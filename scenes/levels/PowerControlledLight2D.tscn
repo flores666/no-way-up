@@ -1,0 +1,46 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/World2D/Power/PowerControlledLight2D.cs" id="1_controller"]
+[ext_resource type="Texture2D" path="res://assets/generated/emergency_light.svg" id="2_light_texture"]
+[ext_resource type="Script" path="res://src/World2D/Perception/LightExposureZone2D.cs" id="3_zone"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_zone"]
+size = Vector2(240, 96)
+
+[node name="PowerControlledLight2D" type="Node2D"]
+script = ExtResource("1_controller")
+
+[node name="LightOverlay" type="Polygon2D" parent="."]
+unique_name_in_owner = true
+z_index = -3
+visible = false
+color = Color(0.62, 0.78, 0.54, 0.18)
+polygon = PackedVector2Array(-120, -48, 120, -48, 120, 48, -120, 48)
+
+[node name="PoweredLight" type="PointLight2D" parent="."]
+unique_name_in_owner = true
+enabled = false
+texture = ExtResource("2_light_texture")
+energy = 1.15
+texture_scale = 1.15
+
+[node name="PowerIndicator" type="Polygon2D" parent="."]
+unique_name_in_owner = true
+z_index = 5
+position = Vector2(0, -38)
+color = Color(0.58, 0.12, 0.09, 1)
+polygon = PackedVector2Array(-18, -5, 18, -5, 18, 5, -18, 5)
+
+[node name="PoweredVisibilityZone" type="Area2D" parent="."]
+unique_name_in_owner = true
+collision_layer = 0
+collision_mask = 8
+monitorable = false
+script = ExtResource("3_zone")
+DisplayName = "Powered exit corridor"
+VisibilityMultiplier = 1.35
+ZonePriority = 30
+ExposureEnabled = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PoweredVisibilityZone"]
+shape = SubResource("RectangleShape2D_zone")

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Gameplay/Items/ItemDefinition.cs" id="1_item"]
+
+[resource]
+resource_name = "Gas Mask Filter"
+script = ExtResource("1_item")
+Id = "filter"
+DisplayName = "Gas Mask Filter"
+Description = "A sealed replacement filter for contaminated areas."
+MaxStackSize = 3

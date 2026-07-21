@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Gameplay/Items/ItemDefinition.cs" id="1_item"]
+
+[resource]
+resource_name = "Replacement Fuse"
+script = ExtResource("1_item")
+Id = "replacement_fuse"
+DisplayName = "Replacement Fuse"
+Description = "A heavy industrial fuse used by the underground power system."
+MaxStackSize = 1

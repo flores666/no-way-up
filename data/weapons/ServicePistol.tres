@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FirearmDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/Gameplay/Combat/FirearmDefinition.cs" id="1_weapon"]
+[ext_resource type="Resource" path="res://data/items/PistolAmmo.tres" id="2_ammo"]
+
+[resource]
+resource_name = "Service Pistol"
+script = ExtResource("1_weapon")
+Id = "service_pistol"
+DisplayName = "Service Pistol"
+AmmoItemDefinition = ExtResource("2_ammo")
+MagazineCapacity = 8
+Damage = 25
+FireIntervalSeconds = 0.25
+ReloadDurationSeconds = 1.2
+Range = 700.0

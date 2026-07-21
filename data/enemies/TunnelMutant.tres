@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="MutantDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Gameplay/Enemies/MutantDefinition.cs" id="1_mutant"]
+
+[resource]
+resource_name = "Tunnel Mutant"
+script = ExtResource("1_mutant")
+Id = "tunnel_mutant"
+DisplayName = "Tunnel Mutant"
+MaxHealth = 75
+MoveSpeed = 90.0
+Acceleration = 500.0
+SightRange = 320.0
+FieldOfViewDegrees = 110.0
+PerceptionIntervalSeconds = 0.12
+ChasePathRefreshIntervalSeconds = 0.15
+LostTargetGraceSeconds = 2.0
+HearingSensitivity = 1.0
+MinimumAudibleIntensity = 0.2
+InvestigationDurationSeconds = 2.0
+MaximumSearchSeconds = 5.0
+StuckDetectionSeconds = 1.25
+MinimumProgressDistance = 8.0
+AttackRange = 34.0
+AttackDamage = 15
+AttackCooldownSeconds = 1.0
+PatrolWaitSeconds = 1.0

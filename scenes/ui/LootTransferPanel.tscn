@@ -1,0 +1,167 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/UI/LootTransferPanelController.cs" id="1_panel"]
+
+[node name="LootTransferPanel" type="Control"]
+process_mode = 3
+z_index = 20
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+script = ExtResource("1_panel")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0.006, 0.009, 0.012, 0.84)
+
+[node name="TransferWindow" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -560.0
+offset_top = -315.0
+offset_right = 560.0
+offset_bottom = 315.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="OuterMargin" type="MarginContainer" parent="TransferWindow"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="Content" type="VBoxContainer" parent="TransferWindow/OuterMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Heading" type="Label" parent="TransferWindow/OuterMargin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.78, 0.39, 1)
+theme_override_font_sizes/font_size = 25
+text = "INVENTORY TRANSFER"
+horizontal_alignment = 1
+
+[node name="Instruction" type="Label" parent="TransferWindow/OuterMargin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.67, 0.73, 0.74, 1)
+theme_override_font_sizes/font_size = 14
+text = "Move one item or a complete stack in either direction. Empty slots remain visible."
+horizontal_alignment = 1
+
+[node name="Body" type="HBoxContainer" parent="TransferWindow/OuterMargin/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="ContainerColumn" type="VBoxContainer" parent="TransferWindow/OuterMargin/Content/Body"]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ContainerTitle" type="Label" parent="TransferWindow/OuterMargin/Content/Body/ContainerColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.91, 0.88, 1)
+theme_override_font_sizes/font_size = 19
+text = "Container"
+horizontal_alignment = 1
+
+[node name="ContainerItemList" type="ItemList" parent="TransferWindow/OuterMargin/Content/Body/ContainerColumn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(420, 400)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 16
+allow_reselect = true
+
+[node name="Actions" type="VBoxContainer" parent="TransferWindow/OuterMargin/Content/Body"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 10
+
+[node name="TakeOneButton" type="Button" parent="TransferWindow/OuterMargin/Content/Body/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(190, 44)
+layout_mode = 2
+text = "Take 1  →"
+
+[node name="TakeStackButton" type="Button" parent="TransferWindow/OuterMargin/Content/Body/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(190, 44)
+layout_mode = 2
+text = "Take Stack  →"
+
+[node name="ActionSeparator" type="HSeparator" parent="TransferWindow/OuterMargin/Content/Body/Actions"]
+layout_mode = 2
+
+[node name="StoreOneButton" type="Button" parent="TransferWindow/OuterMargin/Content/Body/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(190, 44)
+layout_mode = 2
+text = "←  Store 1"
+
+[node name="StoreStackButton" type="Button" parent="TransferWindow/OuterMargin/Content/Body/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(190, 44)
+layout_mode = 2
+text = "←  Store Stack"
+
+[node name="PlayerColumn" type="VBoxContainer" parent="TransferWindow/OuterMargin/Content/Body"]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="PlayerTitle" type="Label" parent="TransferWindow/OuterMargin/Content/Body/PlayerColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.91, 0.88, 1)
+theme_override_font_sizes/font_size = 19
+text = "Player Inventory"
+horizontal_alignment = 1
+
+[node name="PlayerItemList" type="ItemList" parent="TransferWindow/OuterMargin/Content/Body/PlayerColumn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(420, 400)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 16
+allow_reselect = true
+
+[node name="StatusLabel" type="Label" parent="TransferWindow/OuterMargin/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.71, 0.82, 0.8, 1)
+theme_override_font_sizes/font_size = 15
+text = "Select a stack, then choose a transfer amount."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Footer" type="HBoxContainer" parent="TransferWindow/OuterMargin/Content"]
+layout_mode = 2
+alignment = 1
+
+[node name="CloseButton" type="Button" parent="TransferWindow/OuterMargin/Content/Footer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 42)
+layout_mode = 2
+text = "Close  [Esc]"

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FlashlightDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/Gameplay/Flashlight/FlashlightDefinition.cs" id="1_flashlight"]
+[ext_resource type="Resource" path="res://data/items/Battery.tres" id="2_battery"]
+
+[resource]
+resource_name = "Service Flashlight"
+script = ExtResource("1_flashlight")
+Id = "standard_flashlight"
+DisplayName = "Service Flashlight"
+MaximumCharge = 100.0
+DrainPerSecond = 1.0
+LowChargeThreshold = 25.0
+CriticalChargeThreshold = 10.0
+BatteryItemDefinition = ExtResource("2_battery")
+ChargeRestoredPerBattery = 100.0

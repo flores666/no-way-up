@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Gameplay/Items/ItemDefinition.cs" id="1_item"]
+
+[resource]
+resource_name = "9mm Ammunition"
+script = ExtResource("1_item")
+Id = "pistol_ammo"
+DisplayName = "9mm Ammunition"
+Description = "Standard pistol cartridges recovered from underground security stores."
+MaxStackSize = 30

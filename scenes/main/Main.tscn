@@ -1,0 +1,85 @@
+[gd_scene load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://src/Core/Main.cs" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/levels/TestLevel.tscn" id="2_level"]
+[ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="3_player"]
+[ext_resource type="PackedScene" path="res://scenes/ui/DebugHud.tscn" id="4_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/InteractionPrompt.tscn" id="5_prompt"]
+[ext_resource type="PackedScene" path="res://scenes/ui/InteractionMessage.tscn" id="6_message"]
+[ext_resource type="PackedScene" path="res://scenes/ui/InventoryPanel.tscn" id="7_inventory"]
+[ext_resource type="PackedScene" path="res://scenes/ui/LootTransferPanel.tscn" id="8_loot_transfer"]
+[ext_resource type="PackedScene" path="res://scenes/ui/HealthHud.tscn" id="9_health_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/WeaponHud.tscn" id="10_weapon_hud"]
+[ext_resource type="Script" path="res://src/World2D/Noise/NoiseSystem2D.cs" id="11_noise_system"]
+[ext_resource type="PackedScene" path="res://scenes/ui/NoiseHud.tscn" id="12_noise_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/StaminaHud.tscn" id="13_stamina_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/FlashlightHud.tscn" id="14_flashlight_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/VisibilityHud.tscn" id="15_visibility_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/ObjectiveHud.tscn" id="16_objective_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/EscapeCompletePanel.tscn" id="17_escape_panel"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="World2D" type="Node2D" parent="."]
+
+[node name="AmbientDarkness" type="CanvasModulate" parent="World2D"]
+color = Color(0.265, 0.29, 0.315, 1)
+
+[node name="NoiseSystem2D" type="Node2D" parent="World2D"]
+unique_name_in_owner = true
+script = ExtResource("11_noise_system")
+FootstepBaseRadius = 130.0
+InteractionBaseRadius = 180.0
+GunshotBaseRadius = 650.0
+WallAttenuation = 0.5
+OcclusionCollisionMask = 1
+
+[node name="TestLevel" parent="World2D" instance=ExtResource("2_level")]
+unique_name_in_owner = true
+
+[node name="Player" parent="World2D" instance=ExtResource("3_player")]
+unique_name_in_owner = true
+position = Vector2(-205, 0)
+
+[node name="UI" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="DebugHud" parent="UI" instance=ExtResource("4_hud")]
+unique_name_in_owner = true
+
+[node name="HealthHud" parent="UI" instance=ExtResource("9_health_hud")]
+unique_name_in_owner = true
+
+[node name="WeaponHud" parent="UI" instance=ExtResource("10_weapon_hud")]
+unique_name_in_owner = true
+
+[node name="NoiseHud" parent="UI" instance=ExtResource("12_noise_hud")]
+unique_name_in_owner = true
+
+[node name="StaminaHud" parent="UI" instance=ExtResource("13_stamina_hud")]
+unique_name_in_owner = true
+
+[node name="FlashlightHud" parent="UI" instance=ExtResource("14_flashlight_hud")]
+unique_name_in_owner = true
+
+[node name="VisibilityHud" parent="UI" instance=ExtResource("15_visibility_hud")]
+unique_name_in_owner = true
+
+[node name="ObjectiveHud" parent="UI" instance=ExtResource("16_objective_hud")]
+unique_name_in_owner = true
+
+[node name="InventoryPanel" parent="UI" instance=ExtResource("7_inventory")]
+unique_name_in_owner = true
+
+[node name="LootTransferPanel" parent="UI" instance=ExtResource("8_loot_transfer")]
+unique_name_in_owner = true
+
+[node name="InteractionMessage" parent="UI" instance=ExtResource("6_message")]
+unique_name_in_owner = true
+
+[node name="InteractionPrompt" parent="UI" instance=ExtResource("5_prompt")]
+unique_name_in_owner = true
+
+[node name="EscapeCompletePanel" parent="UI" instance=ExtResource("17_escape_panel")]
+unique_name_in_owner = true

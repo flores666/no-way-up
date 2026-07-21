@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/Gameplay/Items/ItemDefinition.cs" id="1_item"]
+[ext_resource type="Resource" path="res://data/items/effects/MedkitHealingEffect.tres" id="2_effect"]
+
+[resource]
+resource_name = "Field Medkit"
+script = ExtResource("1_item")
+Id = "medkit"
+DisplayName = "Field Medkit"
+Description = "A sealed emergency kit containing bandages and medical supplies."
+MaxStackSize = 3
+UseEffect = ExtResource("2_effect")

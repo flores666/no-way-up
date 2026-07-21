@@ -1,0 +1,93 @@
+*.user
+*.userprefs
+# Godot generated data
+.godot/
+.import/
+.mono/
+
+# .NET build output
+bin/
+obj/
+artifacts/
+TestResults/
+
+# Godot C# generated build data
+**/.godot/
+**/.mono/
+**/bin/
+**/obj/
+
+# Godot export credentials
+export_credentials.cfg
+
+# Exported builds
+build/
+builds/
+dist/
+exports/
+release/
+
+# IDE — JetBrains Rider / IntelliJ
+.idea/
+*.sln.iml
+*.DotSettings.user
+
+# IDE — Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.csproj.user
+
+# IDE — Visual Studio Code
+.vscode/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+~$*
+
+# Logs and test output
+*.log
+test-results/
+coverage/
+coverage.*
+*.trx
+
+# Crash dumps
+core
+core.*
+*.dmp
+*.stackdump
+
+# Operating system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Desktop.ini
+
+# Linux desktop trash metadata
+.Trash-*
+.directory
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# NuGet local packages and caches
+packages/
+*.nupkg
+*.snupkg
+
+# Generated archives
+*.zip
+*.tar
+*.tar.gz
+*.7z

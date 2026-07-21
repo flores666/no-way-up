@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Gameplay/Items/ItemDefinition.cs" id="1_item"]
+
+[resource]
+resource_name = "Battery"
+script = ExtResource("1_item")
+Id = "battery"
+DisplayName = "Battery"
+Description = "A partially charged industrial battery."
+MaxStackSize = 5

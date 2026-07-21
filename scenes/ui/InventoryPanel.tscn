@@ -1,0 +1,105 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/UI/InventoryPanelController.cs" id="1_inventory_panel"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.022, 0.034, 0.041, 0.97)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.36, 0.61, 0.57, 0.86)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 18.0
+content_margin_top = 15.0
+content_margin_right = 18.0
+content_margin_bottom = 14.0
+
+[node name="InventoryPanel" type="MarginContainer"]
+visible = false
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -470.0
+offset_top = 62.0
+offset_right = -24.0
+offset_bottom = 660.0
+grow_horizontal = 0
+mouse_filter = 1
+script = ExtResource("1_inventory_panel")
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="Content" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="Panel/Content"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Panel/Content/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.94, 0.84, 1)
+theme_override_font_sizes/font_size = 22
+text = "INVENTORY"
+
+[node name="CapacityLabel" type="Label" parent="Panel/Content/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.54, 0.8, 0.74, 1)
+theme_override_font_sizes/font_size = 15
+text = "Slots: 0 / 12"
+vertical_alignment = 1
+
+[node name="Separator" type="HSeparator" parent="Panel/Content"]
+layout_mode = 2
+
+[node name="SlotList" type="ItemList" parent="Panel/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(398, 325)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 15
+allow_reselect = true
+
+[node name="DetailsSeparator" type="HSeparator" parent="Panel/Content"]
+layout_mode = 2
+
+[node name="SelectedItemLabel" type="Label" parent="Panel/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.78, 0.4, 1)
+theme_override_font_sizes/font_size = 17
+text = "NO ITEM SELECTED"
+vertical_alignment = 1
+
+[node name="DescriptionLabel" type="Label" parent="Panel/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 55)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.67, 0.72, 0.72, 1)
+theme_override_font_sizes/font_size = 14
+text = "Select an occupied inventory slot to inspect it."
+autowrap_mode = 2
+vertical_alignment = 1
+
+[node name="UseButton" type="Button" parent="Panel/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+disabled = true
+text = "Use Selected Item"
+
+[node name="Hint" type="Label" parent="Panel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.52, 0.57, 0.58, 1)
+theme_override_font_sizes/font_size = 13
+text = "TAB  Close  •  Select a slot to inspect or use"
+horizontal_alignment = 1

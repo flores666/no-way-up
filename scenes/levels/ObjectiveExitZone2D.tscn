@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/World2D/Levels/ObjectiveExitZone2D.cs" id="1_exit_zone"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_exit"]
+size = Vector2(220, 72)
+
+[node name="ObjectiveExitZone2D" type="Area2D"]
+collision_layer = 0
+collision_mask = 33
+monitoring = true
+monitorable = false
+script = ExtResource("1_exit_zone")
+
+[node name="ExitShape" type="CollisionShape2D" parent="."]
+unique_name_in_owner = true
+shape = SubResource("RectangleShape2D_exit")

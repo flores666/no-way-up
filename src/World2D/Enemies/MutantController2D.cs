@@ -100,6 +100,9 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
     [Export]
     public bool EnableDebugStateLabel { get; set; }
 
+    [Export]
+    public bool EnableDebugHealthLabel { get; set; } = true;
+
     public HealthModel Health => _health
         ?? throw new InvalidOperationException(
             $"{nameof(MutantController2D)} on '{Name}' has no initialized health model.");
@@ -1466,6 +1469,12 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
 
     private void RefreshHealthDisplay()
     {
+        if (!EnableDebugHealthLabel)
+        {
+            _healthLabel.Visible = false;
+            return;
+        }
+
         if (Health.IsDead)
         {
             _healthLabel.Visible = true;

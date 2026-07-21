@@ -77,6 +77,12 @@ navigation excludes the duct, so the full-height eastern service stair remains t
 AI route. Platform columns, train cars, ticket booths, corners, and narrow corridor
 segments provide hearing attenuation, line-of-sight breaks, and combat cover.
 
+Gameplay landmark text is authored as a `Label` below a positioned `Node2D` anchor.
+The anchor owns world placement and the Label owns only local centering offsets. This
+prevents direct Control children from collapsing onto one offset rectangle. The
+normal gameplay composition disables the technical DebugHud and mutant health/death
+labels; `TestMain.tscn` keeps technical telemetry available explicitly.
+
 `TestLevel.tscn` remains unchanged as the compact technical map for regression
 scenarios. `TestMain.tscn` keeps it directly runnable after `Main.tscn` changed to
 MetroLevel01.
@@ -1073,18 +1079,17 @@ threshold or maximum before the model has actually reached it, the HUD clamps th
 text to the lower tenth. Consequently a real value below either gameplay boundary
 cannot be presented as though it had already reached it. Death changes the existing
 panel to a disabled
-presentation; tree exit removes all three subscriptions. Its
-left-column placement begins below the noise HUD and does not intersect the health,
-weapon, debug, inventory, transfer, prompt, or message layouts.
+presentation; tree exit removes all three subscriptions. Its compact left-column placement begins below the noise HUD and does not intersect
+the health, weapon, inventory, transfer, prompt, or message layouts. The technical
+debug HUD is disabled in the gameplay composition.
 
 `FlashlightHudController` is also event-only. `Main` binds the explicit
 `FlashlightModel` and player `InventoryModel`; the HUD subscribes once to each
 `Changed` event, derives reserve count through stable item ID `battery`, and removes
 both subscriptions on rebind or tree exit. Rebinding the same pair refreshes without
 adding handlers. It shows `FLASHLIGHT`, the charge bar and numeric value,
-`ON`, `OFF`, `ON/OFF · LOW`, `ON/OFF · CRITICAL`, `EMPTY`, or `DEAD`, and never mutates either model. Its anchored
-left-column rectangle begins below the stamina panel and avoids the health, weapon,
-noise, interaction, inventory, transfer, and debug layouts.
+`ON`, `OFF`, `ON/OFF · LOW`, `ON/OFF · CRITICAL`, `EMPTY`, or `DEAD`, and never mutates either model. Its compact anchored left-column rectangle begins below the stamina panel and avoids
+the health, weapon, noise, interaction, inventory, and transfer layouts.
 
 `LootTransferPanelController` binds directly to the two supplied models, renders
 every fixed slot in two `ItemList` controls, and subscribes once to each model's

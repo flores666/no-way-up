@@ -21,7 +21,7 @@ public sealed partial class DebugHud : MarginContainer
 
     public override void _Process(double delta)
     {
-        if (_player is null)
+        if (!IsVisibleInTree() || _player is null)
         {
             return;
         }

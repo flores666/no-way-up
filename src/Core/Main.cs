@@ -19,6 +19,9 @@ namespace LineZero.Core;
 
 public sealed partial class Main : Node2D
 {
+    [Export]
+    public bool EnableDebugHud { get; set; }
+
     private readonly ItemUseService _itemUseService = new();
     private readonly FlashlightBatteryService _flashlightBatteryService = new();
     private readonly ObjectiveProgressModel _objectiveProgress = new();
@@ -211,7 +214,12 @@ public sealed partial class Main : Node2D
         player.Health.Died += OnPlayerDied;
         player.Inventory.Changed += OnPlayerInventoryChanged;
 
-        debugHud.Initialize(player);
+        debugHud.Visible = EnableDebugHud;
+        debugHud.SetProcess(EnableDebugHud);
+        if (EnableDebugHud)
+        {
+            debugHud.Initialize(player);
+        }
         interactionPrompt.SetPrompt(playerInteractor.CurrentPrompt);
 
         IInventoryOwner inventoryOwner = player;

@@ -6,8 +6,10 @@ using LineZero.Core;
 using LineZero.Data;
 using LineZero.Gameplay.Combat;
 using LineZero.Gameplay.Flashlight;
+using LineZero.Gameplay.Health;
 using LineZero.Gameplay.Items;
 using LineZero.Tests.Framework;
+using LineZero.UI;
 using LineZero.World2D;
 using LineZero.World2D.Enemies;
 using LineZero.World2D.Hazards;
@@ -191,6 +193,108 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
             await context.DisposeNodeAsync(level);
         });
 
+        await context.RunAsync("metro-landmarks-use-distinct-world-anchors", async () =>
+        {
+            MetroLevelController2D level = context.InstantiateScene<MetroLevelController2D>(
+                "res://scenes/levels/MetroLevel01.tscn");
+            await context.WaitProcessFramesAsync(2);
+
+            Node2D landmarks = level.GetNode<Node2D>("Landmarks");
+            string[] anchorNames =
+            {
+                "PlatformSignAnchor",
+                "TicketHallSignAnchor",
+                "ServiceSignAnchor",
+                "ElectricalSignAnchor",
+                "ExitSignAnchor",
+                "TrainLineSignAnchor",
+                "CrawlMarkingAnchor",
+            };
+
+            HashSet<Vector2> authoredPositions = new();
+            for (int index = 0; index < anchorNames.Length; index++)
+            {
+                Node2D anchor = landmarks.GetNode<Node2D>(anchorNames[index]);
+                TestAssert.True(
+                    authoredPositions.Add(anchor.Position),
+                    $"Metro landmark anchor '{anchor.Name}' overlaps another anchor.");
+                TestAssert.Equal(
+                    1,
+                    anchor.GetChildCount(),
+                    $"Metro landmark anchor '{anchor.Name}' must own one label.");
+                TestAssert.True(
+                    anchor.GetChild(0) is Label,
+                    $"Metro landmark anchor '{anchor.Name}' does not own a Label.");
+            }
+
+            await context.DisposeNodeAsync(level);
+        });
+
+        await context.RunAsync("metro-mutant-debug-health-labels-stay-hidden", async () =>
+        {
+            MetroLevelController2D level = context.InstantiateScene<MetroLevelController2D>(
+                "res://scenes/levels/MetroLevel01.tscn");
+            await context.WaitProcessFramesAsync(2);
+
+            TestAssert.True(level.Mutants.Count > 0,
+                "MetroLevel01 has no mutant for debug-label validation.");
+            MutantController2D mutant = level.Mutants[0];
+            Label healthLabel = mutant.GetNode<Label>("MutantHealthLabel");
+            TestAssert.False(mutant.EnableDebugHealthLabel,
+                "Metro mutant health debug labels are enabled in gameplay.");
+            TestAssert.False(healthLabel.Visible,
+                "Metro mutant health label is visible before damage.");
+
+            mutant.Health.ApplyDamage(new DamageInfo(mutant.Health.MaxHealth));
+            TestAssert.False(healthLabel.Visible,
+                "Dead metro mutant exposed the technical 'MUTANT DEAD' label.");
+
+            await context.DisposeNodeAsync(level);
+        });
+
+        await context.RunAsync("gameplay-hud-is-compact-and-debug-free", async () =>
+        {
+            Main main = context.InstantiateScene<Main>("res://scenes/main/Main.tscn");
+            await context.WaitProcessFramesAsync(3);
+
+            DebugHud debugHud = main.GetNode<DebugHud>("%DebugHud");
+            TestAssert.False(main.EnableDebugHud,
+                "Gameplay Main unexpectedly enables the technical debug HUD.");
+            TestAssert.False(debugHud.Visible,
+                "Technical FPS/position HUD is visible in gameplay.");
+            TestAssert.False(debugHud.IsProcessing(),
+                "Hidden technical HUD still performs per-frame work.");
+
+            Control[] leftStack =
+            {
+                main.GetNode<Control>("%HealthHud"),
+                main.GetNode<Control>("%WeaponHud"),
+                main.GetNode<Control>("%NoiseHud"),
+                main.GetNode<Control>("%StaminaHud"),
+                main.GetNode<Control>("%FlashlightHud"),
+            };
+
+            float previousBottom = 0.0f;
+            for (int index = 0; index < leftStack.Length; index++)
+            {
+                Control panel = leftStack[index];
+                TestAssert.True(panel.Size.X <= 224.0f + 0.01f,
+                    $"HUD panel '{panel.Name}' is wider than the compact layout contract.");
+                TestAssert.True(panel.Position.Y >= previousBottom,
+                    $"HUD panel '{panel.Name}' overlaps the previous panel.");
+                previousBottom = panel.Position.Y + panel.Size.Y;
+            }
+
+            TestAssert.True(previousBottom <= 350.0f + 0.01f,
+                "Left HUD stack occupies too much vertical gameplay space.");
+            TestAssert.True(main.GetNode<Control>("%VisibilityHud").Size.X <= 242.0f + 0.01f,
+                "Visibility HUD is wider than the compact layout contract.");
+            TestAssert.True(main.GetNode<Control>("%ObjectiveHud").Size.X <= 340.0f + 0.01f,
+                "Objective HUD is wider than the compact layout contract.");
+
+            await context.DisposeNodeAsync(main);
+        });
+
         context.Run("authored-resources-load-and-validate", () =>
         {
             PlayerMovementSettings movement = LoadResource<PlayerMovementSettings>(
@@ -289,6 +393,10 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
 
             TestAssert.True(main.IsInitialized,
                 "TestMain did not initialize the technical regression level.");
+            TestAssert.True(main.EnableDebugHud,
+                "TestMain no longer enables the technical debug HUD.");
+            TestAssert.True(main.GetNode<DebugHud>("%DebugHud").Visible,
+                "TestMain debug HUD is not visible.");
             TestAssert.True(
                 main.GetNodeOrNull<TestLevelController2D>("%PlayableLevel") is not null,
                 "TestMain no longer contains TestLevel.");

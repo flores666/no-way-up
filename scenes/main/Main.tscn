@@ -47,6 +47,7 @@ layer = 10
 
 [node name="DebugHud" parent="UI" instance=ExtResource("4_hud")]
 unique_name_in_owner = true
+visible = false
 
 [node name="HealthHud" parent="UI" instance=ExtResource("9_health_hud")]
 unique_name_in_owner = true

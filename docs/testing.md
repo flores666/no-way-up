@@ -153,6 +153,10 @@ sampling, random timing, arbitrary sleeps for domain tests, and duplicated gamep
 implementations. It is a regression suite, not a substitute for the documented
 manual feel/balance checks.
 
+Scene contracts also verify that Metro landmark Labels use distinct world-space
+anchors, gameplay disables technical mutant/debug labels, and the persistent HUD
+fits the compact layout bounds without panel overlap.
+
 ## Deterministic integration fixtures
 
 Integration suites explicitly control mutable presentation state instead of relying on

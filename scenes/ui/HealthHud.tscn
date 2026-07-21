@@ -13,10 +13,10 @@ corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
-content_margin_left = 12.0
-content_margin_top = 9.0
-content_margin_right = 12.0
-content_margin_bottom = 9.0
+content_margin_left = 8.0
+content_margin_top = 6.0
+content_margin_right = 8.0
+content_margin_bottom = 6.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_background"]
 bg_color = Color(0.055, 0.07, 0.075, 1)
@@ -38,10 +38,10 @@ corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 
 [node name="HealthHud" type="MarginContainer"]
-offset_left = 16.0
-offset_top = 124.0
-offset_right = 300.0
-offset_bottom = 204.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 236.0
+offset_bottom = 70.0
 mouse_filter = 2
 script = ExtResource("1_hud")
 
@@ -51,7 +51,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="Content" type="VBoxContainer" parent="Panel"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 3
 
 [node name="HealthLabel" type="Label" parent="Panel/Content"]
 unique_name_in_owner = true
@@ -60,12 +60,12 @@ theme_override_colors/font_color = Color(0.94, 0.84, 0.79, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.75)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 13
 text = "HEALTH 100 / 100"
 
 [node name="HealthBar" type="ProgressBar" parent="Panel/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(252, 22)
+custom_minimum_size = Vector2(204, 12)
 layout_mode = 2
 theme_override_styles/background = SubResource("StyleBoxFlat_bar_background")
 theme_override_styles/fill = SubResource("StyleBoxFlat_bar_fill")

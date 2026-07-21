@@ -49,6 +49,13 @@ change after the single fuse circuit is restored.
 TestLevel remains the compact technical/regression level and is not replaced by the
 metro greybox.
 
+The gameplay HUD uses a compact 224-pixel left stack and disables the technical
+FPS/position panel in `Main.tscn`; `TestMain.tscn` keeps that debug panel enabled.
+Metro landmark labels are attached to explicit world-space `Node2D` anchors so their
+Control offsets cannot collapse every sign onto one screen position. Mutant health
+and `MUTANT DEAD` debug labels are disabled in the gameplay level while remaining
+available to technical scenes that explicitly enable them.
+
 Known greybox limitations:
 
 - geometry and signage use primitive built-in visuals rather than final art;

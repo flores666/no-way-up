@@ -9,10 +9,14 @@ using LineZero.Gameplay.Flashlight;
 using LineZero.Gameplay.Items;
 using LineZero.Tests.Framework;
 using LineZero.World2D;
+using LineZero.World2D.Enemies;
 using LineZero.World2D.Hazards;
+using LineZero.World2D.Interaction;
+using LineZero.World2D.Items;
 using LineZero.World2D.Levels;
 using LineZero.World2D.Noise;
 using LineZero.World2D.Perception;
+using LineZero.World2D.Power;
 
 namespace LineZero.Tests.Suites;
 
@@ -116,6 +120,77 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
             await context.DisposeNodeAsync(level);
         });
 
+        await context.RunAsync("metro-level-greybox-contracts", async () =>
+        {
+            MetroLevelController2D level = context.InstantiateScene<MetroLevelController2D>(
+                "res://scenes/levels/MetroLevel01.tscn");
+            await context.WaitProcessFramesAsync(2);
+            await context.WaitPhysicsFramesAsync(2);
+
+            TestAssert.True(level.Mutants.Count >= 3,
+                "MetroLevel01 requires at least three authored mutants.");
+            TestAssert.True(level.PoweredLights.Count >= 3,
+                "MetroLevel01 requires multiple powered route lights.");
+            TestAssert.True(level.EmergencyExitDoor.RequiresPower,
+                "Metro emergency exit is not power-gated.");
+
+            Node hazards = level.GetNode<Node>("Hazards");
+            Node interactions = level.GetNode<Node>("Interactions");
+            TestAssert.True(CountDirectChildren<DamageZone2D>(hazards) >= 2,
+                "MetroLevel01 requires at least two authored hazards.");
+            TestAssert.True(CountDirectChildren<LootContainer2D>(interactions) >= 4,
+                "MetroLevel01 requires at least four loot containers.");
+            TestAssert.True(CountDirectChildren<WorldItemPickup2D>(interactions) >= 5,
+                "MetroLevel01 requires authored standalone pickups.");
+
+            CollisionShape2D ductTop = level.GetNode<CollisionShape2D>(
+                "WallCollisions/CrawlDuctTop");
+            CollisionShape2D ductBottom = level.GetNode<CollisionShape2D>(
+                "WallCollisions/CrawlDuctBottom");
+            RectangleShape2D topRectangle = ductTop.Shape as RectangleShape2D
+                ?? throw new TestAssertionException("Crawl duct top is not rectangular.");
+            RectangleShape2D bottomRectangle = ductBottom.Shape as RectangleShape2D
+                ?? throw new TestAssertionException("Crawl duct bottom is not rectangular.");
+            float crawlGap =
+                (ductBottom.Position.Y - bottomRectangle.Size.Y * 0.5f) -
+                (ductTop.Position.Y + topRectangle.Size.Y * 0.5f);
+
+            PlayerController2D player = InstantiateDetached<PlayerController2D>(
+                "res://scenes/player/Player.tscn");
+            CapsuleShape2D normalShape =
+                player.GetNode<CollisionShape2D>("NormalCollisionShape").Shape as CapsuleShape2D
+                ?? throw new TestAssertionException("Normal movement shape is not a capsule.");
+            CapsuleShape2D crawlShape =
+                player.GetNode<CollisionShape2D>("CrawlCollisionShape").Shape as CapsuleShape2D
+                ?? throw new TestAssertionException("Crawl movement shape is not a capsule.");
+            TestAssert.True(crawlGap < normalShape.Radius * 2.0f,
+                "Normal movement collider can fit through the crawl-only passage.");
+            TestAssert.True(crawlGap > crawlShape.Radius * 2.0f,
+                "Crawl collider cannot fit through the authored maintenance passage.");
+            player.Free();
+
+            for (int index = 0; index < level.PoweredLights.Count; index++)
+            {
+                PowerControlledLight2D poweredLight = level.PoweredLights[index];
+                poweredLight.BindPowerCircuit(level.PowerCircuit.Model);
+                TestAssert.False(
+                    poweredLight.GetNode<PointLight2D>("PoweredLight").Enabled,
+                    "Powered metro light started online before fuse restoration.");
+            }
+
+            TestAssert.True(level.PowerCircuit.Model.TryInstallFuse(),
+                "Metro power circuit rejected its first fuse installation.");
+            for (int index = 0; index < level.PoweredLights.Count; index++)
+            {
+                TestAssert.True(
+                    level.PoweredLights[index].GetNode<PointLight2D>("PoweredLight").Enabled,
+                    "Metro route light did not switch on after power restoration.");
+            }
+
+            AssertNoHumanNpcNames(level);
+            await context.DisposeNodeAsync(level);
+        });
+
         context.Run("authored-resources-load-and-validate", () =>
         {
             PlayerMovementSettings movement = LoadResource<PlayerMovementSettings>(
@@ -197,14 +272,76 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
                 main.GetNodeOrNull<PlayerController2D>("%Player") is not null,
                 "Main smoke scene did not contain the unique Player node.");
             TestAssert.True(
-                main.GetNodeOrNull<TestLevelController2D>("%TestLevel") is not null,
-                "Main smoke scene did not contain the unique TestLevel node.");
+                main.GetNodeOrNull<MetroLevelController2D>("%PlayableLevel") is not null,
+                "Main does not load MetroLevel01 as the default gameplay level.");
             TestAssert.True(
                 main.GetNodeOrNull<NoiseSystem2D>("%NoiseSystem2D") is not null,
                 "Main smoke scene did not contain the unique NoiseSystem2D node.");
 
             await context.DisposeNodeAsync(main);
         });
+
+        await context.RunAsync("technical-test-level-remains-runnable", async () =>
+        {
+            Main main = context.InstantiateScene<Main>("res://scenes/main/TestMain.tscn");
+            await context.WaitProcessFramesAsync(3);
+            await context.WaitPhysicsFramesAsync(2);
+
+            TestAssert.True(main.IsInitialized,
+                "TestMain did not initialize the technical regression level.");
+            TestAssert.True(
+                main.GetNodeOrNull<TestLevelController2D>("%PlayableLevel") is not null,
+                "TestMain no longer contains TestLevel.");
+
+            await context.DisposeNodeAsync(main);
+        });
+    }
+
+    private static int CountDirectChildren<TNode>(Node parent)
+        where TNode : Node
+    {
+        int count = 0;
+        for (int index = 0; index < parent.GetChildCount(); index++)
+        {
+            if (parent.GetChild(index) is TNode)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private static void AssertNoHumanNpcNames(Node root)
+    {
+        string[] bannedTokens =
+        {
+            "survivor",
+            "civilian",
+            "companion",
+            "human_npc",
+            "dialogue",
+            "cutscene",
+        };
+
+        Stack<Node> pending = new();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            Node current = pending.Pop();
+            string normalizedName = current.Name.ToString().ToLowerInvariant();
+            for (int index = 0; index < bannedTokens.Length; index++)
+            {
+                TestAssert.False(
+                    normalizedName.Contains(bannedTokens[index], StringComparison.Ordinal),
+                    $"MetroLevel01 contains prohibited human/NPC content at '{current.GetPath()}'.");
+            }
+
+            for (int index = 0; index < current.GetChildCount(); index++)
+            {
+                pending.Push(current.GetChild(index));
+            }
+        }
     }
 
     private static T InstantiateDetached<T>(string resourcePath)

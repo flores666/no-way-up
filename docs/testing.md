@@ -79,8 +79,8 @@ The Godot runner always finishes with a compact result block:
 [TEST][FINAL_SUMMARY]
   result: PASS
   suites: 20
-  tests: 88
-  passed: 88
+  tests: 90
+  passed: 90
   failed: 0
   duration: 1.23s
   failed cases: none
@@ -123,7 +123,7 @@ non-zero exit code is preserved for local scripts and CI.
 | `prototype-flow` | Full fuse, power, emergency-door, exit, and terminal-input loop through `Main` |
 | `movement-crawl` | Collision-profile invariants, blocked exit, and constant sensors |
 | `hud` | Honest stamina/flashlight values and event-driven objective status |
-| `scene-contracts` | Exported paths, resource validation, dark bounds, inputs, and `Main.tscn` smoke load |
+| `scene-contracts` | Exported paths, TestLevel preservation, MetroLevel01 content/crawl/power contracts, inputs, and both main-scene smoke loads |
 
 ## Structure
 
@@ -145,7 +145,7 @@ sequentially and failures are aggregated instead of aborting the remaining tests
 Plain C# models are tested without scene dependencies. Godot integration tests use
 the real project scenes and real physics server for behavior that depends on
 `Area2D`, `CharacterBody2D`, ray queries, tweens, signals, or UI nodes. The final
-`scene-contracts` suite loads `Main.tscn` and requires the composition root to reach
+`scene-contracts` suite loads both `Main.tscn` and `TestMain.tscn`, validates the MetroLevel01 greybox contracts, and requires each composition root to reach
 `Main.IsInitialized` without startup exceptions.
 
 The harness is deterministic and intentionally avoids screenshots, rendered-pixel

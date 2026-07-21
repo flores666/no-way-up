@@ -32,7 +32,8 @@ public sealed class PrototypeFlowFeatureTests : IFeatureTestSuite
                 "Main did not initialize before the prototype-flow test.");
 
             PlayerController2D player = main.GetNode<PlayerController2D>("%Player");
-            TestLevelController2D level = main.GetNode<TestLevelController2D>("%TestLevel");
+            PlayableLevelController2D level =
+                main.GetNode<PlayableLevelController2D>("%PlayableLevel");
             ObjectiveHudController objectiveHud = main.GetNode<ObjectiveHudController>(
                 "%ObjectiveHud");
             EscapeCompletePanelController completionPanel =

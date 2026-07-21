@@ -3,16 +3,60 @@
 **No Way Up** is the public game name. The existing `LineZero` assembly, namespaces,
 and internal project identifiers are intentionally retained in this stabilization stage.
 
-No Way Up is an early technical prototype for a top-down survival-horror game set
-in an abandoned underground transit system. The current Stage 13 build preserves
-the complete Stage 1–12 movement, interaction, inventory, combat, mutant, noise,
-stamina, crawl, flashlight, visibility, modal-UI, death, and Tab-handling slice.
-Stage 13 adds the first complete prototype loop: recover a replacement fuse,
-restore the maintenance circuit, open the powered emergency exit, and reach the
-escape zone.
+No Way Up is a top-down survival-horror prototype set in a damaged underground
+metro. The current cumulative build preserves the complete movement, crawl,
+stamina, interaction, inventory, combat, mutant, noise, flashlight, visibility,
+hazard, power, objective, death, and terminal-completion systems. The first real
+playable greybox level now uses those systems in a longer exploration loop while
+the original TestLevel remains available for focused regression work.
 
 The codebase intentionally keeps 2D presentation and movement separate from data
 that can be reused when a future 3D top-down version is introduced.
+
+
+## MetroLevel01 gameplay greybox
+
+`res://scenes/levels/MetroLevel01.tscn` is the default playable level loaded by
+`res://scenes/main/Main.tscn`. It is designed as a 20–30 minute first-pass run,
+depending on stealth, exploration, combat, and loot decisions.
+
+The intended route is:
+
+1. Start in the dim western concourse with the powerless emergency exit visible.
+2. Enter Platform 01 through the ticket/access corridor.
+3. Search the stopped train and recover the replacement fuse from its maintenance car.
+4. Reach the northeastern service corridor and electrical room by either the exposed
+   platform route or the crawl-only cable duct shortcut.
+5. Install the fuse at the existing maintenance fuse box.
+6. Follow the newly powered service and emergency lighting back to the western exit.
+7. Open the powered emergency door and enter the existing objective exit zone.
+
+Major authored spaces are the ticket hall/concourse, main platform, stopped train,
+track bed, narrow service route, electrical room, crawl-only cable passage, powered
+emergency corridor, and optional ticket-office/train loot areas. Three mutants,
+three hazards, five containers, standalone ammunition, medkit, battery, and filter
+pickups are placed to support stealth, combat, resource management, and alternate
+routing. The train car is traversable and acts as both a landmark and objective-loot
+space.
+
+The blue floor marking connects the platform to the electrical room. Green markings
+identify the emergency route. Dark platform/service exposure zones reward crouch and
+crawl, while the powered exit, service junction, and electrical-room lights visibly
+change after the single fuse circuit is restored.
+
+`res://scenes/main/TestMain.tscn` runs the original
+`res://scenes/levels/TestLevel.tscn` with the normal player and UI composition.
+TestLevel remains the compact technical/regression level and is not replaced by the
+metro greybox.
+
+Known greybox limitations:
+
+- geometry and signage use primitive built-in visuals rather than final art;
+- train interaction volumes use the existing proximity-based interaction system and
+  do not add a new interaction line-of-sight framework;
+- navigation is authored as explicit walkable polygons and should be rebaked when the
+  layout changes materially;
+- pacing is an authored target and still requires playtesting on the local Godot build.
 
 ## Prerequisites
 
@@ -685,7 +729,7 @@ rendered-light analysis.
   World-layer ray checks that prevent sight and attacks through walls;
 - a dimension-free `IVisibilityTarget` contract with deterministic crawl/crouch/
   walk/sprint sight-range multipliers of `0.40 / 0.65 / 1.0 / 1.15`;
-- explicit one-time player binding from `Main` through `TestLevelController2D`,
+- explicit one-time player binding from `Main` through `PlayableLevelController2D`,
   with target-death and target-lifetime cleanup and no per-frame scene searches;
 - variable-count direct mutant binding, including valid zero-mutant test scenes,
   with clear rejection of incorrectly configured direct children;

@@ -1,0 +1,1070 @@
+[gd_scene load_steps=72 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/interactables/SlidingDoor2D.tscn" id="1_door"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/InspectableObject2D.tscn" id="2_inspectable"]
+[ext_resource type="PackedScene" path="res://scenes/items/WorldItemPickup2D.tscn" id="3_pickup"]
+[ext_resource type="Resource" path="res://data/items/Scrap.tres" id="4_scrap"]
+[ext_resource type="Resource" path="res://data/items/Battery.tres" id="5_battery"]
+[ext_resource type="Resource" path="res://data/items/Filter.tres" id="6_filter"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/LootContainer2D.tscn" id="7_container"]
+[ext_resource type="Script" path="res://src/Gameplay/Inventory/InventorySeedEntry.cs" id="8_seed_script"]
+[ext_resource type="Resource" path="res://data/inventory/MaintenanceLockerScrap.tres" id="9_locker_scrap"]
+[ext_resource type="Resource" path="res://data/inventory/MaintenanceLockerBattery.tres" id="10_locker_battery"]
+[ext_resource type="Resource" path="res://data/inventory/EmergencyCabinetFilter.tres" id="11_cabinet_filter"]
+[ext_resource type="Resource" path="res://data/inventory/EmergencyCabinetBattery.tres" id="12_cabinet_battery"]
+[ext_resource type="Resource" path="res://data/inventory/EmergencyCabinetScrap.tres" id="13_cabinet_scrap"]
+[ext_resource type="Resource" path="res://data/items/Medkit.tres" id="14_medkit"]
+[ext_resource type="Resource" path="res://data/inventory/EmergencyCabinetMedkit.tres" id="15_cabinet_medkit"]
+[ext_resource type="PackedScene" path="res://scenes/hazards/DamageZone2D.tscn" id="16_damage_zone"]
+[ext_resource type="Resource" path="res://data/items/PistolAmmo.tres" id="17_pistol_ammo"]
+[ext_resource type="Resource" path="res://data/inventory/MaintenanceLockerPistolAmmo.tres" id="18_locker_ammo"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/TunnelMutant2D.tscn" id="19_mutant"]
+[ext_resource type="NavigationPolygon" path="res://data/navigation/MetroLevel01Navigation.tres" id="20_navigation"]
+[ext_resource type="PackedScene" path="res://scenes/levels/LightExposureZone2D.tscn" id="21_light_zone"]
+[ext_resource type="PackedScene" path="res://scenes/interactables/FuseBox2D.tscn" id="22_fuse_box"]
+[ext_resource type="Script" path="res://src/World2D/Power/PowerCircuitComponent.cs" id="23_power_circuit"]
+[ext_resource type="PackedScene" path="res://scenes/levels/PowerControlledLight2D.tscn" id="24_powered_light"]
+[ext_resource type="PackedScene" path="res://scenes/levels/ObjectiveExitZone2D.tscn" id="25_exit_zone"]
+[ext_resource type="Resource" path="res://data/inventory/MaintenanceFuseCrateReplacementFuse.tres" id="26_fuse_seed"]
+[ext_resource type="Script" path="res://src/World2D/Levels/MetroLevelController2D.cs" id="27_controller"]
+[ext_resource type="Texture2D" path="res://assets/generated/emergency_light.svg" id="28_light_texture"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TicketTop"]
+size = Vector2(490, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TicketLeft"]
+size = Vector2(20, 1120)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TicketBottom"]
+size = Vector2(490, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TicketRightTop"]
+size = Vector2(20, 130)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TicketRightMid"]
+size = Vector2(20, 490)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TicketRightBottom"]
+size = Vector2(20, 350)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_AccessTop"]
+size = Vector2(220, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_AccessBottom"]
+size = Vector2(220, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_PlatformTop"]
+size = Vector2(1180, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_PlatformLeftTop"]
+size = Vector2(20, 280)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_PlatformLeftBottom"]
+size = Vector2(20, 30)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_PlatformRight"]
+size = Vector2(20, 720)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TrackBottom"]
+size = Vector2(1300, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TrackLeft"]
+size = Vector2(20, 280)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ServiceTop"]
+size = Vector2(1800, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ServiceBottomLeft"]
+size = Vector2(1220, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ServiceLeftTop"]
+size = Vector2(20, 90)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ServiceLeftBottom"]
+size = Vector2(20, 70)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_EastStairLeft"]
+size = Vector2(20, 160)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_EastStairRight"]
+size = Vector2(20, 160)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ElectricalRight"]
+size = Vector2(20, 300)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ElectricalBottom"]
+size = Vector2(360, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ElectricalDividerTop"]
+size = Vector2(20, 50)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ElectricalDividerBottom"]
+size = Vector2(20, 50)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ExitTop"]
+size = Vector2(200, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ExitLeft"]
+size = Vector2(20, 290)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ExitRight"]
+size = Vector2(20, 290)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_CrawlDuctTop"]
+size = Vector2(140, 28)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_CrawlDuctBottom"]
+size = Vector2(140, 28)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TrainWestBody"]
+size = Vector2(320, 170)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TrainEastBody"]
+size = Vector2(200, 170)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TrainCenterTopLeft"]
+size = Vector2(100, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TrainCenterTopRight"]
+size = Vector2(200, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TrainCenterBottom"]
+size = Vector2(380, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TrainCenterLeft"]
+size = Vector2(20, 170)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TrainCenterRight"]
+size = Vector2(20, 170)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ColumnWest"]
+size = Vector2(36, 36)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ColumnCenter"]
+size = Vector2(36, 36)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ColumnEast"]
+size = Vector2(36, 36)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ColumnFarEast"]
+size = Vector2(36, 36)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TicketBoothWest"]
+size = Vector2(140, 90)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_TicketBoothEast"]
+size = Vector2(120, 80)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_CollapsedBarricade"]
+size = Vector2(120, 30)
+
+[node name="MetroLevel01" type="Node2D"]
+script = ExtResource("27_controller")
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+unique_name_in_owner = true
+navigation_polygon = ExtResource("20_navigation")
+navigation_layers = 1
+
+[node name="Floor" type="Node2D" parent="."]
+z_index = -12
+[node name="TicketHall" type="Polygon2D" parent="Floor"]
+color = Color(0.185, 0.205, 0.215, 1)
+polygon = PackedVector2Array(-1250, -520, -760, -520, -760, 80, -1250, 80)
+
+[node name="StartConcourse" type="Polygon2D" parent="Floor"]
+color = Color(0.22, 0.235, 0.24, 1)
+polygon = PackedVector2Array(-1250, 80, -760, 80, -760, 560, -1250, 560)
+
+[node name="AccessCorridor" type="Polygon2D" parent="Floor"]
+color = Color(0.205, 0.22, 0.225, 1)
+polygon = PackedVector2Array(-760, 100, -540, 100, -540, 230, -760, 230)
+
+[node name="MainPlatform" type="Polygon2D" parent="Floor"]
+color = Color(0.215, 0.225, 0.225, 1)
+polygon = PackedVector2Array(-560, -160, 720, -160, 720, 260, -560, 260)
+
+[node name="TrackBed" type="Polygon2D" parent="Floor"]
+color = Color(0.09, 0.105, 0.11, 1)
+polygon = PackedVector2Array(-560, 260, 720, 260, 720, 520, -560, 520)
+
+[node name="ServiceCorridor" type="Polygon2D" parent="Floor"]
+color = Color(0.145, 0.165, 0.172, 1)
+polygon = PackedVector2Array(-620, -500, 820, -500, 820, -300, -620, -300)
+
+[node name="ElectricalRoom" type="Polygon2D" parent="Floor"]
+color = Color(0.18, 0.19, 0.19, 1)
+polygon = PackedVector2Array(820, -520, 1180, -520, 1180, -240, 820, -240)
+
+[node name="EastServiceStair" type="Polygon2D" parent="Floor"]
+color = Color(0.16, 0.18, 0.185, 1)
+polygon = PackedVector2Array(620, -300, 720, -300, 720, -160, 620, -160)
+
+[node name="EmergencyExitCorridor" type="Polygon2D" parent="Floor"]
+color = Color(0.11, 0.14, 0.14, 1)
+polygon = PackedVector2Array(-1120, -180, -960, -180, -960, 100, -1120, 100)
+
+[node name="CrawlPassageFloor" type="Polygon2D" parent="Floor"]
+color = Color(0.075, 0.09, 0.095, 1)
+polygon = PackedVector2Array(-760, -410, -620, -410, -620, -390, -760, -390)
+
+[node name="TrainInterior" type="Polygon2D" parent="Floor"]
+color = Color(0.155, 0.17, 0.175, 1)
+polygon = PackedVector2Array(-60, 320, 280, 320, 280, 450, -60, 450)
+
+[node name="PlatformDarkOverlay" type="Polygon2D" parent="Floor"]
+z_index = -1
+color = Color(0.015, 0.022, 0.028, 0.24)
+polygon = PackedVector2Array(-560, -160, 720, -160, 720, 520, -560, 520)
+
+[node name="ServiceDarkOverlay" type="Polygon2D" parent="Floor"]
+z_index = -1
+color = Color(0.008, 0.018, 0.024, 0.34)
+polygon = PackedVector2Array(-620, -500, 820, -500, 820, -300, -620, -300)
+
+[node name="ExitDarkOverlay" type="Polygon2D" parent="Floor"]
+z_index = -1
+color = Color(0.006, 0.018, 0.019, 0.38)
+polygon = PackedVector2Array(-1120, -180, -960, -180, -960, 100, -1120, 100)
+
+[node name="BlueRouteMarking" type="Line2D" parent="Floor"]
+points = PackedVector2Array(-1160, 390, -850, 390, -650, 165, -420, 165, 0, 165, 650, 165, 670, -210, 450, -400, 1020, -400)
+width = 6.0
+default_color = Color(0.16, 0.49, 0.78, 0.75)
+
+[node name="EmergencyRouteMarking" type="Line2D" parent="Floor"]
+points = PackedVector2Array(-1135, 120, -1040, 65, -1040, -155)
+width = 5.0
+default_color = Color(0.3, 0.78, 0.46, 0.74)
+
+[node name="PlatformEdge" type="Line2D" parent="Floor"]
+points = PackedVector2Array(-545, 245, 705, 245)
+width = 5.0
+default_color = Color(0.82, 0.65, 0.15, 0.82)
+
+[node name="RailNorth" type="Line2D" parent="Floor"]
+points = PackedVector2Array(-545, 285, 705, 285)
+width = 5.0
+default_color = Color(0.055, 0.065, 0.07, 1)
+
+[node name="RailSouth" type="Line2D" parent="Floor"]
+points = PackedVector2Array(-545, 505, 705, 505)
+width = 5.0
+default_color = Color(0.055, 0.065, 0.07, 1)
+
+[node name="TrackTie01" type="Polygon2D" parent="Floor"]
+color = Color(0.12, 0.125, 0.12, 1)
+polygon = PackedVector2Array(-500, 275, -488, 275, -488, 515, -500, 515)
+
+[node name="TrackTie02" type="Polygon2D" parent="Floor"]
+color = Color(0.12, 0.125, 0.12, 1)
+polygon = PackedVector2Array(-400, 275, -388, 275, -388, 515, -400, 515)
+
+[node name="TrackTie03" type="Polygon2D" parent="Floor"]
+color = Color(0.12, 0.125, 0.12, 1)
+polygon = PackedVector2Array(-300, 275, -288, 275, -288, 515, -300, 515)
+
+[node name="TrackTie04" type="Polygon2D" parent="Floor"]
+color = Color(0.12, 0.125, 0.12, 1)
+polygon = PackedVector2Array(-200, 275, -188, 275, -188, 515, -200, 515)
+
+[node name="TrackTie05" type="Polygon2D" parent="Floor"]
+color = Color(0.12, 0.125, 0.12, 1)
+polygon = PackedVector2Array(-100, 275, -88, 275, -88, 515, -100, 515)
+
+[node name="TrackTie06" type="Polygon2D" parent="Floor"]
+color = Color(0.12, 0.125, 0.12, 1)
+polygon = PackedVector2Array(0, 275, 12, 275, 12, 515, 0, 515)
+
+[node name="TrackTie07" type="Polygon2D" parent="Floor"]
+color = Color(0.12, 0.125, 0.12, 1)
+polygon = PackedVector2Array(100, 275, 112, 275, 112, 515, 100, 515)
+
+[node name="TrackTie08" type="Polygon2D" parent="Floor"]
+color = Color(0.12, 0.125, 0.12, 1)
+polygon = PackedVector2Array(200, 275, 212, 275, 212, 515, 200, 515)
+
+[node name="TrackTie09" type="Polygon2D" parent="Floor"]
+color = Color(0.12, 0.125, 0.12, 1)
+polygon = PackedVector2Array(300, 275, 312, 275, 312, 515, 300, 515)
+
+[node name="TrackTie10" type="Polygon2D" parent="Floor"]
+color = Color(0.12, 0.125, 0.12, 1)
+polygon = PackedVector2Array(400, 275, 412, 275, 412, 515, 400, 515)
+
+[node name="TrackTie11" type="Polygon2D" parent="Floor"]
+color = Color(0.12, 0.125, 0.12, 1)
+polygon = PackedVector2Array(500, 275, 512, 275, 512, 515, 500, 515)
+
+[node name="TrackTie12" type="Polygon2D" parent="Floor"]
+color = Color(0.12, 0.125, 0.12, 1)
+polygon = PackedVector2Array(600, 275, 612, 275, 612, 515, 600, 515)
+
+[node name="TrackTie13" type="Polygon2D" parent="Floor"]
+color = Color(0.12, 0.125, 0.12, 1)
+polygon = PackedVector2Array(700, 275, 712, 275, 712, 515, 700, 515)
+
+[node name="TrainVisuals" type="Node2D" parent="."]
+z_index = -3
+
+[node name="WestCar" type="Polygon2D" parent="TrainVisuals"]
+color = Color(0.24, 0.275, 0.285, 1)
+polygon = PackedVector2Array(-420, 300, -100, 300, -100, 470, -420, 470)
+
+[node name="CenterCarShell" type="Polygon2D" parent="TrainVisuals"]
+color = Color(0.22, 0.255, 0.265, 1)
+polygon = PackedVector2Array(-80, 300, 300, 300, 300, 470, -80, 470)
+
+[node name="CenterCarInterior" type="Polygon2D" parent="TrainVisuals"]
+z_index = 1
+color = Color(0.13, 0.15, 0.155, 1)
+polygon = PackedVector2Array(-60, 320, 280, 320, 280, 450, -60, 450)
+
+[node name="EastCar" type="Polygon2D" parent="TrainVisuals"]
+color = Color(0.24, 0.275, 0.285, 1)
+polygon = PackedVector2Array(320, 300, 520, 300, 520, 470, 320, 470)
+
+[node name="Window01" type="Polygon2D" parent="TrainVisuals"]
+z_index = 2
+color = Color(0.08, 0.13, 0.15, 0.92)
+polygon = PackedVector2Array(-390, 325, -320, 325, -320, 350, -390, 350)
+
+[node name="Window02" type="Polygon2D" parent="TrainVisuals"]
+z_index = 2
+color = Color(0.08, 0.13, 0.15, 0.92)
+polygon = PackedVector2Array(-290, 325, -220, 325, -220, 350, -290, 350)
+
+[node name="Window03" type="Polygon2D" parent="TrainVisuals"]
+z_index = 2
+color = Color(0.08, 0.13, 0.15, 0.92)
+polygon = PackedVector2Array(-190, 325, -120, 325, -120, 350, -190, 350)
+
+[node name="Window04" type="Polygon2D" parent="TrainVisuals"]
+z_index = 2
+color = Color(0.08, 0.13, 0.15, 0.92)
+polygon = PackedVector2Array(-40, 325, 20, 325, 20, 350, -40, 350)
+
+[node name="Window05" type="Polygon2D" parent="TrainVisuals"]
+z_index = 2
+color = Color(0.08, 0.13, 0.15, 0.92)
+polygon = PackedVector2Array(110, 325, 170, 325, 170, 350, 110, 350)
+
+[node name="Window06" type="Polygon2D" parent="TrainVisuals"]
+z_index = 2
+color = Color(0.08, 0.13, 0.15, 0.92)
+polygon = PackedVector2Array(220, 325, 270, 325, 270, 350, 220, 350)
+
+[node name="Window07" type="Polygon2D" parent="TrainVisuals"]
+z_index = 2
+color = Color(0.08, 0.13, 0.15, 0.92)
+polygon = PackedVector2Array(345, 325, 400, 325, 400, 350, 345, 350)
+
+[node name="Window08" type="Polygon2D" parent="TrainVisuals"]
+z_index = 2
+color = Color(0.08, 0.13, 0.15, 0.92)
+polygon = PackedVector2Array(430, 325, 490, 325, 490, 350, 430, 350)
+
+[node name="TrainStripe" type="Line2D" parent="TrainVisuals"]
+z_index = 3
+points = PackedVector2Array(-410, 370, -110, 370, -70, 370, 290, 370, 330, 370, 510, 370)
+width = 8.0
+default_color = Color(0.16, 0.48, 0.75, 0.9)
+
+[node name="OpenDoorGuide" type="Line2D" parent="TrainVisuals"]
+z_index = 4
+points = PackedVector2Array(20, 310, 20, 330, 100, 330, 100, 310)
+width = 4.0
+default_color = Color(0.83, 0.67, 0.18, 0.95)
+
+[node name="WallsVisual" type="Node2D" parent="."]
+z_index = -2
+
+[node name="TicketTop" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-1005, -530)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-245.0, -10.0, 245.0, -10.0, 245.0, 10.0, -245.0, 10.0)
+
+[node name="TicketLeft" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-1260, 20)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -560.0, 10.0, -560.0, 10.0, 560.0, -10.0, 560.0)
+
+[node name="TicketBottom" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-1005, 570)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-245.0, -10.0, 245.0, -10.0, 245.0, 10.0, -245.0, 10.0)
+
+[node name="TicketRightTop" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-770, -475)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -65.0, 10.0, -65.0, 10.0, 65.0, -10.0, 65.0)
+
+[node name="TicketRightMid" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-770, -145)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -245.0, 10.0, -245.0, 10.0, 245.0, -10.0, 245.0)
+
+[node name="TicketRightBottom" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-770, 405)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -175.0, 10.0, -175.0, 10.0, 175.0, -10.0, 175.0)
+
+[node name="AccessTop" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-650, 90)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-110.0, -10.0, 110.0, -10.0, 110.0, 10.0, -110.0, 10.0)
+
+[node name="AccessBottom" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-650, 240)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-110.0, -10.0, 110.0, -10.0, 110.0, 10.0, -110.0, 10.0)
+
+[node name="PlatformTop" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(30, -170)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-590.0, -10.0, 590.0, -10.0, 590.0, 10.0, -590.0, 10.0)
+
+[node name="PlatformLeftTop" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-570, -40)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -140.0, 10.0, -140.0, 10.0, 140.0, -10.0, 140.0)
+
+[node name="PlatformLeftBottom" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-570, 245)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -15.0, 10.0, -15.0, 10.0, 15.0, -10.0, 15.0)
+
+[node name="PlatformRight" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(730, 180)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -360.0, 10.0, -360.0, 10.0, 360.0, -10.0, 360.0)
+
+[node name="TrackBottom" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(80, 530)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-650.0, -10.0, 650.0, -10.0, 650.0, 10.0, -650.0, 10.0)
+
+[node name="TrackLeft" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-570, 400)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -140.0, 10.0, -140.0, 10.0, 140.0, -10.0, 140.0)
+
+[node name="ServiceTop" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(280, -530)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-900.0, -10.0, 900.0, -10.0, 900.0, 10.0, -900.0, 10.0)
+
+[node name="ServiceBottomLeft" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(10, -290)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-610.0, -10.0, 610.0, -10.0, 610.0, 10.0, -610.0, 10.0)
+
+[node name="ServiceLeftTop" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-630, -455)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -45.0, 10.0, -45.0, 10.0, 45.0, -10.0, 45.0)
+
+[node name="ServiceLeftBottom" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-630, -355)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -35.0, 10.0, -35.0, 10.0, 35.0, -10.0, 35.0)
+
+[node name="EastStairLeft" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(610, -220)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -80.0, 10.0, -80.0, 10.0, 80.0, -10.0, 80.0)
+
+[node name="EastStairRight" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(730, -220)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -80.0, 10.0, -80.0, 10.0, 80.0, -10.0, 80.0)
+
+[node name="ElectricalRight" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(1190, -390)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -150.0, 10.0, -150.0, 10.0, 150.0, -10.0, 150.0)
+
+[node name="ElectricalBottom" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(1000, -230)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-180.0, -10.0, 180.0, -10.0, 180.0, 10.0, -180.0, 10.0)
+
+[node name="ElectricalDividerTop" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(810, -475)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -25.0, 10.0, -25.0, 10.0, 25.0, -10.0, 25.0)
+
+[node name="ElectricalDividerBottom" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(810, -325)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -25.0, 10.0, -25.0, 10.0, 25.0, -10.0, 25.0)
+
+[node name="ExitTop" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-1040, -190)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-100.0, -10.0, 100.0, -10.0, 100.0, 10.0, -100.0, 10.0)
+
+[node name="ExitLeft" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-1130, -45)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -145.0, 10.0, -145.0, 10.0, 145.0, -10.0, 145.0)
+
+[node name="ExitRight" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-950, -45)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-10.0, -145.0, 10.0, -145.0, 10.0, 145.0, -10.0, 145.0)
+
+[node name="CrawlDuctTop" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-690, -424)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-70.0, -14.0, 70.0, -14.0, 70.0, 14.0, -70.0, 14.0)
+
+[node name="CrawlDuctBottom" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-690, -376)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-70.0, -14.0, 70.0, -14.0, 70.0, 14.0, -70.0, 14.0)
+
+[node name="ColumnWest" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-330, 40)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-18.0, -18.0, 18.0, -18.0, 18.0, 18.0, -18.0, 18.0)
+
+[node name="ColumnCenter" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-40, 40)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-18.0, -18.0, 18.0, -18.0, 18.0, 18.0, -18.0, 18.0)
+
+[node name="ColumnEast" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(250, 40)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-18.0, -18.0, 18.0, -18.0, 18.0, 18.0, -18.0, 18.0)
+
+[node name="ColumnFarEast" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(540, 40)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-18.0, -18.0, 18.0, -18.0, 18.0, 18.0, -18.0, 18.0)
+
+[node name="TicketBoothWest" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-1110, -120)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-70.0, -45.0, 70.0, -45.0, 70.0, 45.0, -70.0, 45.0)
+
+[node name="TicketBoothEast" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-900, -120)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-60.0, -40.0, 60.0, -40.0, 60.0, 40.0, -60.0, 40.0)
+
+[node name="CollapsedBarricade" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-700, 20)
+color = Color(0.075, 0.09, 0.1, 1)
+polygon = PackedVector2Array(-60.0, -15.0, 60.0, -15.0, 60.0, 15.0, -60.0, 15.0)
+
+[node name="WallCollisions" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 1
+
+[node name="TicketTop" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-1005, -530)
+shape = SubResource("RectangleShape2D_TicketTop")
+
+[node name="TicketLeft" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-1260, 20)
+shape = SubResource("RectangleShape2D_TicketLeft")
+
+[node name="TicketBottom" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-1005, 570)
+shape = SubResource("RectangleShape2D_TicketBottom")
+
+[node name="TicketRightTop" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-770, -475)
+shape = SubResource("RectangleShape2D_TicketRightTop")
+
+[node name="TicketRightMid" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-770, -145)
+shape = SubResource("RectangleShape2D_TicketRightMid")
+
+[node name="TicketRightBottom" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-770, 405)
+shape = SubResource("RectangleShape2D_TicketRightBottom")
+
+[node name="AccessTop" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-650, 90)
+shape = SubResource("RectangleShape2D_AccessTop")
+
+[node name="AccessBottom" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-650, 240)
+shape = SubResource("RectangleShape2D_AccessBottom")
+
+[node name="PlatformTop" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(30, -170)
+shape = SubResource("RectangleShape2D_PlatformTop")
+
+[node name="PlatformLeftTop" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-570, -40)
+shape = SubResource("RectangleShape2D_PlatformLeftTop")
+
+[node name="PlatformLeftBottom" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-570, 245)
+shape = SubResource("RectangleShape2D_PlatformLeftBottom")
+
+[node name="PlatformRight" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(730, 180)
+shape = SubResource("RectangleShape2D_PlatformRight")
+
+[node name="TrackBottom" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(80, 530)
+shape = SubResource("RectangleShape2D_TrackBottom")
+
+[node name="TrackLeft" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-570, 400)
+shape = SubResource("RectangleShape2D_TrackLeft")
+
+[node name="ServiceTop" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(280, -530)
+shape = SubResource("RectangleShape2D_ServiceTop")
+
+[node name="ServiceBottomLeft" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(10, -290)
+shape = SubResource("RectangleShape2D_ServiceBottomLeft")
+
+[node name="ServiceLeftTop" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-630, -455)
+shape = SubResource("RectangleShape2D_ServiceLeftTop")
+
+[node name="ServiceLeftBottom" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-630, -355)
+shape = SubResource("RectangleShape2D_ServiceLeftBottom")
+
+[node name="EastStairLeft" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(610, -220)
+shape = SubResource("RectangleShape2D_EastStairLeft")
+
+[node name="EastStairRight" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(730, -220)
+shape = SubResource("RectangleShape2D_EastStairRight")
+
+[node name="ElectricalRight" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(1190, -390)
+shape = SubResource("RectangleShape2D_ElectricalRight")
+
+[node name="ElectricalBottom" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(1000, -230)
+shape = SubResource("RectangleShape2D_ElectricalBottom")
+
+[node name="ElectricalDividerTop" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(810, -475)
+shape = SubResource("RectangleShape2D_ElectricalDividerTop")
+
+[node name="ElectricalDividerBottom" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(810, -325)
+shape = SubResource("RectangleShape2D_ElectricalDividerBottom")
+
+[node name="ExitTop" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-1040, -190)
+shape = SubResource("RectangleShape2D_ExitTop")
+
+[node name="ExitLeft" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-1130, -45)
+shape = SubResource("RectangleShape2D_ExitLeft")
+
+[node name="ExitRight" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-950, -45)
+shape = SubResource("RectangleShape2D_ExitRight")
+
+[node name="CrawlDuctTop" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-690, -424)
+shape = SubResource("RectangleShape2D_CrawlDuctTop")
+
+[node name="CrawlDuctBottom" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-690, -376)
+shape = SubResource("RectangleShape2D_CrawlDuctBottom")
+
+[node name="TrainWestBody" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-260, 385)
+shape = SubResource("RectangleShape2D_TrainWestBody")
+
+[node name="TrainEastBody" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(420, 385)
+shape = SubResource("RectangleShape2D_TrainEastBody")
+
+[node name="TrainCenterTopLeft" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-30, 310)
+shape = SubResource("RectangleShape2D_TrainCenterTopLeft")
+
+[node name="TrainCenterTopRight" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(200, 310)
+shape = SubResource("RectangleShape2D_TrainCenterTopRight")
+
+[node name="TrainCenterBottom" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(110, 460)
+shape = SubResource("RectangleShape2D_TrainCenterBottom")
+
+[node name="TrainCenterLeft" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-70, 385)
+shape = SubResource("RectangleShape2D_TrainCenterLeft")
+
+[node name="TrainCenterRight" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(290, 385)
+shape = SubResource("RectangleShape2D_TrainCenterRight")
+
+[node name="ColumnWest" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-330, 40)
+shape = SubResource("RectangleShape2D_ColumnWest")
+
+[node name="ColumnCenter" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-40, 40)
+shape = SubResource("RectangleShape2D_ColumnCenter")
+
+[node name="ColumnEast" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(250, 40)
+shape = SubResource("RectangleShape2D_ColumnEast")
+
+[node name="ColumnFarEast" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(540, 40)
+shape = SubResource("RectangleShape2D_ColumnFarEast")
+
+[node name="TicketBoothWest" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-1110, -120)
+shape = SubResource("RectangleShape2D_TicketBoothWest")
+
+[node name="TicketBoothEast" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-900, -120)
+shape = SubResource("RectangleShape2D_TicketBoothEast")
+
+[node name="CollapsedBarricade" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-700, 20)
+shape = SubResource("RectangleShape2D_CollapsedBarricade")
+
+[node name="Landmarks" type="Node2D" parent="."]
+z_index = 8
+
+[node name="PlatformSign" type="Label" parent="Landmarks"]
+position = Vector2(30, -120)
+offset_left = -110.0
+offset_top = -16.0
+offset_right = 110.0
+offset_bottom = 16.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.68, 0.82, 0.93, 1)
+theme_override_colors/font_outline_color = Color(0.015, 0.02, 0.025, 0.96)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 20
+text = "PLATFORM 01 · NORTHBOUND"
+horizontal_alignment = 1
+
+[node name="TicketHallSign" type="Label" parent="Landmarks"]
+position = Vector2(-1010, -470)
+offset_left = -110.0
+offset_top = -16.0
+offset_right = 110.0
+offset_bottom = 16.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.74, 0.8, 0.82, 1)
+theme_override_colors/font_outline_color = Color(0.015, 0.02, 0.025, 0.96)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 17
+text = "TICKETS / ACCESS"
+horizontal_alignment = 1
+
+[node name="ServiceSign" type="Label" parent="Landmarks"]
+position = Vector2(100, -465)
+offset_left = -110.0
+offset_top = -16.0
+offset_right = 110.0
+offset_bottom = 16.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.84, 0.69, 0.28, 1)
+theme_override_colors/font_outline_color = Color(0.015, 0.02, 0.025, 0.96)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 17
+text = "SERVICE M-2"
+horizontal_alignment = 1
+
+[node name="ElectricalSign" type="Label" parent="Landmarks"]
+position = Vector2(1000, -485)
+offset_left = -110.0
+offset_top = -16.0
+offset_right = 110.0
+offset_bottom = 16.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.9, 0.62, 0.24, 1)
+theme_override_colors/font_outline_color = Color(0.015, 0.02, 0.025, 0.96)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 17
+text = "ELECTRICAL ROOM"
+horizontal_alignment = 1
+
+[node name="ExitSign" type="Label" parent="Landmarks"]
+position = Vector2(-1040, -155)
+offset_left = -110.0
+offset_top = -16.0
+offset_right = 110.0
+offset_bottom = 16.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.38, 0.9, 0.55, 1)
+theme_override_colors/font_outline_color = Color(0.015, 0.02, 0.025, 0.96)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 16
+text = "EMERGENCY EXIT"
+horizontal_alignment = 1
+
+[node name="TrainLineSign" type="Label" parent="Landmarks"]
+position = Vector2(100, 495)
+offset_left = -110.0
+offset_top = -16.0
+offset_right = 110.0
+offset_bottom = 16.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.52, 0.7, 0.9, 1)
+theme_override_colors/font_outline_color = Color(0.015, 0.02, 0.025, 0.96)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 15
+text = "M2 · TRAIN OUT OF SERVICE"
+horizontal_alignment = 1
+
+[node name="CrawlMarking" type="Label" parent="Landmarks"]
+position = Vector2(-690, -448)
+offset_left = -110.0
+offset_top = -16.0
+offset_right = 110.0
+offset_bottom = 16.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.66, 0.58, 0.36, 1)
+theme_override_colors/font_outline_color = Color(0.015, 0.02, 0.025, 0.96)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 12
+text = "CABLE DUCT · CRAWL ACCESS"
+horizontal_alignment = 1
+
+[node name="EmergencyDimLight" type="PointLight2D" parent="Landmarks"]
+position = Vector2(-1040, 10)
+texture = ExtResource("28_light_texture")
+energy = 0.22
+texture_scale = 0.75
+color = Color(0.8, 0.18, 0.12, 1)
+
+[node name="TicketBoothLight" type="PointLight2D" parent="Landmarks"]
+position = Vector2(-1080, -210)
+texture = ExtResource("28_light_texture")
+energy = 0.35
+texture_scale = 0.9
+color = Color(0.48, 0.62, 0.68, 1)
+
+[node name="PowerSystems" type="Node2D" parent="."]
+
+[node name="PowerCircuitComponent" type="Node" parent="PowerSystems"]
+unique_name_in_owner = true
+script = ExtResource("23_power_circuit")
+
+[node name="PoweredExitThreshold" parent="PowerSystems" instance=ExtResource("24_powered_light")]
+position = Vector2(-1040, -115)
+rotation = 1.5707963
+
+[node name="PoweredExitApproach" parent="PowerSystems" instance=ExtResource("24_powered_light")]
+position = Vector2(-1040, 10)
+rotation = 1.5707963
+
+[node name="PoweredServiceJunction" parent="PowerSystems" instance=ExtResource("24_powered_light")]
+position = Vector2(670, -225)
+rotation = 1.5707963
+scale = Vector2(1.0, 0.85)
+
+[node name="PoweredElectricalRoom" parent="PowerSystems" instance=ExtResource("24_powered_light")]
+position = Vector2(1010, -390)
+scale = Vector2(1.35, 1.25)
+
+[node name="ExitZones" type="Node2D" parent="."]
+
+[node name="ObjectiveExitZone" parent="ExitZones" instance=ExtResource("25_exit_zone")]
+unique_name_in_owner = true
+position = Vector2(-1040, -125)
+rotation = 1.5707963
+
+[node name="LightExposureZones" type="Node2D" parent="."]
+
+[node name="DarkPlatformAndTrack" parent="LightExposureZones" instance=ExtResource("21_light_zone")]
+position = Vector2(80, 180)
+scale = Vector2(8, 5.8)
+DisplayName = "Dark platform and track"
+VisibilityMultiplier = 0.72
+ZonePriority = 8
+
+[node name="DarkServiceRoute" parent="LightExposureZones" instance=ExtResource("21_light_zone")]
+position = Vector2(100, -400)
+scale = Vector2(9, 1.6)
+DisplayName = "Unpowered service route"
+VisibilityMultiplier = 0.62
+ZonePriority = 12
+
+[node name="DarkCrawlPassage" parent="LightExposureZones" instance=ExtResource("21_light_zone")]
+position = Vector2(-690, -400)
+scale = Vector2(0.875, 0.25)
+DisplayName = "Cable duct darkness"
+VisibilityMultiplier = 0.5
+ZonePriority = 20
+
+[node name="DimStartingConcourse" parent="LightExposureZones" instance=ExtResource("21_light_zone")]
+position = Vector2(-1010, 360)
+scale = Vector2(2.5, 1.6)
+DisplayName = "Dim concourse"
+VisibilityMultiplier = 0.84
+ZonePriority = 6
+
+[node name="BrightTicketBooth" parent="LightExposureZones" instance=ExtResource("21_light_zone")]
+position = Vector2(-1080, -210)
+scale = Vector2(1.5, 1.5)
+DisplayName = "Emergency ticket booth light"
+VisibilityMultiplier = 1.18
+ZonePriority = 18
+
+[node name="Interactions" type="Node2D" parent="."]
+
+[node name="EmergencyExitDoor" parent="Interactions" instance=ExtResource("1_door")]
+unique_name_in_owner = true
+position = Vector2(-1040, 80)
+rotation = 1.5707963
+OpeningDistance = 180.0
+RequiresPower = true
+PoweredInteractionPrompt = "Open emergency exit"
+UnpoweredInteractionPrompt = "Emergency exit — no power"
+NoPowerMessage = "The emergency route has no power."
+
+[node name="ElectricalRoomDoor" parent="Interactions" instance=ExtResource("1_door")]
+position = Vector2(810, -400)
+OpeningDistance = 170.0
+RequiresPower = false
+PoweredInteractionPrompt = "Open electrical room"
+
+[node name="MaintenanceFuseBox" parent="Interactions" instance=ExtResource("22_fuse_box")]
+unique_name_in_owner = true
+position = Vector2(1080, -390)
+
+[node name="BlockedMaintenanceShutter" parent="Interactions" instance=ExtResource("2_inspectable")]
+position = Vector2(100, -125)
+PromptText = "Inspect maintenance shutter"
+MessageText = "The shutter is buckled inward. The service stair to the east is the only full-height route."
+IsReusable = true
+
+[node name="PlatformMap" parent="Interactions" instance=ExtResource("2_inspectable")]
+position = Vector2(-420, -110)
+PromptText = "Inspect station map"
+MessageText = "Emergency exit west. Electrical room northeast. The blue floor line links both through Platform 01."
+IsReusable = true
+
+[node name="TrainServiceNotice" parent="Interactions" instance=ExtResource("2_inspectable")]
+position = Vector2(40, 345)
+PromptText = "Inspect train notice"
+MessageText = "Car isolated after traction failure. Maintenance supplies remain inside."
+IsReusable = true
+
+[node name="StartSupplyLocker" parent="Interactions" instance=ExtResource("7_container")]
+position = Vector2(-1160, 470)
+ContainerDisplayName = "Concourse Supply Locker"
+SlotCapacity = 6
+InitialContents = Array[ExtResource("8_seed_script")]([ExtResource("9_locker_scrap"), ExtResource("10_locker_battery"), ExtResource("18_locker_ammo")])
+
+[node name="TicketOfficeCabinet" parent="Interactions" instance=ExtResource("7_container")]
+position = Vector2(-1100, -260)
+ContainerDisplayName = "Abandoned Ticket Office Cabinet"
+SlotCapacity = 6
+InitialContents = Array[ExtResource("8_seed_script")]([ExtResource("11_cabinet_filter"), ExtResource("12_cabinet_battery"), ExtResource("13_cabinet_scrap"), ExtResource("15_cabinet_medkit")])
+
+[node name="TrainEmergencyLocker" parent="Interactions" instance=ExtResource("7_container")]
+position = Vector2(0, 390)
+ContainerDisplayName = "Train Emergency Locker"
+SlotCapacity = 5
+InitialContents = Array[ExtResource("8_seed_script")]([ExtResource("12_cabinet_battery"), ExtResource("15_cabinet_medkit"), ExtResource("18_locker_ammo")])
+
+[node name="TrainFuseCrate" parent="Interactions" instance=ExtResource("7_container")]
+position = Vector2(220, 390)
+ContainerDisplayName = "Train Maintenance Fuse Crate"
+SlotCapacity = 2
+InitialContents = Array[ExtResource("8_seed_script")]([ExtResource("26_fuse_seed")])
+
+[node name="ServiceLocker" parent="Interactions" instance=ExtResource("7_container")]
+position = Vector2(500, -400)
+ContainerDisplayName = "Service Corridor Locker"
+SlotCapacity = 6
+InitialContents = Array[ExtResource("8_seed_script")]([ExtResource("9_locker_scrap"), ExtResource("10_locker_battery"), ExtResource("18_locker_ammo")])
+
+[node name="StartingMedkit" parent="Interactions" instance=ExtResource("3_pickup")]
+position = Vector2(-1120, 300)
+ItemDefinition = ExtResource("14_medkit")
+Quantity = 1
+PickupColor = Color(0.78, 0.22, 0.18, 1)
+VisualScale = 0.95
+
+[node name="PlatformAmmo" parent="Interactions" instance=ExtResource("3_pickup")]
+position = Vector2(-500, 60)
+ItemDefinition = ExtResource("17_pistol_ammo")
+Quantity = 10
+PickupColor = Color(0.76, 0.64, 0.28, 1)
+VisualScale = 0.9
+
+[node name="TrackAmmo" parent="Interactions" instance=ExtResource("3_pickup")]
+position = Vector2(650, 450)
+ItemDefinition = ExtResource("17_pistol_ammo")
+Quantity = 14
+PickupColor = Color(0.76, 0.64, 0.28, 1)
+VisualScale = 0.95
+
+[node name="CrawlPassageBattery" parent="Interactions" instance=ExtResource("3_pickup")]
+position = Vector2(-690, -400)
+ItemDefinition = ExtResource("5_battery")
+Quantity = 1
+PickupColor = Color(0.86, 0.62, 0.18, 1)
+VisualScale = 0.82
+
+[node name="ElectricalRoomBattery" parent="Interactions" instance=ExtResource("3_pickup")]
+position = Vector2(930, -310)
+ItemDefinition = ExtResource("5_battery")
+Quantity = 1
+PickupColor = Color(0.86, 0.62, 0.18, 1)
+VisualScale = 0.88
+
+[node name="TrackFilter" parent="Interactions" instance=ExtResource("3_pickup")]
+position = Vector2(-500, 470)
+ItemDefinition = ExtResource("6_filter")
+Quantity = 1
+PickupColor = Color(0.31, 0.68, 0.45, 1)
+VisualScale = 0.9
+
+[node name="Hazards" type="Node2D" parent="."]
+
+[node name="PlatformElectricalSpill" parent="Hazards" instance=ExtResource("16_damage_zone")]
+position = Vector2(470, 120)
+scale = Vector2(1.15, 0.78)
+DamageKind = "Live platform cable spill"
+
+[node name="TrackPowerLeak" parent="Hazards" instance=ExtResource("16_damage_zone")]
+position = Vector2(-350, 490)
+scale = Vector2(0.95, 0.42)
+DamageAmount = 8
+DamageKind = "Energized third-rail runoff"
+
+[node name="ServiceCableTrench" parent="Hazards" instance=ExtResource("16_damage_zone")]
+position = Vector2(320, -400)
+scale = Vector2(0.75, 0.5)
+DamageAmount = 7
+DamageKind = "Exposed service cable trench"
+
+[node name="Mutants" type="Node2D" parent="."]
+unique_name_in_owner = true
+
+[node name="PlatformPatrolMutant" parent="Mutants" instance=ExtResource("19_mutant")]
+position = Vector2(80, 130)
+PatrolPointOffsets = PackedVector2Array(-360, 0, 360, 0)
+InitialFacingDirection = Vector2(-1, 0)
+EnableDebugStateLabel = false
+
+[node name="ServiceRouteMutant" parent="Mutants" instance=ExtResource("19_mutant")]
+position = Vector2(180, -400)
+PatrolPointOffsets = PackedVector2Array(-330, 0, 330, 0)
+InitialFacingDirection = Vector2(1, 0)
+EnableDebugStateLabel = false
+
+[node name="TrackMutant" parent="Mutants" instance=ExtResource("19_mutant")]
+position = Vector2(620, 390)
+PatrolPointOffsets = PackedVector2Array(0, -130, 0, 100)
+InitialFacingDirection = Vector2(0, -1)
+EnableDebugStateLabel = false

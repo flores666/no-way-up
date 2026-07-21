@@ -1,7 +1,7 @@
 [gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://src/Core/Main.cs" id="1_main"]
-[ext_resource type="PackedScene" path="res://scenes/levels/MetroLevel01.tscn" id="2_level"]
+[ext_resource type="PackedScene" path="res://scenes/levels/TestLevel.tscn" id="2_level"]
 [ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="3_player"]
 [ext_resource type="PackedScene" path="res://scenes/ui/DebugHud.tscn" id="4_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/InteractionPrompt.tscn" id="5_prompt"]
@@ -40,7 +40,7 @@ unique_name_in_owner = true
 
 [node name="Player" parent="World2D" instance=ExtResource("3_player")]
 unique_name_in_owner = true
-position = Vector2(-1080, 390)
+position = Vector2(-205, 0)
 
 [node name="UI" type="CanvasLayer" parent="."]
 layer = 10

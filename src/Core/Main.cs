@@ -24,7 +24,7 @@ public sealed partial class Main : Node2D
     private readonly ObjectiveProgressModel _objectiveProgress = new();
 
     private PlayerController2D? _player;
-    private TestLevelController2D? _testLevel;
+    private PlayableLevelController2D? _activeLevel;
     private PlayerInteractor2D? _playerInteractor;
     private PlayerWeaponController2D? _playerWeapon;
     private PlayerFlashlightController2D? _playerFlashlight;
@@ -52,10 +52,10 @@ public sealed partial class Main : Node2D
             ?? throw new InvalidOperationException(
                 $"{nameof(Main)} requires a unique Player node.");
 
-        TestLevelController2D testLevel =
-            GetNodeOrNull<TestLevelController2D>("%TestLevel")
+        PlayableLevelController2D activeLevel =
+            GetNodeOrNull<PlayableLevelController2D>("%PlayableLevel")
             ?? throw new InvalidOperationException(
-                $"{nameof(Main)} requires a unique TestLevel node.");
+                $"{nameof(Main)} requires a unique PlayableLevel node.");
 
         NoiseSystem2D noiseSystem = GetNodeOrNull<NoiseSystem2D>("%NoiseSystem2D")
             ?? throw new InvalidOperationException(
@@ -146,7 +146,7 @@ public sealed partial class Main : Node2D
                 $"{nameof(Main)} requires a unique EscapeCompletePanel node.");
 
         _player = player;
-        _testLevel = testLevel;
+        _activeLevel = activeLevel;
         _playerInteractor = playerInteractor;
         _playerWeapon = playerWeapon;
         _playerFlashlight = playerFlashlight;
@@ -156,9 +156,9 @@ public sealed partial class Main : Node2D
         _lootTransferPanel = lootTransferPanel;
         _weaponHud = weaponHud;
         _flashlightHud = flashlightHud;
-        PowerCircuitModel powerCircuit = testLevel.PowerCircuit.Model;
-        SlidingDoor2D emergencyExitDoor = testLevel.EmergencyExitDoor;
-        ObjectiveExitZone2D objectiveExitZone = testLevel.ExitZone;
+        PowerCircuitModel powerCircuit = activeLevel.PowerCircuit.Model;
+        SlidingDoor2D emergencyExitDoor = activeLevel.EmergencyExitDoor;
+        ObjectiveExitZone2D objectiveExitZone = activeLevel.ExitZone;
 
         _escapeCompletePanel = escapeCompletePanel;
         _powerCircuit = powerCircuit;
@@ -168,8 +168,8 @@ public sealed partial class Main : Node2D
         _isPlayerDead = player.Health.IsDead;
 
         player.BindNoiseSystem(noiseSystem);
-        testLevel.BindNoiseSystem(noiseSystem);
-        testLevel.BindMutantTargets(player, player, player);
+        activeLevel.BindNoiseSystem(noiseSystem);
+        activeLevel.BindMutantTargets(player, player, player);
         noiseHud.Bind(noiseSystem, player);
         PlayerMovementSettings movementSettings = player.MovementSettings
             ?? throw new InvalidOperationException(
@@ -190,10 +190,13 @@ public sealed partial class Main : Node2D
         emergencyExitDoor.Opened += OnEmergencyExitOpened;
         objectiveExitZone.EscapeCompleted += OnEscapeCompleted;
 
-        testLevel.FuseBox.BindPowerCircuit(powerCircuit);
-        testLevel.FuseBox.BindObjectives(_objectiveProgress);
+        activeLevel.FuseBox.BindPowerCircuit(powerCircuit);
+        activeLevel.FuseBox.BindObjectives(_objectiveProgress);
         emergencyExitDoor.BindPowerCircuit(powerCircuit);
-        testLevel.PoweredExitLighting.BindPowerCircuit(powerCircuit);
+        for (int index = 0; index < activeLevel.PoweredLights.Count; index++)
+        {
+            activeLevel.PoweredLights[index].BindPowerCircuit(powerCircuit);
+        }
         objectiveExitZone.BindObjectives(_objectiveProgress);
 
         playerInteractor.PromptChanged += interactionPrompt.SetPrompt;
@@ -451,7 +454,7 @@ public sealed partial class Main : Node2D
 
         _isPrototypeCompleted = true;
         player.Health.DisableDamagePermanently();
-        _testLevel?.EnterTerminalPlayerState(player.Health);
+        _activeLevel?.EnterTerminalPlayerState(player.Health);
         player.SetPlayerNoiseEnabled(false);
         _playerFlashlight?.TurnOff();
         _inventoryPanel?.Close();

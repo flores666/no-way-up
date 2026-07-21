@@ -2,107 +2,88 @@
 
 ## Current scene structure
 
-`res://scenes/main/Main.tscn` is the only application entry point. It composes
-independent scenes instead of embedding their implementation directly:
+`res://scenes/main/Main.tscn` is the default application entry point and composes
+`MetroLevel01` as the current gameplay level. `res://scenes/main/TestMain.tscn`
+uses the same composition root, player, noise system, and UI but instantiates the
+technical `TestLevel` instead.
 
 ```text
-Main
+Main / TestMain
 ├── World2D
 │   ├── AmbientDarkness
 │   ├── NoiseSystem2D
-│   ├── TestLevel
+│   ├── PlayableLevel
 │   │   ├── NavigationRegion2D
-│   │   ├── Interactions
-│   │   │   ├── CorridorDoor
-│   │   │   ├── VentilationTerminal
-│   │   │   ├── EmergencyPowerPanel
-│   │   │   ├── MaintenanceLocker
-│   │   │   ├── EmergencySupplyCabinet
-│   │   │   ├── StartingRoomScrap
-│   │   │   ├── StartingRoomMedkit
-│   │   │   ├── StartingRoomPistolAmmo
-│   │   │   ├── CorridorScrapCache
-│   │   │   ├── CorridorBattery
-│   │   │   ├── SideRoomFilter
-│   │   │   ├── SideRoomPistolAmmo
-│   │   │   └── MaintenancePocketBattery
+│   │   ├── Floor / train / landmark greybox visuals
+│   │   ├── WallCollisions
+│   │   ├── PowerSystems
+│   │   │   ├── PowerCircuitComponent
+│   │   │   └── PowerControlledLight2D instances
 │   │   ├── LightExposureZones
-│   │   │   ├── DarkMaintenanceArea
-│   │   │   └── BrightCorridorArea
+│   │   ├── Interactions
+│   │   │   ├── MaintenanceFuseBox
+│   │   │   ├── EmergencyExitDoor
+│   │   │   ├── loot containers and pickups
+│   │   │   └── inspectable landmarks
 │   │   ├── Hazards
-│   │   │   └── ExposedElectricalFloor
-│   │   ├── CombatTargets
-│   │   │   ├── ExposedCorridorTarget
-│   │   │   └── WallShieldedTarget
+│   │   ├── ExitZones
 │   │   └── Mutants
-│   │       ├── PatrolMutant
-│   │       │   ├── HealthComponent
-│   │       │   └── NavigationAgent2D
-│   │       └── GuardMutant
-│   │           ├── HealthComponent
-│   │           └── NavigationAgent2D
 │   └── Player
-│       ├── NormalCollisionShape
-│       ├── CrawlCollisionShape
-│       ├── InventoryComponent
-│       ├── HealthComponent
-│       ├── PlayerInteractor2D
-│       │   └── DetectionArea
-│       ├── PlayerWeaponController2D
-│       │   ├── TracerLine
-│       │   ├── TracerTimer
-│       │   └── ReloadTimer
-│       ├── PlayerFlashlightController2D
-│       │   └── FlashlightPointLight
-│       ├── PlayerVisibilityController2D
-│       ├── LightExposureSensor2D
-│       │   └── LightExposureShape
-│       ├── PlayerHazardSensor2D
-│       │   └── HazardShape
-│       └── PlayerFootstepNoiseEmitter2D
-└── UI (CanvasLayer)
-    ├── DebugHud
-    ├── HealthHud
-    ├── WeaponHud
-    ├── NoiseHud
-    ├── StaminaHud
-    ├── FlashlightHud
-    ├── VisibilityHud
-    ├── InventoryPanel
-    ├── LootTransferPanel
-    ├── InteractionMessage
-    └── InteractionPrompt
+│       ├── normal and crawl movement colliders
+│       ├── dedicated lighting, hazard, and objective sensors
+│       ├── inventory / health / stamina
+│       ├── pistol / flashlight / footstep emitters
+│       └── Camera2D
+└── UI
+    ├── gameplay HUDs
+    ├── inventory and loot transfer
+    ├── interaction feedback
+    └── EscapeCompletePanel
 ```
 
-- `Main` performs the small set of composition steps: it initializes the debug HUD,
-  connects the player interactor to interaction UI, binds the inventory and health
-  panels, binds the weapon, noise, stamina, flashlight, and visibility HUDs, coordinates battery
-  replacement through a dedicated service, explicitly supplies the player,
-  health owner, and visibility target to the test level's mutants, binds the
-  scene-owned noise system to player
-  emitters and level listeners/emitters, owns item-use requests, and coordinates
-  world, combat, modal, inventory, and death input state.
-- `TestLevel` owns greybox floor, wall visuals, static wall collision, a baked
-  navigation region, and placed instances of reusable interaction and mutant scenes.
-  Its controller inspects direct children of `%Mutants` once, accepts any valid
-  count including zero, rejects a misconfigured direct child clearly, and forwards
-  explicit target and listener bindings without per-frame searches.
-- `Player` owns its 2D body, two explicit movement collision profiles, aim pivot,
-  camera, runtime stamina, posture/effective movement mode, and composed service-
-  pistol, flashlight-presentation, and distance-footstep components. The dedicated
-  flashlight controller owns one plain charge model; `PlayerController2D` only keeps
-  a compatibility reference and does not process F/B. The visibility controller
-  combines movement mode, current ambient zone, and actual flashlight on/off state,
-  while the player delegates the existing `IVisibilityTarget` contract to it.
-- Each `InventoryComponent` owns one independent dimension-independent model. The
-  player configures 12 empty slots; container components receive validated seed data.
-- `PlayerInteractor2D` owns 2D overlap detection, scoring, line of sight, and input.
-- `UI` uses a `CanvasLayer`, so world camera movement and ambient modulation do not
-  move or darken the debug HUD, flashlight HUD, inventory panels, prompt, or
-  temporary messages.
+`PlayableLevelController2D` is the shared explicit level-composition adapter.
+`TestLevelController2D` and `MetroLevelController2D` are sealed level types that
+inherit it. The controller validates the navigation region, resolves the single
+power circuit, fuse box, powered emergency door, objective exit zone, authored
+mutants, hazards, level noise emitters, and every powered light once during
+initialization. It exposes those dependencies to `Main` without process-time scene
+tree searches.
 
-The main scene instantiates the test level and player as separate `PackedScene`
-resources. Either can be replaced without rebuilding the other scene.
+`Main` resolves `%PlayableLevel` rather than a concrete level type. It binds the
+scene-owned noise system, player target contracts, objective model, power circuit,
+all power-controlled lights, emergency door, exit zone, and event-driven UI. This
+keeps the TestLevel and MetroLevel01 interchangeable without adding a scene-loading
+framework or service locator.
+
+### MetroLevel01 structure and flow
+
+`res://scenes/levels/MetroLevel01.tscn` contains a western ticket hall/concourse,
+a high-risk central platform, a stopped three-car train with one traversable car,
+a northern service corridor, a northeastern electrical room, a crawl-only cable
+duct, track-side hazards, optional loot spaces, and a western emergency-exit route.
+
+The replacement fuse is stored in the traversable train maintenance car. The one
+existing fuse box and power circuit are in the electrical room. Restoring power
+switches on the electrical-room, service-junction, and emergency-corridor light
+instances; their exposure zones become active through the existing
+`PowerControlledLight2D` behavior. The player then backtracks to the powered door
+and completes through the dedicated `PlayerObjectiveSensor2D` and existing terminal
+completion flow.
+
+The crawl duct has a physical clear width larger than the crawl collider but smaller
+than the normal movement collider. It provides an alternate connection from the
+ticket hall to the service route and contains optional battery loot. Mutant
+navigation excludes the duct, so the full-height eastern service stair remains the
+AI route. Platform columns, train cars, ticket booths, corners, and narrow corridor
+segments provide hearing attenuation, line-of-sight breaks, and combat cover.
+
+`TestLevel.tscn` remains unchanged as the compact technical map for regression
+scenarios. `TestMain.tscn` keeps it directly runnable after `Main.tscn` changed to
+MetroLevel01.
+
+Greybox limitations are deliberate: primitive art only, no human NPC content, no
+new quest framework, no dynamic level streaming, and navigation polygons require
+manual review after layout edits.
 
 ## Source folders
 
@@ -125,7 +106,7 @@ resources. Either can be replaced without rebuilding the other scene.
 | `src/World2D/Combat` | Mouse-facing hitscan, reload timing, tracer presentation, and damageable 2D targets. |
 | `src/World2D/Enemies` | Mutant navigation, perception, movement, melee timing, and world presentation. |
 | `src/World2D/Noise` | 2D noise occurrences, scene-owned propagation, acoustic rays, listener adapters, and distance-based footsteps. |
-| `src/World2D/Levels` | Test-level validation and explicit mutant target composition. |
+| `src/World2D/Levels` | Shared playable-level composition, objective-exit integration, and explicit mutant target/noise binding. |
 | `src/World2D/Perception` | Player visibility composition and reusable ambient-light Area2D zones. |
 | `src/World2D/Interaction` | 2D detection, scoring, interactable areas, and demonstration behavior. |
 | `src/World2D/Items` | Interactable 2D world-pickup presentation and removal. |
@@ -135,9 +116,9 @@ resources. Either can be replaced without rebuilding the other scene.
 | `data/items` | Scrap, Battery, Filter, Medkit, and 9mm ammunition definitions plus reusable use-effect resources. |
 | `data/weapons` | Static firearm definitions, currently the Service Pistol. |
 | `data/enemies` | Validated static enemy definitions, currently the Tunnel Mutant. |
-| `data/navigation` | Baked walkable polygons for the current 2D test level. |
+| `data/navigation` | Authored navigation polygons for the technical TestLevel and gameplay MetroLevel01 scenes. |
 | `data/inventory` | Typed static seed-entry resources for sample containers, including medkits and locker ammunition. |
-| `scenes/main` | Application composition and entry point. |
+| `scenes/main` | Default Metro gameplay composition plus the directly runnable technical TestMain composition. |
 | `scenes/player` | Reusable player presentation and controller scene. |
 | `scenes/levels` | Reusable 2D level scenes. |
 | `scenes/interactables` | Reusable sliding-door, inspectable-object, and loot-container scenes. |
@@ -702,8 +683,8 @@ but may replace expired visual memory with a stronger gunshot investigation.
 
 ### Composition, navigation, and patrol
 
-`Main` resolves the existing `%Player` and `%TestLevel` once. After child scenes are
-ready, it calls `TestLevelController2D.BindMutantTargets(player, player, player)`.
+`Main` resolves the existing `%Player` and `%PlayableLevel` once. After child scenes are
+ready, it calls `PlayableLevelController2D.BindMutantTargets(player, player, player)`.
 The level controller forwards that typed `Node2D`/`IHealthOwner`/
 `IVisibilityTarget` set to every validated
 direct mutant child; zero, one, two, or more direct mutants are valid. A non-mutant
@@ -1038,9 +1019,9 @@ health, and binds `StaminaHudController` to the plain stamina model,
 `IMovementModeSource`, and health model. It resolves the dedicated flashlight
 controller, binds `FlashlightHudController` to its model and the same player
 inventory, and handles the controller's replacement request through one
-`FlashlightBatteryService`. The same composition pass resolves
-`TestLevelController2D` and supplies the already resolved player/health/visibility
-set to every cached mutant exactly once. When an executed target implements
+`FlashlightBatteryService`. The same composition pass resolves the active
+`PlayableLevelController2D` and supplies the already resolved
+player/health/visibility set to every cached mutant exactly once. When an executed target implements
 `IInventoryContainer`, `Main` verifies the interaction actor's `IInventoryOwner`,
 passes the two models and container name to `LootTransferPanelController`, and
 tracks the active container only as a validated node for lifetime cleanup.
@@ -1648,7 +1629,7 @@ safe event publication.
 
 ### Test-level composition
 
-`TestLevelController2D` resolves the unique power component, fuse box, emergency
+`PlayableLevelController2D` resolves the unique power component, fuse box, emergency
 door, powered lighting, and exit zone once during `_Ready` and exposes them to
 `Main`. Its existing direct `Interactions` pass still binds all `INoiseEmitter2D`
 instances, including both ordinary/powered doors and the fuse box. The replacement

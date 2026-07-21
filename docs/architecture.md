@@ -654,10 +654,29 @@ wait.
 
 `MutantState` is a typed enum with distinct `Investigate` and
 `ChaseLastKnownPosition` meanings. Investigation follows an anonymous heard point;
-search follows the player's last directly observed point. Keeping both explicit
-prevents noise from becoming exact player knowledge and gives each behavior its own
+search follows the player's last confirmed point. Keeping both explicit prevents
+ordinary noise from becoming exact player knowledge and gives each behavior its own
 entry, timeout, display, and exit rules. `MutantController2D.TransitionTo` owns all
-entry/exit work and makes `Dead` terminal.
+entry/exit work, ignores same-state transitions, publishes `StateChanged` once per
+real transition, and makes `Dead` terminal.
+
+Perception checks, validated player damage, and delivered noises now record stimuli
+before `UpdateDecisionState` resolves one effective state. The priority is terminal
+death, direct visible living target (`Attack` by range or `Chase`), confirmed target
+memory inside `LostTargetGraceSeconds`, last-known-position search, accepted
+investigation, then patrol/idle. A noise callback never changes state directly.
+While confirmed pursuit is active, lower-priority noise is discarded without
+touching navigation, search time, attack cooldown, or target memory. A noise emitted
+by the bound living target may refresh the last-known point during grace, but the
+state remains `Chase`. Validated damage from that target records its current position
+and immediately resolves to `Chase` or the already-valid in-range `Attack`; it never
+passes through `Investigate`. Environmental damage does not reveal the player.
+
+Noises received between two physics decisions are reduced to one deterministic
+stimulus. Bound-target noise is preferred while confirmed pursuit is active;
+otherwise the highest calculated kind/intensity/proximity score wins, with the
+lowest sequence ID as a stable tie-break. Search still ignores ordinary footsteps
+but may replace expired visual memory with a stronger gunshot investigation.
 
 | From | Condition | To |
 | --- | --- | --- |
@@ -673,7 +692,10 @@ entry/exit work and makes `Dead` terminal.
 | `Chase` | Sight remains lost for less than `LostTargetGraceSeconds` | `Chase` toward the fixed last-known point |
 | `Chase` | Sight remains lost for `LostTargetGraceSeconds` | `ChaseLastKnownPosition` |
 | `ChaseLastKnownPosition` | Player is seen again | `Chase` or `Attack` by range |
-| `ChaseLastKnownPosition` | A strong gunshot is heard | `Investigate` |
+| `ChaseLastKnownPosition` | A strong gunshot is selected as the best pending stimulus | `Investigate` |
+| `Idle` / `Patrol` / expired pursuit | Best pending relevant noise is resolved | `Investigate` |
+| `Chase` / `Attack` / lost-target grace | Any lower-priority noise | unchanged; bound-target noise may update memory only |
+| Any living non-dead state | Validated damage from the bound living player | `Chase` or preserved visible in-range `Attack` |
 | `ChaseLastKnownPosition` | Arrival, five-second maximum, navigation failure, or repeated stall | `Patrol` or `Idle` |
 | Any living state | Mutant health reaches zero | `Dead` |
 | Any living pursuit state | Bound player dies or exits the tree | `Idle` |
@@ -748,23 +770,28 @@ target dummies, containers, and other World bodies block sight; the target itsel
 or its immediate collider child is accepted if included by a customized mask. The
 flashlight is not consulted.
 
-Every successful sight sample records the player's current position and resets one
-meaningful timer. If sight is then lost from chase or attack, the mutant remains in
-`Chase` for exactly `LostTargetGraceSeconds` and navigates only toward that fixed
-last-visible point—never the hidden target's live position. Reacquisition selects
-`Chase` or `Attack` immediately by current range. Unrelated noise cannot alter or
-restart this timer because chase/attack reject investigation. Only after the grace
-expires does the controller enter `ChaseLastKnownPosition` (`SEARCH`). A gunshot may
-then redirect search into anonymous investigation; ordinary footsteps cannot
-replace visual memory.
+Every successful sight sample records the player's current position, marks the
+memory as confirmed, and resets one meaningful timer. If sight is then lost from
+chase or attack, the mutant remains in `Chase` for exactly
+`LostTargetGraceSeconds` and navigates only toward that fixed last-visible point—
+never the hidden target's live position. Reacquisition selects `Chase` or `Attack`
+immediately by current range. Unrelated noise cannot alter or restart this timer.
+A noise whose source is the already-confirmed bound player may update the remembered
+world point during grace, but it cannot change state. Only after grace expires does
+the controller enter `ChaseLastKnownPosition` (`SEARCH`). A selected gunshot may then
+redirect search into anonymous investigation; ordinary footsteps cannot replace
+confirmed visual memory.
 
 Search terminates on target-distance/agent arrival, finished-but-unreached
 navigation, repeated lack of progress, or `MaximumSearchSeconds`, so an unreachable
 exact point cannot create the Stage 7 infinite `SEARCH` bug. A validated pistol
-damage source may also seed the explicit player position and search state, but
-unrelated damage does not identify the player. Direct visible detection is checked
-before noise/timed behavior and always enters pursuit even while navigation retry
-is blocked; the retry timestamp gates only destination assignment.
+damage source seeds confirmed player memory and resolves directly to `Chase`; it no
+longer produces an intermediate search or investigation transition. Unrelated
+damage does not identify the player. Direct visible detection is checked before
+noise/timed behavior and always enters pursuit even while navigation retry is
+blocked; the retry timestamp gates only destination assignment. Navigation target
+submission also ignores sub-pixel-equivalent destinations, preventing state-neutral
+stimuli from restarting an unchanged route.
 
 Attack entry stops navigation and velocity. A short one-shot timer provides a
 0.18-second color/scale telegraph, with only one pending strike at a time. At timer

@@ -79,8 +79,8 @@ The Godot runner always finishes with a compact result block:
 [TEST][FINAL_SUMMARY]
   result: PASS
   suites: 20
-  tests: 74
-  passed: 74
+  tests: 88
+  passed: 88
   failed: 0
   duration: 1.23s
   failed cases: none
@@ -113,7 +113,7 @@ non-zero exit code is preserved for local scripts and CI.
 | `flashlight` | Charge, thresholds, depletion, near-full handling, and battery transaction |
 | `objectives-power` | Ordered objectives, fuse transaction, circuit, and subscriber failures |
 | `visibility` | Posture, ambient zones, flashlight multiplier, priorities, and death |
-| `mutant-perception` | Interval timing, short FOV exposure, direct sight, and dead targets |
+| `mutant-perception` | Stimulus priority, Chase/grace memory, damage response, deterministic same-frame noise, FOV timing, and dead targets |
 | `noise-hearing` | Distance, sensitivity, multi-wall attenuation, and deduplication |
 | `hazards` | Stable sensor overlap, entry damage, periodic catch-up, exit, and completion |
 | `footsteps` | Distance cycles, low-FPS debt, event cap, and terminal reset |

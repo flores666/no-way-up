@@ -1,5 +1,6 @@
 using System;
 using Godot;
+using LineZero.Core.Events;
 using LineZero.Gameplay.Enemies;
 using LineZero.Gameplay.Health;
 using LineZero.Gameplay.Noise;
@@ -14,6 +15,7 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
     private const double AttackTelegraphSeconds = 0.18;
     private const float InvestigationReplacementMargin = 0.35f;
     private const float InvestigationScoreDecayPerSecond = 0.2f;
+    private const float NavigationDestinationChangeThresholdSquared = 1.0f;
     private const int MaxPerceptionChecksPerPhysicsUpdate = 3;
 
     private static readonly Color DamageFlashColor =
@@ -64,10 +66,12 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
     private double _nextAttackAllowedAtSeconds;
     private double _investigationAcceptedAtSeconds;
     private float _investigationPriorityScore;
+    private float _pendingNoisePriorityScore;
     private ulong _lastProcessedNoiseSequence;
     private bool _bindingEstablished;
     private bool _isTargetingEnabled = true;
     private bool _canCurrentlySeeTarget;
+    private bool _hasConfirmedTargetMemory;
     private bool _hasLastKnownTargetPosition;
     private bool _hasInvestigationTarget;
     private bool _navigationReady;
@@ -79,6 +83,7 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
     private bool _navigationPathSampled;
     private bool _navigationExpectedMovement;
     private bool _stuckRecoveryAttempted;
+    private PerceivedNoise2D? _pendingNoise;
 
     [Export]
     public MutantDefinition? Definition { get; set; }
@@ -342,8 +347,10 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
         CancelPendingAttack();
         DetachTargetSubscriptions(clearReferences: true);
         _canCurrentlySeeTarget = false;
+        _hasConfirmedTargetMemory = false;
         _hasLastKnownTargetPosition = false;
         _timeSinceLastSeen = double.PositiveInfinity;
+        ClearPendingNoise();
         ClearInvestigation();
 
         if (_state != MutantState.Dead)
@@ -364,37 +371,136 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
         }
 
         _lastProcessedNoiseSequence = sequenceId;
-        if (!CanReceiveNoise ||
-            _canCurrentlySeeTarget ||
-            _state == MutantState.Chase ||
-            _state == MutantState.Attack)
+        if (!CanReceiveNoise || !IsTargetAliveAndValid())
         {
             return;
         }
 
         float priorityScore = CalculateNoisePriority(noise);
+        if ((_state == MutantState.Chase || _state == MutantState.Attack) &&
+            HasRecentConfirmedTargetMemory())
+        {
+            RememberPendingNoise(
+                noise,
+                priorityScore,
+                preferBoundTarget: true);
+            return;
+        }
+
         if (_state == MutantState.ChaseLastKnownPosition &&
             noise.Occurrence.Noise.Kind != NoiseKind.Gunshot)
         {
             return;
         }
 
-        if (_state == MutantState.Investigate)
+        RememberPendingNoise(noise, priorityScore);
+    }
+
+    private void RememberPendingNoise(
+        PerceivedNoise2D noise,
+        float priorityScore,
+        bool preferBoundTarget = false)
+    {
+        if (preferBoundTarget && _pendingNoise is not null)
         {
-            double elapsed = Math.Max(
-                0.0,
-                noise.Occurrence.Noise.TimestampSeconds - _investigationAcceptedAtSeconds);
-            float decayedCurrentScore = MathF.Max(
-                0.0f,
-                _investigationPriorityScore -
-                ((float)elapsed * InvestigationScoreDecayPerSecond));
-            if (priorityScore < decayedCurrentScore + InvestigationReplacementMargin)
+            bool candidateIsBoundTarget = IsNoiseFromBoundTarget(noise);
+            bool pendingIsBoundTarget = IsNoiseFromBoundTarget(_pendingNoise);
+            if (candidateIsBoundTarget != pendingIsBoundTarget)
             {
+                if (candidateIsBoundTarget)
+                {
+                    _pendingNoise = noise;
+                    _pendingNoisePriorityScore = priorityScore;
+                }
+
                 return;
             }
         }
 
-        AcceptInvestigation(noise, priorityScore);
+        if (_pendingNoise is null ||
+            priorityScore > _pendingNoisePriorityScore ||
+            (Mathf.IsEqualApprox(priorityScore, _pendingNoisePriorityScore) &&
+             noise.Occurrence.Noise.SequenceId <
+             _pendingNoise.Occurrence.Noise.SequenceId))
+        {
+            _pendingNoise = noise;
+            _pendingNoisePriorityScore = priorityScore;
+        }
+    }
+
+    private bool HasRecentConfirmedTargetMemory()
+    {
+        return _hasConfirmedTargetMemory &&
+               _hasLastKnownTargetPosition &&
+               _timeSinceLastSeen < _definition.LostTargetGraceSeconds;
+    }
+
+    private void ApplyPendingNoiseToConfirmedTargetMemory()
+    {
+        PerceivedNoise2D? pendingNoise = _pendingNoise;
+        ClearPendingNoise();
+        if (pendingNoise is null || !IsNoiseFromBoundTarget(pendingNoise))
+        {
+            return;
+        }
+
+        _lastKnownTargetPosition = pendingNoise.Occurrence.WorldPosition;
+        _hasConfirmedTargetMemory = true;
+        _hasLastKnownTargetPosition = true;
+        _timeSinceLastSeen = 0.0;
+    }
+
+    private bool TryResolvePendingInvestigation()
+    {
+        PerceivedNoise2D? pendingNoise = _pendingNoise;
+        float pendingPriorityScore = _pendingNoisePriorityScore;
+        ClearPendingNoise();
+        if (pendingNoise is null)
+        {
+            return false;
+        }
+
+        if (_state == MutantState.ChaseLastKnownPosition &&
+            pendingNoise.Occurrence.Noise.Kind != NoiseKind.Gunshot)
+        {
+            return false;
+        }
+
+        if (_state == MutantState.Investigate)
+        {
+            double elapsed = Math.Max(
+                0.0,
+                pendingNoise.Occurrence.Noise.TimestampSeconds -
+                _investigationAcceptedAtSeconds);
+            float decayedCurrentScore = MathF.Max(
+                0.0f,
+                _investigationPriorityScore -
+                ((float)elapsed * InvestigationScoreDecayPerSecond));
+            if (pendingPriorityScore <
+                decayedCurrentScore + InvestigationReplacementMargin)
+            {
+                return false;
+            }
+        }
+
+        AcceptInvestigation(pendingNoise, pendingPriorityScore);
+        return true;
+    }
+
+    private bool IsNoiseFromBoundTarget(PerceivedNoise2D noise)
+    {
+        Node source = noise.Occurrence.Noise.Source;
+        return GodotObject.IsInstanceValid(source) &&
+               _target is not null &&
+               GodotObject.IsInstanceValid(_target) &&
+               (ReferenceEquals(source, _target) ||
+                ReferenceEquals(source.GetParent(), _target));
+    }
+
+    private void ClearPendingNoise()
+    {
+        _pendingNoise = null;
+        _pendingNoisePriorityScore = 0.0f;
     }
 
     private bool IsTargetAliveAndValid()
@@ -486,6 +592,7 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
         }
 
         _lastKnownTargetPosition = _target!.GlobalPosition;
+        _hasConfirmedTargetMemory = true;
         _hasLastKnownTargetPosition = true;
         _timeSinceLastSeen = 0.0;
     }
@@ -551,6 +658,7 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
     {
         if (Health.IsDead)
         {
+            ClearPendingNoise();
             TransitionTo(MutantState.Dead);
             return;
         }
@@ -558,6 +666,11 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
         if (!IsTargetAliveAndValid())
         {
             _canCurrentlySeeTarget = false;
+            _hasConfirmedTargetMemory = false;
+            _hasLastKnownTargetPosition = false;
+            _timeSinceLastSeen = double.PositiveInfinity;
+            ClearPendingNoise();
+            ClearInvestigation();
             if (_state != MutantState.Idle)
             {
                 TransitionTo(MutantState.Idle);
@@ -569,6 +682,7 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
         float distanceToTarget = GlobalPosition.DistanceTo(_target!.GlobalPosition);
         if (_canCurrentlySeeTarget)
         {
+            ClearPendingNoise();
             if (distanceToTarget <= _definition.AttackRange)
             {
                 TransitionTo(MutantState.Attack);
@@ -581,21 +695,25 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
             return;
         }
 
-        if ((_state == MutantState.Chase || _state == MutantState.Attack) &&
-            _hasLastKnownTargetPosition)
+        if (HasRecentConfirmedTargetMemory())
         {
-            if (_timeSinceLastSeen < _definition.LostTargetGraceSeconds)
-            {
-                TransitionTo(MutantState.Chase);
-            }
-            else
-            {
-                TransitionTo(MutantState.ChaseLastKnownPosition);
-            }
-
+            ApplyPendingNoiseToConfirmedTargetMemory();
+            TransitionTo(MutantState.Chase);
             return;
         }
 
+        if (_hasConfirmedTargetMemory &&
+            _hasLastKnownTargetPosition &&
+            _state != MutantState.ChaseLastKnownPosition)
+        {
+            TransitionTo(MutantState.ChaseLastKnownPosition);
+            return;
+        }
+
+        if (TryResolvePendingInvestigation())
+        {
+            return;
+        }
     }
 
     private void UpdateTimedBehavior(double delta)
@@ -830,6 +948,14 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
             throw new ArgumentException("Navigation destinations must be finite.", nameof(position));
         }
 
+        if (_hasDesiredNavigationPosition &&
+            _desiredNavigationPosition.DistanceSquaredTo(position) <=
+            NavigationDestinationChangeThresholdSquared)
+        {
+            ApplyDesiredNavigationPosition();
+            return;
+        }
+
         _desiredNavigationPosition = position;
         _hasDesiredNavigationPosition = true;
         _hasActiveNavigationTarget = false;
@@ -993,8 +1119,10 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
         _isWaitingAtInvestigationPoint = false;
         _investigationWaitRemaining = 0.0;
 
-        if (_state == MutantState.ChaseLastKnownPosition)
+        if (_hasConfirmedTargetMemory ||
+            _state == MutantState.ChaseLastKnownPosition)
         {
+            _hasConfirmedTargetMemory = false;
             _hasLastKnownTargetPosition = false;
             _timeSinceLastSeen = double.PositiveInfinity;
         }
@@ -1009,7 +1137,10 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
             TransitionTo(MutantState.Investigate);
         }
 
-        NoiseAccepted?.Invoke(noise);
+        SafeEventPublisher.Publish(
+            NoiseAccepted,
+            noise,
+            nameof(NoiseAccepted));
     }
 
     private void ClearInvestigation()
@@ -1101,14 +1232,20 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
         }
 
         RefreshStateDisplay();
-        StateChanged?.Invoke(previousState, nextState);
+        SafeEventPublisher.Publish(
+            StateChanged,
+            previousState,
+            nextState,
+            nameof(StateChanged));
     }
 
     private void ReturnToDefaultBehavior()
     {
         _canCurrentlySeeTarget = false;
+        _hasConfirmedTargetMemory = false;
         _hasLastKnownTargetPosition = false;
         _timeSinceLastSeen = double.PositiveInfinity;
+        ClearPendingNoise();
         ClearInvestigation();
         TransitionTo(_patrolPoints.Length > 0
             ? MutantState.Patrol
@@ -1222,10 +1359,11 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
         }
 
         _lastKnownTargetPosition = _target!.GlobalPosition;
+        _hasConfirmedTargetMemory = true;
         _hasLastKnownTargetPosition = true;
         _timeSinceLastSeen = 0.0;
-        _canCurrentlySeeTarget = false;
-        TransitionTo(MutantState.ChaseLastKnownPosition);
+        ClearPendingNoise();
+        UpdateDecisionState();
     }
 
     private bool IsDamageFromBoundTarget(DamageInfo damage)
@@ -1255,7 +1393,9 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
         _chasePathRefreshElapsed = 0.0;
         _timeSinceLastSeen = double.PositiveInfinity;
         _canCurrentlySeeTarget = false;
+        _hasConfirmedTargetMemory = false;
         _hasLastKnownTargetPosition = false;
+        ClearPendingNoise();
         CollisionLayer = 0;
         CollisionMask = 0;
         _collisionShape.SetDeferred(CollisionShape2D.PropertyName.Disabled, true);
@@ -1278,8 +1418,10 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
     private void OnTargetDied(DamageInfo damage, HealthChangeResult result)
     {
         _canCurrentlySeeTarget = false;
+        _hasConfirmedTargetMemory = false;
         _hasLastKnownTargetPosition = false;
         _timeSinceLastSeen = double.PositiveInfinity;
+        ClearPendingNoise();
         CancelPendingAttack();
         if (_state != MutantState.Dead)
         {
@@ -1291,7 +1433,10 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
     {
         DetachTargetSubscriptions(clearReferences: true);
         _canCurrentlySeeTarget = false;
+        _hasConfirmedTargetMemory = false;
         _hasLastKnownTargetPosition = false;
+        _timeSinceLastSeen = double.PositiveInfinity;
+        ClearPendingNoise();
         CancelPendingAttack();
         if (_state != MutantState.Dead)
         {

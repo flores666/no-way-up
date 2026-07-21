@@ -841,6 +841,11 @@ Stage 14 contains stabilization only:
   complete commit.
 - Medkit use is a two-model transaction in `ItemUseService`: useful healing and exact
   source-slot consumption are prepared before either model changes.
+- Mutant perception, damage, and hearing now feed one priority resolver. Confirmed
+  sight, active Chase/Attack, and lost-target grace cannot be downgraded by footsteps,
+  interactions, or gunshots. Player damage confirms target memory and enters or
+  preserves Chase directly; same-frame noises are reduced to one strongest or most
+  relevant stimulus before investigation is considered.
 
 ### Permanent implementation checklist
 

@@ -66,6 +66,31 @@ public sealed class HealthFeatureTests : IFeatureTestSuite
             TestAssert.Equal(0, damageEvents, "Completed player published a damage event.");
         });
 
+
+        context.Run("subscriber-failure-does-not-block-death", () =>
+        {
+            HealthModel health = new(25);
+            int healthyChanged = 0;
+            int damaged = 0;
+            int died = 0;
+            health.Changed += _ => throw new System.InvalidOperationException("Expected.");
+            health.Changed += _ => healthyChanged++;
+            health.Damaged += (_, _) => damaged++;
+            health.Died += (_, _) => died++;
+
+            HealthChangeResult result = health.ApplyDamage(new DamageInfo(25));
+
+            TestAssert.True(result.CausedDeath, "Lethal damage did not complete.");
+            TestAssert.Equal(1, healthyChanged,
+                "A throwing Changed subscriber blocked a later subscriber.");
+            TestAssert.Equal(1, damaged,
+                "A throwing Changed subscriber blocked Damaged.");
+            TestAssert.Equal(1, died,
+                "A throwing Changed subscriber blocked Died.");
+            TestAssert.Equal(0, health.CurrentHealth,
+                "Subscriber failure repeated or reverted health mutation.");
+        });
+
         return Task.CompletedTask;
     }
 }

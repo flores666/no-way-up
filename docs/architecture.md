@@ -1752,3 +1752,87 @@ The harness has no plugin dependency, global test bus, per-frame assertion polli
 or copied production algorithm. Suite selection and usage are documented in
 `docs/testing.md` and exposed through `scripts/test-all.sh`,
 `scripts/test-feature.sh`, and `scripts/list-tests.sh`.
+
+## Stage 14 stabilization and permanent engineering policy
+
+### Authoritative event data
+
+`NoiseHudController` classifies the completed `NoiseOccurrence2D`. Footstep and
+interaction severity use `NoiseEvent.Intensity`; `NoiseKind.Gunshot` is always LOUD.
+The controller does not query `PlayerController2D.CurrentMovementMode`, because a
+single completed step may contain weighted distance from several movement modes.
+Death stops the fade timer and immediately restores SILENT.
+
+### Objective sensor exclusivity
+
+`ObjectiveExitZone2D` has collision layer `0` and mask
+`CollisionLayers2D.PlayerObjectiveSensor` only. It subscribes only to `AreaEntered`.
+Movement `CharacterBody2D` overlaps and normal/Crawl shape changes are deliberately
+outside the completion contract. On the event-driven transition to `ReachExit`, the
+zone performs one bounded inspection of current overlapping objective sensors so an
+early entrant retains the opportunity to complete. Completion remains living-player,
+ordered-stage, and one-shot guarded.
+
+### Safe publication order
+
+`HealthModel`, `StaminaModel`, and `FirearmState` use `SafeEventPublisher`. State is
+mutated once before publication. Invocation-list entries are called independently and
+subscriber exceptions are logged with event and method context. Meaningful ordering is
+preserved: health publishes `Changed`, then `Damaged`, then terminal `Died`; stamina
+publishes `Changed` before threshold events. A failure never retries or rolls back the
+completed state mutation.
+
+### Reload transaction
+
+`FirearmReloadService` is the sole multi-model reload-completion operation. It:
+
+1. validates reload state, magazine capacity, ammo ID, and reserve availability;
+2. computes the exact load amount;
+3. prepares immutable inventory slices and a firearm completion plan;
+4. revalidates both plans;
+5. mutates inventory and firearm without public notifications;
+6. verifies exact ammunition conservation;
+7. publishes inventory and firearm changes independently.
+
+The service has a reentrancy guard. A canceled reload never reaches the transaction.
+A reserve disappearing before timer completion rejects the transaction; the controller
+then ends the separate reload-in-progress state without consuming ammunition.
+
+### Healing-item transaction
+
+Item effect Resources are configuration only. `HealingItemUseEffectDefinition` stores
+and validates `HealAmount`; it does not mutate actors. `ItemUseService` validates the
+living health owner, selected slot, item/effect, useful capacity, exact source item,
+and both prepared plans. It then removes one source item and applies one healing change
+without notifications, followed by independent inventory and health publication. Full
+health, death, empty/invalid slots, unsupported effects, stale plans, and reentrant use
+change neither gameplay model.
+
+### Permanent rules for future stages
+
+1. **Architecture:** gameplay state/rules are plain C#; nodes adapt Godot; UI owns no
+   rules; `Main` is the composition root; dependencies are explicit; no service
+   locator, global bus, mutable static gameplay state, or process-time tree search.
+2. **Transactions:** validate all preconditions, calculate the whole result, prepare
+   every mutation, commit all models silently, then publish; return immutable typed
+   results; never expose intermediate state or use exception rollback normally.
+3. **Events:** mutate once; publish completed facts once; invoke subscribers safely;
+   log failures; preserve ordering; subscribe/unsubscribe symmetrically; do not use an
+   event as a command when a direct call is clearer.
+4. **Time:** accumulate elapsed time, subtract intervals, preserve remainder, bound
+   catch-up, and document excess-debt handling.
+5. **Physics:** movement colliders are physical only; hazards/light/objectives use
+   constant sensors with explicit layers; exclude owners from queries; handle origins
+   near/inside geometry; never let muzzle or sensor origins bypass walls.
+6. **Input/terminal states:** one press means at most one action; all input observes
+   enabled/modal/death/completion state; death and completion cannot be reversed by UI.
+7. **UI:** event-driven, read-only refreshes, actual values, no threshold-inflating
+   ceiling, and classification from the event/model that is the source of truth.
+8. **Resources:** configuration only, validated, finite, bounded, stable-ID based.
+9. **C#:** explicit access, sealed by default, nullable correctness, focused immutable
+   types, no hot-path LINQ, broad catches, warning suppression, unsafe code, or magic
+   collision numbers.
+10. **Change discipline:** inspect authority/events/scenes/tests first; identify
+    failure/terminal/FPS/transaction/sensor risks; define acceptance tests; then test
+    normal, duplicate, invalid, boundary, terminal, modal, low-FPS, subscriber,
+    rebinding, and prior-system regression cases.

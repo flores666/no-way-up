@@ -1,6 +1,14 @@
 using System;
+using LineZero.Core.Events;
 
 namespace LineZero.Gameplay.Combat;
+
+internal readonly record struct FirearmReloadCompletionPlan(
+    FirearmState Firearm,
+    int MagazineAmmoBefore,
+    int SuppliedRounds,
+    int LoadedRounds,
+    int MagazineAmmoAfter);
 
 public sealed class FirearmState
 {
@@ -57,7 +65,7 @@ public sealed class FirearmState
         int magazineAmmoBefore = CurrentMagazineAmmo;
         CurrentMagazineAmmo--;
         FirearmShotResult result = FirearmShotResult.Fired(magazineAmmoBefore);
-        Changed?.Invoke();
+        PublishChanged();
         return result;
     }
 
@@ -99,7 +107,7 @@ public sealed class FirearmState
             ReloadStatus.Started,
             CurrentMagazineAmmo,
             "Reload started.");
-        Changed?.Invoke();
+        PublishChanged();
         return result;
     }
 
@@ -112,27 +120,16 @@ public sealed class FirearmState
                 "Supplied reload rounds cannot be negative.");
         }
 
-        if (!IsReloading)
+        if (!TryPrepareReloadCompletion(
+                suppliedRounds,
+                out FirearmReloadCompletionPlan plan,
+                out ReloadResult rejection))
         {
-            return ReloadResult.Rejected(
-                ReloadStatus.NotReloading,
-                CurrentMagazineAmmo,
-                "No reload is in progress.");
+            return rejection;
         }
 
-        int loadedRounds = Math.Min(suppliedRounds, RoundsNeededToFillMagazine);
-        CurrentMagazineAmmo += loadedRounds;
-        IsReloading = false;
-
-        ReloadResult result = ReloadResult.Changed(
-            ReloadStatus.Completed,
-            CurrentMagazineAmmo,
-            loadedRounds > 0
-                ? $"Reloaded {loadedRounds} rounds."
-                : "Reload completed without available ammunition.",
-            suppliedRounds,
-            loadedRounds);
-        Changed?.Invoke();
+        ReloadResult result = ApplyWithoutNotification(plan);
+        PublishChanged();
         return result;
     }
 
@@ -151,7 +148,98 @@ public sealed class FirearmState
             ReloadStatus.Canceled,
             CurrentMagazineAmmo,
             "Reload canceled.");
-        Changed?.Invoke();
+        PublishChanged();
         return result;
+    }
+
+    internal bool TryPrepareReloadCompletion(
+        int availableReserveAmmo,
+        out FirearmReloadCompletionPlan plan,
+        out ReloadResult rejection)
+    {
+        if (availableReserveAmmo < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(availableReserveAmmo),
+                "Available reserve ammunition cannot be negative.");
+        }
+
+        if (RoundsNeededToFillMagazine == 0)
+        {
+            plan = default;
+            rejection = ReloadResult.Rejected(
+                ReloadStatus.MagazineFull,
+                CurrentMagazineAmmo,
+                "Magazine already full.");
+            return false;
+        }
+
+        if (availableReserveAmmo == 0)
+        {
+            plan = default;
+            rejection = ReloadResult.Rejected(
+                ReloadStatus.NoReserveAmmo,
+                CurrentMagazineAmmo,
+                "No reserve ammunition.");
+            return false;
+        }
+
+        if (!IsReloading)
+        {
+            plan = default;
+            rejection = ReloadResult.Rejected(
+                ReloadStatus.NotReloading,
+                CurrentMagazineAmmo,
+                "No reload is in progress.");
+            return false;
+        }
+
+        int loadedRounds = Math.Min(availableReserveAmmo, RoundsNeededToFillMagazine);
+        plan = new FirearmReloadCompletionPlan(
+            this,
+            CurrentMagazineAmmo,
+            availableReserveAmmo,
+            loadedRounds,
+            CurrentMagazineAmmo + loadedRounds);
+        rejection = null!;
+        return true;
+    }
+
+    internal bool CanApply(FirearmReloadCompletionPlan plan)
+    {
+        return ReferenceEquals(plan.Firearm, this) &&
+               IsReloading &&
+               CurrentMagazineAmmo == plan.MagazineAmmoBefore &&
+               plan.SuppliedRounds > 0 &&
+               plan.LoadedRounds > 0 &&
+               plan.LoadedRounds <= plan.SuppliedRounds &&
+               plan.MagazineAmmoAfter ==
+                   plan.MagazineAmmoBefore + plan.LoadedRounds &&
+               plan.MagazineAmmoAfter <= Definition.MagazineCapacity;
+    }
+
+    internal ReloadResult ApplyWithoutNotification(FirearmReloadCompletionPlan plan)
+    {
+        if (!CanApply(plan))
+        {
+            throw new InvalidOperationException(
+                "The prepared firearm reload is no longer valid.");
+        }
+
+        CurrentMagazineAmmo = plan.MagazineAmmoAfter;
+        IsReloading = false;
+        return ReloadResult.Changed(
+            ReloadStatus.Completed,
+            CurrentMagazineAmmo,
+            $"Reloaded {plan.LoadedRounds} rounds.",
+            plan.SuppliedRounds,
+            plan.LoadedRounds);
+    }
+
+    internal void PublishChanged()
+    {
+        SafeEventPublisher.Publish(
+            Changed,
+            $"{nameof(FirearmState)}.{nameof(Changed)}");
     }
 }

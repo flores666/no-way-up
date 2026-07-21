@@ -1,6 +1,9 @@
-# Line Zero
+# No Way Up
 
-Line Zero is an early technical prototype for a top-down survival-horror game set
+**No Way Up** is the public game name. The existing `LineZero` assembly, namespaces,
+and internal project identifiers are intentionally retained in this stabilization stage.
+
+No Way Up is an early technical prototype for a top-down survival-horror game set
 in an abandoned underground transit system. The current Stage 13 build preserves
 the complete Stage 1–12 movement, interaction, inventory, combat, mutant, noise,
 stamina, crawl, flashlight, visibility, modal-UI, death, and Tab-handling slice.
@@ -814,3 +817,39 @@ The scripts run `dotnet restore`, `dotnet build`, a Godot headless editor import
 and then the selected tests. Set `GODOT_BIN` or `DOTNET_BIN` when executables are
 not on `PATH`. See [`docs/testing.md`](docs/testing.md) for the suite matrix,
 direct runner commands, exit codes, isolation rules, and testing boundaries.
+
+## Stage 14 stabilization
+
+The public prototype name is **No Way Up**. The internal `LineZero` assembly and
+namespaces remain unchanged for compatibility.
+
+Stage 14 contains stabilization only:
+
+- Noise HUD severity is derived from the emitted `NoiseOccurrence2D` kind and
+  intensity. It never infers an already-emitted footstep from the player's current
+  posture. Quiet footsteps are LOW, sprint-level footsteps are MEDIUM, gunshots are
+  LOUD, and interaction severity follows its emitted intensity.
+- The objective exit listens exclusively to `PlayerObjectiveSensor2D` on its
+  dedicated collision layer. Movement-body and Crawl-profile changes cannot complete
+  the objective; an already-overlapping sensor is checked when `ReachExit` begins.
+- `HealthModel`, `StaminaModel`, and `FirearmState` publish subscribers independently
+  through `SafeEventPublisher`. A failing UI subscriber cannot block later handlers
+  or critical events such as `Died`.
+- Reload completion is a two-model transaction implemented by
+  `FirearmReloadService`: reserve and magazine outcomes are calculated first, both
+  models mutate without notifications, and notifications publish only after a
+  complete commit.
+- Medkit use is a two-model transaction in `ItemUseService`: useful healing and exact
+  source-slot consumption are prepared before either model changes.
+
+### Permanent implementation checklist
+
+All future work must preserve these rules: plain C# owns gameplay state; Godot nodes
+adapt input/physics/presentation; `Main` composes explicit dependencies; multi-model
+operations validate, calculate, mutate silently, then publish immutable results;
+events are safe and describe completed state; periodic systems preserve remainder
+with bounded catch-up; gameplay triggers use fixed dedicated sensors rather than
+movement colliders; death and completion are terminal; UI is event-driven and shows
+honest model values; Resources contain configuration only; and every change receives
+boundary, duplicate-input, terminal-state, low-FPS, subscriber-failure, scene-binding,
+and regression tests before completion.

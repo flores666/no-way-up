@@ -1,11 +1,14 @@
 using System;
 using Godot;
+using LineZero.Gameplay.Health;
 using LineZero.Gameplay.Inventory;
 
 namespace LineZero.Gameplay.Items;
 
 public sealed class ItemUseService
 {
+    private bool _isExecuting;
+
     public ItemUseResult TryUseFromSlot(
         Node actor,
         InventoryModel inventory,
@@ -21,11 +24,14 @@ public sealed class ItemUseService
                 nameof(actor));
         }
 
+        if (_isExecuting)
+        {
+            return ItemUseResult.Failure("Cannot use items now.");
+        }
+
         if (slotIndex < 0 || slotIndex >= inventory.Capacity)
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(slotIndex),
-                $"Slot index must be between 0 and {inventory.Capacity - 1}.");
+            return ItemUseResult.Failure("Select a valid inventory slot.");
         }
 
         InventorySlot sourceSlot = inventory.Slots[slotIndex];
@@ -39,57 +45,60 @@ public sealed class ItemUseService
                 "A populated inventory slot must reference an item definition.");
         item.Validate();
 
-        ItemUseEffectDefinition? useEffect = item.UseEffect;
-        if (useEffect is null)
+        if (item.UseEffect is not HealingItemUseEffectDefinition healingEffect)
         {
             return ItemUseResult.Failure($"{item.DisplayName} cannot be used.");
         }
 
-        int sourceQuantityBeforeUse = sourceSlot.Quantity;
-        ItemUseContext context = new(actor, inventory, slotIndex);
-        ItemUseResult eligibility = useEffect.CanUse(context);
-        EnsureEffectDidNotConsumeItem(eligibility, useEffect);
-        if (!eligibility.Success)
+        healingEffect.Validate();
+        if (actor is not IHealthOwner healthOwner)
         {
-            return eligibility;
+            return ItemUseResult.Failure("This actor cannot receive healing.");
         }
 
-        ItemUseResult effectResult = useEffect.Apply(context);
-        EnsureEffectDidNotConsumeItem(effectResult, useEffect);
-        if (!effectResult.Success)
+        HealthModel health = healthOwner.Health;
+        if (health.IsDead)
         {
-            return effectResult;
+            return ItemUseResult.Failure("Medical items cannot be used after death.");
         }
 
-        InventorySlot currentSlot = inventory.Slots[slotIndex];
-        if (currentSlot.IsEmpty ||
-            !ReferenceEquals(currentSlot.Item, item) ||
-            currentSlot.Quantity != sourceQuantityBeforeUse)
+        if (health.CurrentHealth == health.MaxHealth)
         {
-            throw new InvalidOperationException(
-                $"{useEffect.GetType().Name} changed inventory state during item use.");
+            return ItemUseResult.Failure("Health is already full.");
         }
 
-        InventoryRemoveResult removal = inventory.TryRemoveFromSlot(slotIndex, 1);
-        if (removal.RemovedQuantity != 1)
+        if (!inventory.TryPrepareSingleItemRemovalFromSlot(
+                slotIndex,
+                item,
+                out InventorySingleItemRemovalPlan inventoryPlan) ||
+            !health.TryPrepareHealing(
+                healingEffect.HealAmount,
+                out HealthHealingPlan healthPlan))
         {
-            throw new InvalidOperationException(
-                "A successful item effect must consume exactly one source item.");
+            return ItemUseResult.Failure("Health could not be restored.");
         }
 
-        return ItemUseResult.Consumed(
-            effectResult.Message,
-            effectResult.AppliedAmount);
-    }
-
-    private static void EnsureEffectDidNotConsumeItem(
-        ItemUseResult result,
-        ItemUseEffectDefinition useEffect)
-    {
-        if (result.ItemConsumed)
+        _isExecuting = true;
+        try
         {
-            throw new InvalidOperationException(
-                $"{useEffect.GetType().Name} must not consume inventory items directly.");
+            if (!inventory.CanApply(inventoryPlan) || !health.CanApply(healthPlan))
+            {
+                throw new InvalidOperationException(
+                    "Item-use transaction plans became invalid before commit.");
+            }
+
+            inventory.ApplyWithoutNotification(inventoryPlan);
+            HealthChangeResult healing = health.ApplyWithoutNotification(healthPlan);
+
+            inventory.PublishChanged();
+            health.PublishHealing(healing);
+            return ItemUseResult.Consumed(
+                $"Restored {healing.AppliedAmount} health.",
+                healing.AppliedAmount);
+        }
+        finally
+        {
+            _isExecuting = false;
         }
     }
 }

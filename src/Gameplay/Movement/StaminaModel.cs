@@ -1,4 +1,5 @@
 using System;
+using LineZero.Core.Events;
 
 namespace LineZero.Gameplay.Movement;
 
@@ -47,10 +48,16 @@ public sealed class StaminaModel
         }
 
         Current = current;
-        Changed?.Invoke(result);
+        SafeEventPublisher.Publish(
+            Changed,
+            result,
+            $"{nameof(StaminaModel)}.{nameof(Changed)}");
         if (previous > 0.0 && current == 0.0)
         {
-            Depleted?.Invoke(result);
+            SafeEventPublisher.Publish(
+                Depleted,
+                result,
+                $"{nameof(StaminaModel)}.{nameof(Depleted)}");
         }
 
         return result;
@@ -73,10 +80,16 @@ public sealed class StaminaModel
         }
 
         Current = current;
-        Changed?.Invoke(result);
+        SafeEventPublisher.Publish(
+            Changed,
+            result,
+            $"{nameof(StaminaModel)}.{nameof(Changed)}");
         if (previous == 0.0 && current > 0.0)
         {
-            RecoveredFromEmpty?.Invoke(result);
+            SafeEventPublisher.Publish(
+                RecoveredFromEmpty,
+                result,
+                $"{nameof(StaminaModel)}.{nameof(RecoveredFromEmpty)}");
         }
 
         return result;

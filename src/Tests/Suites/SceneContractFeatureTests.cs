@@ -142,6 +142,20 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
                 "Replacement fuse must remain a non-stackable objective item.");
         });
 
+
+        context.Run("exit-zone-uses-objective-sensor-layer-only", () =>
+        {
+            ObjectiveExitZone2D zone = InstantiateDetached<ObjectiveExitZone2D>(
+                "res://scenes/levels/ObjectiveExitZone2D.tscn");
+            TestAssert.Equal(0U, zone.CollisionLayer,
+                "Exit zone unexpectedly occupies a collision layer.");
+            TestAssert.Equal(
+                CollisionLayers2D.PlayerObjectiveSensor,
+                zone.CollisionMask,
+                "Exit zone can be activated by something other than the objective sensor.");
+            zone.Free();
+        });
+
         context.Run("required-input-actions-exist", () =>
         {
             string[] requiredActions =

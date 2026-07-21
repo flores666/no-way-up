@@ -53,6 +53,31 @@ public sealed class StaminaFeatureTests : IFeatureTestSuite
                 "NaN stamina restoration was accepted.");
         });
 
+
+        context.Run("subscriber-failure-does-not-block-critical-events", () =>
+        {
+            StaminaModel stamina = new(10.0);
+            int healthyChanged = 0;
+            int depleted = 0;
+            int recovered = 0;
+            stamina.Changed += _ => throw new InvalidOperationException("Expected.");
+            stamina.Changed += _ => healthyChanged++;
+            stamina.Depleted += _ => depleted++;
+            stamina.RecoveredFromEmpty += _ => recovered++;
+
+            stamina.Consume(10.0);
+            stamina.Restore(1.0);
+
+            TestAssert.Equal(2, healthyChanged,
+                "A throwing stamina subscriber blocked later Changed handlers.");
+            TestAssert.Equal(1, depleted,
+                "A throwing Changed subscriber blocked Depleted.");
+            TestAssert.Equal(1, recovered,
+                "A throwing Changed subscriber blocked RecoveredFromEmpty.");
+            TestAssert.NearlyEqual(1.0, stamina.Current, 1e-9,
+                "Subscriber failure repeated or reverted stamina mutation.");
+        });
+
         return Task.CompletedTask;
     }
 }

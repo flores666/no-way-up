@@ -15,12 +15,10 @@ public sealed partial class ObjectiveExitZone2D : Area2D
 
     public override void _Ready()
     {
-        uint requiredMask =
-            CollisionLayers2D.World |
-            CollisionLayers2D.PlayerObjectiveSensor;
         if (CollisionLayer != 0 ||
-            CollisionMask != requiredMask ||
-            !Monitoring)
+            CollisionMask != CollisionLayers2D.PlayerObjectiveSensor ||
+            !Monitoring ||
+            Monitorable)
         {
             throw new InvalidOperationException(
                 $"{nameof(ObjectiveExitZone2D)} on '{Name}' has invalid collision settings.");
@@ -35,13 +33,11 @@ public sealed partial class ObjectiveExitZone2D : Area2D
                 $"{nameof(ObjectiveExitZone2D)} on '{Name}' requires an enabled shape.");
         }
 
-        BodyEntered += OnBodyEntered;
         AreaEntered += OnAreaEntered;
     }
 
     public override void _ExitTree()
     {
-        BodyEntered -= OnBodyEntered;
         AreaEntered -= OnAreaEntered;
 
         if (_objectives is not null)
@@ -67,23 +63,13 @@ public sealed partial class ObjectiveExitZone2D : Area2D
 
         if (_objectives.CurrentStage == ObjectiveStage.ReachExit)
         {
-            TryCompleteCurrentOccupant();
-        }
-    }
-
-    private void OnBodyEntered(Node2D body)
-    {
-        if (body is PlayerController2D player)
-        {
-            TryComplete(player);
+            TryCompleteCurrentSensor();
         }
     }
 
     private void OnAreaEntered(Area2D area)
     {
-        if (area is PlayerObjectiveSensor2D sensor &&
-            sensor.IsLivingEligiblePlayer &&
-            sensor.TryGetPlayer(out PlayerController2D? player) &&
+        if (TryResolveEligibleSensor(area, out PlayerController2D? player) &&
             player is not null)
         {
             TryComplete(player);
@@ -97,11 +83,11 @@ public sealed partial class ObjectiveExitZone2D : Area2D
         _ = previousStage;
         if (currentStage == ObjectiveStage.ReachExit)
         {
-            TryCompleteCurrentOccupant();
+            TryCompleteCurrentSensor();
         }
     }
 
-    private void TryCompleteCurrentOccupant()
+    private void TryCompleteCurrentSensor()
     {
         if (_completionPublished ||
             _objectives?.CurrentStage != ObjectiveStage.ReachExit)
@@ -111,13 +97,10 @@ public sealed partial class ObjectiveExitZone2D : Area2D
 
         PlayerObjectiveSensor2D? selectedSensor = null;
         ulong selectedInstanceId = ulong.MaxValue;
-
         foreach (Area2D area in GetOverlappingAreas())
         {
             if (area is not PlayerObjectiveSensor2D sensor ||
-                !GodotObject.IsInstanceValid(sensor) ||
-                !sensor.IsInsideTree() ||
-                !sensor.IsLivingEligiblePlayer)
+                !TryResolveEligibleSensor(sensor, out _))
             {
                 continue;
             }
@@ -131,41 +114,31 @@ public sealed partial class ObjectiveExitZone2D : Area2D
         }
 
         if (selectedSensor is not null &&
-            selectedSensor.TryGetPlayer(out PlayerController2D? sensorPlayer) &&
-            sensorPlayer is not null)
+            TryResolveEligibleSensor(
+                selectedSensor,
+                out PlayerController2D? player) &&
+            player is not null)
         {
-            TryComplete(sensorPlayer);
-            return;
+            TryComplete(player);
+        }
+    }
+
+    private static bool TryResolveEligibleSensor(
+        Area2D area,
+        out PlayerController2D? player)
+    {
+        player = null;
+        if (area is not PlayerObjectiveSensor2D sensor ||
+            !GodotObject.IsInstanceValid(sensor) ||
+            !sensor.IsInsideTree() ||
+            sensor.CollisionLayer != CollisionLayers2D.PlayerObjectiveSensor ||
+            sensor.CollisionMask != 0 ||
+            !sensor.IsLivingEligiblePlayer)
+        {
+            return false;
         }
 
-        // BodyEntered remains a supported path. Inspecting current bodies once on
-        // the stage transition prevents a player already touching the boundary
-        // from losing completion solely because the smaller fixed sensor has not
-        // crossed the edge yet.
-        PlayerController2D? selectedPlayer = null;
-        selectedInstanceId = ulong.MaxValue;
-        foreach (Node2D body in GetOverlappingBodies())
-        {
-            if (body is not PlayerController2D player ||
-                !GodotObject.IsInstanceValid(player) ||
-                !player.IsInsideTree() ||
-                player.Health.IsDead)
-            {
-                continue;
-            }
-
-            ulong instanceId = player.GetInstanceId();
-            if (instanceId < selectedInstanceId)
-            {
-                selectedPlayer = player;
-                selectedInstanceId = instanceId;
-            }
-        }
-
-        if (selectedPlayer is not null)
-        {
-            TryComplete(selectedPlayer);
-        }
+        return sensor.TryGetPlayer(out player) && player is not null;
     }
 
     private void TryComplete(PlayerController2D player)

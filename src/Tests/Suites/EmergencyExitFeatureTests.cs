@@ -100,6 +100,45 @@ public sealed class EmergencyExitFeatureTests : IFeatureTestSuite
             await context.DisposeNodeAsync(root);
         });
 
+
+        await context.RunAsync("movement-body-and-posture-switch-cannot-complete-exit", async () =>
+        {
+            Node2D root = context.AddNode(new Node2D { Name = "SensorOnlyExitRoot" });
+            NoiseSystem2D noiseSystem = new() { Name = "NoiseSystem" };
+            PlayerController2D player = LoadPlayer();
+            ObjectiveExitZone2D zone = LoadExitZone();
+            zone.GlobalPosition = Vector2.Zero;
+            player.GlobalPosition = new Vector2(122.0f, 0.0f);
+            root.AddChild(noiseSystem);
+            root.AddChild(player);
+            player.BindNoiseSystem(noiseSystem);
+            root.AddChild(zone);
+            await context.WaitPhysicsFramesAsync(3);
+
+            TestAssert.Equal(CollisionLayers2D.PlayerObjectiveSensor, zone.CollisionMask,
+                "Exit zone listens to a non-objective collision layer.");
+            TestAssert.True(zone.GetOverlappingBodies().Count == 0,
+                "Sensor-only exit zone reported movement-body overlaps.");
+            TestAssert.True(zone.GetOverlappingAreas().Count == 0,
+                "Test fixture accidentally placed the objective sensor inside.");
+
+            ObjectiveProgressModel objectives = CreateOpenExitObjectives();
+            objectives.TryAdvanceTo(ObjectiveStage.ReachExit);
+            zone.BindObjectives(objectives);
+            await context.WaitProcessFramesAsync();
+            TestAssert.Equal(ObjectiveStage.ReachExit, objectives.CurrentStage,
+                "Movement body completed a sensor-only exit.");
+
+            player._UnhandledInput(Action("crawl"));
+            await WaitForPostureTransitionAsync(context);
+            player._UnhandledInput(Action("crawl"));
+            await WaitForPostureTransitionAsync(context);
+            TestAssert.Equal(ObjectiveStage.ReachExit, objectives.CurrentStage,
+                "Stationary movement-collider switching activated the exit.");
+
+            await context.DisposeNodeAsync(root);
+        });
+
         await context.RunAsync("early-exit-overlap-completes-on-reach-exit", async () =>
         {
             Node2D root = context.AddNode(new Node2D { Name = "ExitZoneTestRoot" });
@@ -136,6 +175,24 @@ public sealed class EmergencyExitFeatureTests : IFeatureTestSuite
 
             await context.DisposeNodeAsync(root);
         });
+    }
+
+    private static async Task WaitForPostureTransitionAsync(
+        FeatureTestContext context)
+    {
+        await context.WaitProcessFramesAsync();
+        await context.WaitPhysicsFramesAsync();
+        await context.WaitProcessFramesAsync();
+    }
+
+    private static InputEventAction Action(string action)
+    {
+        return new InputEventAction
+        {
+            Action = action,
+            Pressed = true,
+            Strength = 1.0f,
+        };
     }
 
     private static SlidingDoor2D LoadDoor(bool requiresPower, double animationDuration)

@@ -1,7 +1,6 @@
 using System;
 using Godot;
 using LineZero.Gameplay.Health;
-using LineZero.Gameplay.Movement;
 using LineZero.Gameplay.Noise;
 using LineZero.World2D;
 using LineZero.World2D.Noise;
@@ -25,12 +24,22 @@ public sealed partial class NoiseHudController : MarginContainer
     [Export(PropertyHint.Range, "0.1,10.0,0.1,or_greater")]
     public double SilenceDelaySeconds { get; set; } = 1.2;
 
+    [Export(PropertyHint.Range, "0.01,10.0,0.01,or_greater")]
+    public float MediumIntensityThreshold { get; set; } = 1.5f;
+
     public override void _Ready()
     {
         if (!double.IsFinite(SilenceDelaySeconds) || SilenceDelaySeconds <= 0.0)
         {
             throw new InvalidOperationException(
                 $"{nameof(NoiseHudController)} on '{Name}' requires a positive silence delay.");
+        }
+
+        if (!float.IsFinite(MediumIntensityThreshold) || MediumIntensityThreshold <= 0.0f)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(NoiseHudController)} on '{Name}' requires a positive finite " +
+                "medium-intensity threshold.");
         }
 
         _noiseLabel = GetNodeOrNull<Label>("%NoiseLabel")
@@ -120,37 +129,23 @@ public sealed partial class NoiseHudController : MarginContainer
             return;
         }
 
-        switch (occurrence.Noise.Kind)
-        {
-            case NoiseKind.Footstep:
-                switch (_player.CurrentMovementMode)
-                {
-                    case MovementMode.Sprint:
-                        SetDisplay("NOISE: MEDIUM", MediumColor);
-                        break;
-                    case MovementMode.Walk:
-                    case MovementMode.Crouch:
-                    case MovementMode.Crawl:
-                        SetDisplay("NOISE: LOW", LowColor);
-                        break;
-                    default:
-                        throw new InvalidOperationException(
-                            "Unknown player movement mode.");
-                }
-
-                break;
-            case NoiseKind.Interaction:
-                SetDisplay("NOISE: MEDIUM", MediumColor);
-                break;
-            case NoiseKind.Gunshot:
-                SetDisplay("NOISE: LOUD", LoudColor);
-                break;
-            default:
-                throw new InvalidOperationException("Unknown player noise kind.");
-        }
-
+        NoisePresentation presentation = Classify(occurrence);
+        SetDisplay(presentation.Text, presentation.Color);
         _silenceTimer.Stop();
         _silenceTimer.Start(SilenceDelaySeconds);
+    }
+
+    private NoisePresentation Classify(NoiseOccurrence2D occurrence)
+    {
+        return occurrence.Noise.Kind switch
+        {
+            NoiseKind.Gunshot => new NoisePresentation("NOISE: LOUD", LoudColor),
+            NoiseKind.Footstep or NoiseKind.Interaction =>
+                occurrence.Noise.Intensity >= MediumIntensityThreshold
+                    ? new NoisePresentation("NOISE: MEDIUM", MediumColor)
+                    : new NoisePresentation("NOISE: LOW", LowColor),
+            _ => throw new InvalidOperationException("Unknown player noise kind."),
+        };
     }
 
     private void OnSilenceTimerTimeout()
@@ -187,4 +182,6 @@ public sealed partial class NoiseHudController : MarginContainer
     {
         return ReferenceEquals(source, player) || player.IsAncestorOf(source);
     }
+
+    private readonly record struct NoisePresentation(string Text, Color Color);
 }

@@ -12,6 +12,39 @@ internal readonly record struct InventorySingleItemRemovalPlan(
     ItemDefinition? Item,
     int QuantityBefore);
 
+internal readonly record struct InventoryRemovalSlice(
+    int SlotIndex,
+    ItemDefinition Item,
+    int QuantityBefore,
+    int QuantityToRemove);
+
+internal sealed class InventoryItemQuantityRemovalPlan
+{
+    public InventoryItemQuantityRemovalPlan(
+        InventoryModel inventory,
+        string itemId,
+        int requestedQuantity,
+        int availableQuantityBefore,
+        InventoryRemovalSlice[] slices)
+    {
+        Inventory = inventory;
+        ItemId = itemId;
+        RequestedQuantity = requestedQuantity;
+        AvailableQuantityBefore = availableQuantityBefore;
+        Slices = slices;
+    }
+
+    public InventoryModel Inventory { get; }
+
+    public string ItemId { get; }
+
+    public int RequestedQuantity { get; }
+
+    public int AvailableQuantityBefore { get; }
+
+    public InventoryRemovalSlice[] Slices { get; }
+}
+
 public sealed class InventoryModel
 {
     private readonly InventorySlot[] _slots;
@@ -167,6 +200,93 @@ public sealed class InventoryModel
         return false;
     }
 
+    internal bool TryPrepareSingleItemRemovalFromSlot(
+        int slotIndex,
+        ItemDefinition expectedItem,
+        out InventorySingleItemRemovalPlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(expectedItem);
+        if (slotIndex < 0 || slotIndex >= _slots.Length)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(slotIndex),
+                $"Slot index must be between 0 and {_slots.Length - 1}.");
+        }
+
+        ValidateSlots();
+        InventorySlot slot = _slots[slotIndex];
+        if (slot.IsEmpty || !ReferenceEquals(slot.Item, expectedItem))
+        {
+            plan = default;
+            return false;
+        }
+
+        plan = new InventorySingleItemRemovalPlan(
+            this,
+            slotIndex,
+            expectedItem,
+            slot.Quantity);
+        return true;
+    }
+
+    internal bool TryPrepareItemRemoval(
+        string itemId,
+        int requestedQuantity,
+        out InventoryItemQuantityRemovalPlan? plan)
+    {
+        ValidateItemId(itemId);
+        if (requestedQuantity < 1)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(requestedQuantity),
+                "Requested removal quantity must be at least one.");
+        }
+
+        ValidateSlots();
+        int availableQuantity = CountByItemId(itemId);
+        if (availableQuantity < requestedQuantity)
+        {
+            plan = null;
+            return false;
+        }
+
+        List<InventoryRemovalSlice> slices = new();
+        int remaining = requestedQuantity;
+        for (int index = 0; index < _slots.Length && remaining > 0; index++)
+        {
+            InventorySlot slot = _slots[index];
+            if (!slot.ContainsItem(itemId))
+            {
+                continue;
+            }
+
+            ItemDefinition item = slot.Item
+                ?? throw new InvalidOperationException(
+                    "A populated inventory slot must reference an item definition.");
+            int quantityToRemove = Math.Min(remaining, slot.Quantity);
+            slices.Add(new InventoryRemovalSlice(
+                index,
+                item,
+                slot.Quantity,
+                quantityToRemove));
+            remaining -= quantityToRemove;
+        }
+
+        if (remaining != 0)
+        {
+            throw new InvalidOperationException(
+                "Inventory removal planning did not cover the requested quantity.");
+        }
+
+        plan = new InventoryItemQuantityRemovalPlan(
+            this,
+            itemId,
+            requestedQuantity,
+            availableQuantity,
+            slices.ToArray());
+        return true;
+    }
+
     internal bool CanApply(InventorySingleItemRemovalPlan plan)
     {
         if (!ReferenceEquals(plan.Inventory, this) ||
@@ -192,6 +312,66 @@ public sealed class InventoryModel
         }
 
         _slots[plan.SlotIndex].RemoveQuantity(1);
+    }
+
+    internal bool CanApply(InventoryItemQuantityRemovalPlan plan)
+    {
+        if (!ReferenceEquals(plan.Inventory, this) ||
+            plan.RequestedQuantity < 1 ||
+            plan.AvailableQuantityBefore < plan.RequestedQuantity ||
+            string.IsNullOrWhiteSpace(plan.ItemId) ||
+            plan.Slices.Length == 0)
+        {
+            return false;
+        }
+
+        int plannedQuantity = 0;
+        for (int index = 0; index < plan.Slices.Length; index++)
+        {
+            InventoryRemovalSlice slice = plan.Slices[index];
+            if (slice.SlotIndex < 0 ||
+                slice.SlotIndex >= _slots.Length ||
+                slice.QuantityBefore < 1 ||
+                slice.QuantityToRemove < 1 ||
+                slice.QuantityToRemove > slice.QuantityBefore)
+            {
+                return false;
+            }
+
+            InventorySlot slot = _slots[slice.SlotIndex];
+            if (!ReferenceEquals(slot.Item, slice.Item) ||
+                !slot.ContainsItem(plan.ItemId) ||
+                slot.Quantity != slice.QuantityBefore)
+            {
+                return false;
+            }
+
+            plannedQuantity = checked(plannedQuantity + slice.QuantityToRemove);
+        }
+
+        return plannedQuantity == plan.RequestedQuantity &&
+               CountByItemId(plan.ItemId) == plan.AvailableQuantityBefore;
+    }
+
+    internal InventoryItemRemovalResult ApplyWithoutNotification(
+        InventoryItemQuantityRemovalPlan plan)
+    {
+        if (!CanApply(plan))
+        {
+            throw new InvalidOperationException(
+                "The prepared inventory quantity removal is no longer valid.");
+        }
+
+        for (int index = 0; index < plan.Slices.Length; index++)
+        {
+            InventoryRemovalSlice slice = plan.Slices[index];
+            _slots[slice.SlotIndex].RemoveQuantity(slice.QuantityToRemove);
+        }
+
+        return new InventoryItemRemovalResult(
+            plan.RequestedQuantity,
+            plan.RequestedQuantity,
+            plan.AvailableQuantityBefore - plan.RequestedQuantity);
     }
 
     internal InventoryItemRemovalResult TryRemoveByItemIdWithoutNotification(

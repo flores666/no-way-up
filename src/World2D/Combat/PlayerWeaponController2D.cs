@@ -1,5 +1,6 @@
 using System;
 using Godot;
+using LineZero.Core.Events;
 using LineZero.Gameplay.Combat;
 using LineZero.Gameplay.Health;
 using LineZero.Gameplay.Inventory;
@@ -19,6 +20,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
     private const float MinimumSegmentLengthSquared = 0.0001f;
 
     private readonly Godot.Collections.Array<Rid> _rayExclusions = new();
+    private readonly FirearmReloadService _reloadService = new();
 
     private PlayerController2D? _player;
     private InventoryModel? _inventory;
@@ -230,7 +232,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
                 FirearmShotStatus.CombatDisabled,
                 State.CurrentMagazineAmmo,
                 "Combat input is disabled.");
-            ShotAttempted?.Invoke(result);
+            PublishShotAttempted(result);
             return result;
         }
 
@@ -240,7 +242,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
                 FirearmShotStatus.OwnerDead,
                 State.CurrentMagazineAmmo,
                 "Dead actors cannot fire.");
-            ShotAttempted?.Invoke(result);
+            PublishShotAttempted(result);
             return result;
         }
 
@@ -258,7 +260,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
                 FirearmShotStatus.FireInterval,
                 State.CurrentMagazineAmmo,
                 "Weapon is cycling.");
-            ShotAttempted?.Invoke(result);
+            PublishShotAttempted(result);
             return result;
         }
 
@@ -268,7 +270,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
                 FirearmShotStatus.MuzzleObstructed,
                 State.CurrentMagazineAmmo,
                 "Muzzle obstructed.");
-            ShotAttempted?.Invoke(result);
+            PublishShotAttempted(result);
             return result;
         }
 
@@ -283,7 +285,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
             nowSeconds + State.Definition.FireIntervalSeconds;
         PerformHitscan(shotPath);
         EmitGunshotNoise(shotPath.RayStart);
-        ShotAttempted?.Invoke(result);
+        PublishShotAttempted(result);
         return result;
     }
 
@@ -298,7 +300,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
                 ReloadStatus.CombatDisabled,
                 State.CurrentMagazineAmmo,
                 "Combat input is disabled.");
-            ReloadChanged?.Invoke(result);
+            PublishReloadChanged(result);
             return result;
         }
 
@@ -308,7 +310,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
                 ReloadStatus.OwnerDead,
                 State.CurrentMagazineAmmo,
                 "Dead actors cannot reload.");
-            ReloadChanged?.Invoke(result);
+            PublishReloadChanged(result);
             return result;
         }
 
@@ -321,10 +323,10 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
         }
         else if (result.Status == ReloadStatus.NoReserveAmmo)
         {
-            MessageRequested?.Invoke(result.Message);
+            PublishMessage(result.Message);
         }
 
-        ReloadChanged?.Invoke(result);
+        PublishReloadChanged(result);
         return result;
     }
 
@@ -365,7 +367,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
         ReloadResult result = state.CancelReload();
         if (result.StateChanged)
         {
-            ReloadChanged?.Invoke(result);
+            PublishReloadChanged(result);
         }
 
         return result;
@@ -396,32 +398,24 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
             return;
         }
 
-        int roundsNeeded = State.RoundsNeededToFillMagazine;
-        string ammoItemId = GetAmmoItemId();
-        int availableReserveAmmo = Inventory.CountByItemId(ammoItemId);
-        int requestedRounds = Math.Min(roundsNeeded, availableReserveAmmo);
-        int removedRounds = 0;
-
-        if (requestedRounds > 0)
+        ReloadResult result = _reloadService.TryCompleteReload(
+            State,
+            Inventory,
+            GetAmmoItemId());
+        if (!result.Success)
         {
-            InventoryItemRemovalResult removal = Inventory.TryRemoveByItemId(
-                ammoItemId,
-                requestedRounds);
-            removedRounds = removal.RemovedQuantity;
+            if (State.IsReloading)
+            {
+                State.CancelReload();
+            }
+
+            if (result.Status == ReloadStatus.NoReserveAmmo)
+            {
+                PublishMessage(result.Message);
+            }
         }
 
-        ReloadResult result = State.CompleteReload(removedRounds);
-        if (result.LoadedRounds != removedRounds)
-        {
-            throw new InvalidOperationException(
-                "Reload completion did not load the exact removed reserve quantity.");
-        }
-
-        ReloadChanged?.Invoke(result);
-        if (removedRounds == 0)
-        {
-            MessageRequested?.Invoke("No reserve ammunition.");
-        }
+        PublishReloadChanged(result);
     }
 
     private void OnTracerTimerTimeout()
@@ -584,7 +578,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
 
     private void PublishShotResult(FirearmShotResult result)
     {
-        ShotAttempted?.Invoke(result);
+        PublishShotAttempted(result);
         if (result.Status != FirearmShotStatus.EmptyMagazine)
         {
             return;
@@ -598,7 +592,31 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
 
         _nextEmptyMessageAllowedAtSeconds =
             nowSeconds + EmptyMessageIntervalSeconds;
-        MessageRequested?.Invoke(result.Message);
+        PublishMessage(result.Message);
+    }
+
+    private void PublishShotAttempted(FirearmShotResult result)
+    {
+        SafeEventPublisher.Publish(
+            ShotAttempted,
+            result,
+            $"{nameof(PlayerWeaponController2D)}.{nameof(ShotAttempted)}");
+    }
+
+    private void PublishReloadChanged(ReloadResult result)
+    {
+        SafeEventPublisher.Publish(
+            ReloadChanged,
+            result,
+            $"{nameof(PlayerWeaponController2D)}.{nameof(ReloadChanged)}");
+    }
+
+    private void PublishMessage(string message)
+    {
+        SafeEventPublisher.Publish(
+            MessageRequested,
+            message,
+            $"{nameof(PlayerWeaponController2D)}.{nameof(MessageRequested)}");
     }
 
     private string GetAmmoItemId()

@@ -79,8 +79,8 @@ The Godot runner always finishes with a compact result block:
 [TEST][FINAL_SUMMARY]
   result: PASS
   suites: 20
-  tests: 59
-  passed: 59
+  tests: 74
+  passed: 74
   failed: 0
   duration: 1.23s
   failed cases: none
@@ -168,3 +168,12 @@ HUD controllers are intentionally bound once for their scene lifetime. Tests tha
 
 Every failed case is written to standard output as `[TEST][FAIL]` and also reported through Godot's error channel, so failure details remain visible even when only stdout is captured.
 
+
+## Stage 14 regression additions
+
+The existing suites now additionally cover mixed-mode footstep HUD classification,
+objective-sensor-only completion, stationary movement-profile switching at the exit,
+already-overlapping objective sensors, safe health/stamina/firearm subscriber
+publication, transactional partial/full/no-reserve/canceled/reentrant reload paths,
+ammunition conservation, transactional medkit success/full/dead/final-stack paths,
+and subscriber failures during reload and healing notifications.

@@ -6,8 +6,4 @@ namespace LineZero.Gameplay.Items;
 public abstract partial class ItemUseEffectDefinition : Resource
 {
     public abstract void Validate();
-
-    public abstract ItemUseResult CanUse(ItemUseContext context);
-
-    public abstract ItemUseResult Apply(ItemUseContext context);
 }

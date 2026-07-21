@@ -6,9 +6,12 @@ using LineZero.Gameplay.Health;
 using LineZero.Gameplay.Inventory;
 using LineZero.Gameplay.Movement;
 using LineZero.Gameplay.Objectives;
+using LineZero.Gameplay.Noise;
 using LineZero.Tests.Fixtures;
 using LineZero.Tests.Framework;
 using LineZero.UI;
+using LineZero.World2D;
+using LineZero.World2D.Noise;
 
 namespace LineZero.Tests.Suites;
 
@@ -79,6 +82,132 @@ public sealed class HudFeatureTests : IFeatureTestSuite
             await context.DisposeNodeAsync(hud);
         });
 
+
+        await context.RunAsync("noise-hud-uses-emitted-kind-and-intensity", async () =>
+        {
+            Node2D root = context.AddNode(new Node2D { Name = "NoiseHudTestRoot" });
+            NoiseSystem2D noiseSystem = new() { Name = "NoiseSystem" };
+            PlayerController2D player = LoadPlayer();
+            NoiseHudController hud = context.InstantiateScene<NoiseHudController>(
+                "res://scenes/ui/NoiseHud.tscn");
+            root.AddChild(noiseSystem);
+            root.AddChild(player);
+            player.BindNoiseSystem(noiseSystem);
+            await context.WaitProcessFramesAsync(2);
+            hud.Bind(noiseSystem, player);
+
+            PlayerFootstepNoiseEmitter2D emitter =
+                player.GetNode<PlayerFootstepNoiseEmitter2D>(
+                    "%PlayerFootstepNoiseEmitter2D");
+            player.SetPhysicsProcess(false);
+            emitter.SetPhysicsProcess(false);
+
+            Label label = hud.GetNode<Label>("%NoiseLabel");
+            float? mixedFootstepIntensity = null;
+            emitter.FootstepEmitted += occurrence =>
+                mixedFootstepIntensity = occurrence.Noise.Intensity;
+            Input.ActionPress("move_right");
+            Input.ActionPress("sprint");
+            try
+            {
+                player._PhysicsProcess(0.1);
+                TestAssert.Equal(MovementMode.Sprint, player.CurrentMovementMode,
+                    "Test fixture did not enter Sprint.");
+
+                emitter.SetEmissionEnabled(false);
+                emitter.SetEmissionEnabled(true);
+                player.GlobalPosition += new Vector2(
+                    emitter.SprintStepDistance * 0.9f,
+                    0.0f);
+                emitter._PhysicsProcess(0.1);
+                TestAssert.Equal("NOISE: SILENT", label.Text,
+                    "Incomplete Sprint segment emitted a footstep too early.");
+            }
+            finally
+            {
+                Input.ActionRelease("sprint");
+                Input.ActionRelease("move_right");
+            }
+
+            player._UnhandledInput(new InputEventAction
+            {
+                Action = "crawl",
+                Pressed = true,
+                Strength = 1.0f,
+            });
+            await context.WaitProcessFramesAsync();
+            await context.WaitPhysicsFramesAsync();
+            await context.WaitProcessFramesAsync();
+            TestAssert.Equal(MovementMode.Crawl, player.CurrentMovementMode,
+                "Test fixture did not enter Crawl.");
+
+            const float crawlCompletionProgress = 0.12f;
+            float crawlStepDistance =
+                emitter.WalkStepDistance *
+                (player.MovementSettings?.CrawlStepDistanceMultiplier
+                    ?? throw new TestAssertionException(
+                        "Player fixture lost its movement settings."));
+            player.GlobalPosition += new Vector2(
+                crawlStepDistance * crawlCompletionProgress,
+                0.0f);
+            emitter._PhysicsProcess(0.1);
+            TestAssert.True(mixedFootstepIntensity is not null,
+                "Mixed-mode movement did not complete a real footstep occurrence.");
+            TestAssert.True(
+                mixedFootstepIntensity >= hud.MediumIntensityThreshold &&
+                mixedFootstepIntensity <= emitter.SprintFootstepIntensity,
+                "Mixed-mode footstep did not retain its bounded Sprint contribution.");
+            TestAssert.Equal("NOISE: MEDIUM", label.Text,
+                "HUD ignored Sprint contribution when the step completed in Crawl.");
+
+            noiseSystem.EmitNoise(
+                player,
+                NoiseKind.Footstep,
+                0.45f,
+                player.GlobalPosition,
+                player,
+                "Quiet footstep");
+            TestAssert.Equal("NOISE: LOW", label.Text,
+                "HUD did not classify a quiet emitted footstep as LOW.");
+
+            noiseSystem.EmitNoise(
+                player,
+                NoiseKind.Interaction,
+                1.0f,
+                player.GlobalPosition,
+                player,
+                "Quiet configured interaction");
+            TestAssert.Equal("NOISE: LOW", label.Text,
+                "HUD ignored a quiet configured interaction intensity.");
+
+            noiseSystem.EmitNoise(
+                player,
+                NoiseKind.Interaction,
+                1.8f,
+                player.GlobalPosition,
+                player,
+                "Loud configured interaction");
+            TestAssert.Equal("NOISE: MEDIUM", label.Text,
+                "HUD ignored a medium configured interaction intensity.");
+
+            noiseSystem.EmitNoise(
+                player,
+                NoiseKind.Gunshot,
+                1.0f,
+                player.GlobalPosition,
+                player,
+                "Gunshot");
+            TestAssert.Equal("NOISE: LOUD", label.Text,
+                "HUD did not classify gunshot kind as LOUD.");
+
+            player.Health.ApplyDamage(new DamageInfo(player.Health.MaxHealth));
+            TestAssert.Equal("NOISE: SILENT", label.Text,
+                "Player death did not reset noise HUD immediately.");
+
+            await context.DisposeNodeAsync(root);
+            await context.DisposeNodeAsync(hud);
+        });
+
         await context.RunAsync("objective-hud-shows-only-current-stage", async () =>
         {
             ObjectiveHudController hud = context.InstantiateScene<ObjectiveHudController>(
@@ -136,6 +265,15 @@ public sealed class HudFeatureTests : IFeatureTestSuite
             "Stamina progress bar did not use the actual value.");
 
         await context.DisposeNodeAsync(hud);
+    }
+
+    private static PlayerController2D LoadPlayer()
+    {
+        PackedScene scene = ResourceLoader.Load<PackedScene>(
+            "res://scenes/player/Player.tscn")
+            ?? throw new System.InvalidOperationException(
+                "Could not load player scene.");
+        return scene.Instantiate<PlayerController2D>();
     }
 
     private static string FormatStamina(double current, double maximum)

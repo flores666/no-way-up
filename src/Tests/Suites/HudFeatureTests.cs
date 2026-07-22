@@ -94,7 +94,7 @@ public sealed class HudFeatureTests : IFeatureTestSuite
             root.AddChild(player);
             player.BindNoiseSystem(noiseSystem);
             await context.WaitProcessFramesAsync(2);
-            hud.Bind(noiseSystem, player);
+            hud.Bind(noiseSystem, player, player.Health);
 
             PlayerFootstepNoiseEmitter2D emitter =
                 player.GetNode<PlayerFootstepNoiseEmitter2D>(

@@ -1,0 +1,137 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://src/World3D/Enemies/MutantController3D.cs" id="1_controller"]
+[ext_resource type="Resource" path="res://data/enemies/TunnelMutant.tres" id="2_definition"]
+[ext_resource type="Script" path="res://src/Gameplay/Health/HealthComponent.cs" id="3_health"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_mutant"]
+radius = 0.58
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_body"]
+albedo_color = Color(0.31, 0.48, 0.27, 1)
+roughness = 0.88
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+material = SubResource("StandardMaterial3D_body")
+radius = 0.54
+height = 1.8
+radial_segments = 14
+rings = 7
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_core"]
+albedo_color = Color(0.5, 0.12, 0.18, 1)
+emission_enabled = true
+emission = Color(0.26, 0.02, 0.03, 1)
+emission_energy_multiplier = 1.2
+roughness = 0.7
+
+[sub_resource type="SphereMesh" id="SphereMesh_core"]
+material = SubResource("StandardMaterial3D_core")
+radius = 0.28
+height = 0.56
+radial_segments = 12
+rings = 6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eye"]
+albedo_color = Color(1, 0.49, 0.08, 1)
+emission_enabled = true
+emission = Color(1, 0.16, 0.01, 1)
+emission_energy_multiplier = 2.2
+roughness = 0.5
+
+[sub_resource type="SphereMesh" id="SphereMesh_eye"]
+material = SubResource("StandardMaterial3D_eye")
+radius = 0.1
+height = 0.2
+radial_segments = 10
+rings = 5
+
+[sub_resource type="BoxMesh" id="BoxMesh_claw"]
+material = SubResource("StandardMaterial3D_body")
+size = Vector3(0.12, 0.12, 0.85)
+
+[node name="TunnelMutant3D" type="CharacterBody3D"]
+unique_name_in_owner = true
+collision_layer = 12
+collision_mask = 3
+floor_max_angle = 0.785398
+script = ExtResource("1_controller")
+Definition = ExtResource("2_definition")
+InitialFacingDirection = Vector3(-1, 0, 0)
+WorldDistanceScale = 0.04
+SightCollisionMask = 1
+
+[node name="MutantCollision3D" type="CollisionShape3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_mutant")
+
+[node name="HealthComponent" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("3_health")
+MaxHealth = 75
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+unique_name_in_owner = true
+path_desired_distance = 0.45
+target_desired_distance = 0.7
+radius = 0.58
+height = 1.8
+avoidance_enabled = false
+path_height_offset = 0.05
+
+[node name="MutantSightOrigin3D" type="Marker3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 1.1, -0.1)
+
+[node name="MutantVisualPivot3D" type="Node3D" parent="."]
+unique_name_in_owner = true
+
+[node name="BodyMesh3D" type="MeshInstance3D" parent="MutantVisualPivot3D"]
+position = Vector3(0, 0.9, 0)
+mesh = SubResource("CapsuleMesh_body")
+
+[node name="CoreMesh3D" type="MeshInstance3D" parent="MutantVisualPivot3D"]
+position = Vector3(0, 1, -0.48)
+mesh = SubResource("SphereMesh_core")
+
+[node name="EyeMesh3D" type="MeshInstance3D" parent="MutantVisualPivot3D"]
+position = Vector3(0, 1.28, -0.52)
+mesh = SubResource("SphereMesh_eye")
+
+[node name="LeftClaw3D" type="MeshInstance3D" parent="MutantVisualPivot3D"]
+position = Vector3(-0.5, 0.82, -0.46)
+rotation_degrees = Vector3(0, -14, 0)
+mesh = SubResource("BoxMesh_claw")
+
+[node name="RightClaw3D" type="MeshInstance3D" parent="MutantVisualPivot3D"]
+position = Vector3(0.5, 0.82, -0.46)
+rotation_degrees = Vector3(0, 14, 0)
+mesh = SubResource("BoxMesh_claw")
+
+[node name="MutantHealthLabel3D" type="Label3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 2.2, 0)
+visible = false
+text = "TUNNEL MUTANT 75 / 75"
+font_size = 28
+outline_size = 5
+modulate = Color(0.78, 0.94, 0.7, 1)
+billboard = 1
+no_depth_test = true
+
+[node name="MutantStateLabel3D" type="Label3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 1.92, 0)
+visible = false
+text = "IDLE"
+font_size = 24
+outline_size = 5
+modulate = Color(0.94, 0.68, 0.25, 1)
+billboard = 1
+no_depth_test = true
+
+[node name="MutantAttackWindupTimer3D" type="Timer" parent="."]
+unique_name_in_owner = true
+one_shot = true

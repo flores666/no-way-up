@@ -3,20 +3,42 @@
 **No Way Up** is the public game name. The existing `LineZero` assembly, namespaces,
 and internal project identifiers are intentionally retained in this stabilization stage.
 
-No Way Up is a top-down survival-horror prototype set in a damaged underground
-metro. The current cumulative build preserves the complete movement, crawl,
-stamina, interaction, inventory, combat, mutant, noise, flashlight, visibility,
-hazard, power, objective, death, and terminal-completion systems. The first real
-playable greybox level now uses those systems in a longer exploration loop while
-the original TestLevel remains available for focused regression work.
+No Way Up is a top-down survival-horror technical prototype set in a damaged
+underground facility. Its complete gameplay loop now runs in real isometric 3D:
+movement and Crawl, stamina, cursor aim, flashlight and visibility, gameplay noise,
+inventory and containers, pistol combat, hazards, a navigation-driven mutant, the
+replacement-fuse/power/door objective, death, and terminal escape completion.
 
-The codebase intentionally keeps 2D presentation and movement separate from data
-that can be reused when a future 3D top-down version is introduced.
+`res://scenes/3d/Main3D.tscn` is the configured F5 entry point. The legacy 2D
+implementation remains intact as a runnable regression reference; both paths reuse
+the same plain gameplay models and Canvas UI where their contracts are
+dimension-independent.
+
+## Playable isometric 3D slice
+
+The 3D slice uses a fixed orthographic camera, screen-relative XZ movement,
+independent mouse aiming, two physical posture colliders, dedicated constant-size
+gameplay sensors, occluder fading, `NavigationAgent3D`, physical muzzle validation,
+and a primitive but complete technical level. Run it with F5 or:
+
+```bash
+godot --path . res://scenes/3d/Main3D.tscn
+```
+
+Run the preserved 2D gameplay reference explicitly with:
+
+```bash
+godot --path . res://scenes/main/Main.tscn
+```
+
+See [`docs/3d-migration.md`](docs/3d-migration.md) for the final hierarchy,
+collision map, shared-model boundary, renderer result, phase record, and remaining
+validation limits.
 
 
-## MetroLevel01 gameplay greybox
+## Legacy MetroLevel01 gameplay greybox
 
-`res://scenes/levels/MetroLevel01.tscn` is the default playable level loaded by
+`res://scenes/levels/MetroLevel01.tscn` is the preserved 2D gameplay level loaded by
 `res://scenes/main/Main.tscn`. It is designed as a 20–30 minute first-pass run,
 depending on stealth, exploration, combat, and loot decisions.
 
@@ -80,7 +102,7 @@ release is used, let the editor perform its normal project upgrade and update th
 2. Select **Import**.
 3. Choose this repository's `project.godot` file.
 4. Wait for the initial asset import and C# restore to finish.
-5. Open `res://scenes/main/Main.tscn` if it is not already open.
+5. Open `res://scenes/3d/Main3D.tscn` if it is not already open.
 
 From a terminal, the equivalent editor command is:
 
@@ -105,10 +127,16 @@ The Godot editor can also build the project from its **Build** button.
 ## Run
 
 Press **F6** in Godot to run the current scene, or **F5** to run the configured
-main scene. From a terminal:
+3D main scene. From a terminal:
 
 ```bash
 godot --path .
+```
+
+The legacy 2D reference remains directly runnable with:
+
+```bash
+godot --path . res://scenes/main/Main.tscn
 ```
 
 ## Controls
@@ -805,8 +833,8 @@ door operation, dynamic navigation rebaking, spawning, waves, loot drop, knockba
 stagger, or advanced animation. The only firearm remains the equipped Service
 Pistol; item use remains limited to the Field Medkit.
 
-See [`docs/architecture.md`](docs/architecture.md) for the current boundaries and
-the intended 3D migration path.
+See [`docs/architecture.md`](docs/architecture.md) for the current shared-model and
+2D/3D adapter boundaries.
 
 ## Runtime hardening audit
 
@@ -836,12 +864,13 @@ interacted with again after opening; enter or remain inside the exit zone and ve
 
 ## Automated feature tests
 
-The project now includes a built-in headless Godot C# regression harness with 20
+The project now includes a built-in headless Godot C# regression harness with 26
 independently selectable feature suites. It covers domain models, transactions,
 HUD event binding, movement/Crawl collision profiles, constant sensors, hazards,
 footstep debt, multi-wall hearing, mutant perception, wall-safe firearm hitscan,
 container noise, powered emergency-door completion, early exit overlap, serialized
-scene references, authored resources, and a full `Main.tscn` composition smoke test.
+scene references, authored resources, both legacy compositions, the complete 3D
+technical-level contract, and a full 3D objective-loop integration test.
 
 Run everything:
 
@@ -876,11 +905,11 @@ namespaces remain unchanged for compatibility.
 
 Stage 14 contains stabilization only:
 
-- Noise HUD severity is derived from the emitted `NoiseOccurrence2D` kind and
+- Noise HUD severity is derived from the emitted 2D or 3D occurrence kind and
   intensity. It never infers an already-emitted footstep from the player's current
   posture. Quiet footsteps are LOW, sprint-level footsteps are MEDIUM, gunshots are
   LOUD, and interaction severity follows its emitted intensity.
-- The objective exit listens exclusively to `PlayerObjectiveSensor2D` on its
+- Each objective exit listens exclusively to its dedicated player objective sensor on its
   dedicated collision layer. Movement-body and Crawl-profile changes cannot complete
   the objective; an already-overlapping sensor is checked when `ReachExit` begins.
 - `HealthModel`, `StaminaModel`, and `FirearmState` publish subscribers independently
@@ -901,7 +930,7 @@ Stage 14 contains stabilization only:
 ### Permanent implementation checklist
 
 All future work must preserve these rules: plain C# owns gameplay state; Godot nodes
-adapt input/physics/presentation; `Main` composes explicit dependencies; multi-model
+adapt input/physics/presentation; `Main`/`Main3D` compose explicit dependencies; multi-model
 operations validate, calculate, mutate silently, then publish immutable results;
 events are safe and describe completed state; periodic systems preserve remainder
 with bounded catch-up; gameplay triggers use fixed dedicated sensors rather than

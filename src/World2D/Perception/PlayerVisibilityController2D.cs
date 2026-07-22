@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Godot;
+using LineZero.Core.Events;
 using LineZero.Data;
 using LineZero.Gameplay.Flashlight;
 using LineZero.Gameplay.Health;
@@ -9,17 +10,13 @@ using LineZero.Gameplay.Perception;
 
 namespace LineZero.World2D.Perception;
 
-public sealed partial class PlayerVisibilityController2D : Node, IVisibilityTarget
+public sealed partial class PlayerVisibilityController2D : Node,
+    IVisibilityStateSource
 {
-    public const float DefaultAmbientLightMultiplier = 1.0f;
-    public const string DefaultAmbientZoneName = "Normal area";
-
-    private const float WalkVisibilityMultiplier = 1.0f;
-    private const float CrouchVisibilityMultiplier = 0.65f;
-    private const float SprintVisibilityMultiplier = 1.15f;
-    private const float HiddenThreshold = 0.55f;
-    private const float DimThreshold = 0.85f;
-    private const float ExposedThreshold = 1.30f;
+    public const float DefaultAmbientLightMultiplier =
+        VisibilityRules.DefaultAmbientLightMultiplier;
+    public const string DefaultAmbientZoneName =
+        VisibilityRules.DefaultAmbientZoneName;
 
     private readonly List<LightExposureZone2D> _activeZones = new();
     private IMovementModeSource? _movementSource;
@@ -151,7 +148,10 @@ public sealed partial class PlayerVisibilityController2D : Node, IVisibilityTarg
         _state = nextState;
         if (effectiveValueChanged || categoryChanged || lifeStateChanged)
         {
-            VisibilityChanged?.Invoke(nextState);
+            SafeEventPublisher.Publish(
+                VisibilityChanged,
+                nextState,
+                $"{nameof(PlayerVisibilityController2D)}.{nameof(VisibilityChanged)}");
         }
     }
 
@@ -168,40 +168,15 @@ public sealed partial class PlayerVisibilityController2D : Node, IVisibilityTarg
 
         RemoveInvalidZones();
         _effectiveZone = SelectEffectiveZone();
-        float postureMultiplier = movementSource.CurrentMovementMode switch
-        {
-            MovementMode.Walk => WalkVisibilityMultiplier,
-            MovementMode.Crouch => CrouchVisibilityMultiplier,
-            MovementMode.Sprint => SprintVisibilityMultiplier,
-            MovementMode.Crawl => movementSettings.CrawlVisibilityMultiplier,
-            _ => throw new InvalidOperationException("Unknown player movement mode.")
-        };
         float ambientMultiplier = _effectiveZone?.VisibilityMultiplier ??
             DefaultAmbientLightMultiplier;
-        float flashlightMultiplier = flashlight.IsOn
-            ? FlashlightOnMultiplier
-            : 1.0f;
-        float finalMultiplier = postureMultiplier * ambientMultiplier * flashlightMultiplier;
-        if (!float.IsFinite(finalMultiplier) || finalMultiplier <= 0.0f)
-        {
-            throw new InvalidOperationException(
-                "Calculated player visibility multiplier must be finite and positive.");
-        }
-
-        VisibilityCategory category = finalMultiplier switch
-        {
-            < HiddenThreshold => VisibilityCategory.Hidden,
-            < DimThreshold => VisibilityCategory.Dim,
-            < ExposedThreshold => VisibilityCategory.Visible,
-            _ => VisibilityCategory.Exposed
-        };
         string zoneName = _effectiveZone?.DisplayName ?? DefaultAmbientZoneName;
-        return new VisibilityState(
-            postureMultiplier,
+        return VisibilityRules.Calculate(
+            movementSource.CurrentMovementMode,
+            movementSettings.CrawlVisibilityMultiplier,
             ambientMultiplier,
-            flashlightMultiplier,
-            finalMultiplier,
-            category,
+            flashlight.IsOn,
+            FlashlightOnMultiplier,
             health.IsAlive,
             zoneName);
     }

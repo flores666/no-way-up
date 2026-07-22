@@ -1,7 +1,6 @@
 using System;
 using Godot;
 using LineZero.Gameplay.Perception;
-using LineZero.World2D.Perception;
 
 namespace LineZero.UI;
 
@@ -15,7 +14,7 @@ public sealed partial class VisibilityHudController : MarginContainer
 
     private Label _valueLabel = null!;
     private Label _zoneLabel = null!;
-    private PlayerVisibilityController2D? _visibility;
+    private IVisibilityStateSource? _visibility;
 
     public override void _Ready()
     {
@@ -29,7 +28,7 @@ public sealed partial class VisibilityHudController : MarginContainer
         Unbind();
     }
 
-    public void Bind(PlayerVisibilityController2D visibility)
+    public void Bind(IVisibilityStateSource visibility)
     {
         ArgumentNullException.ThrowIfNull(visibility);
         if (ReferenceEquals(_visibility, visibility))

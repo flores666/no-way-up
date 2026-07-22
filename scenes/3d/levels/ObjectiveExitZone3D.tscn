@@ -1,0 +1,35 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/World3D/Objectives/ObjectiveExitZone3D.cs" id="1_exit"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_exit"]
+size = Vector3(4.8, 2, 3.2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_exit"]
+transparency = 1
+albedo_color = Color(0.15, 0.88, 0.47, 0.32)
+emission_enabled = true
+emission = Color(0.04, 0.5, 0.2, 1)
+emission_energy_multiplier = 1.2
+shading_mode = 0
+
+[sub_resource type="BoxMesh" id="BoxMesh_exit"]
+material = SubResource("StandardMaterial3D_exit")
+size = Vector3(4.8, 0.04, 3.2)
+
+[node name="ObjectiveExitZone3D" type="Area3D"]
+collision_layer = 256
+collision_mask = 4096
+monitoring = true
+monitorable = false
+script = ExtResource("1_exit")
+
+[node name="ExitShape3D" type="CollisionShape3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 1, 0)
+shape = SubResource("BoxShape3D_exit")
+
+[node name="ExitMarkerMesh3D" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.03, 0)
+cast_shadow = 0
+mesh = SubResource("BoxMesh_exit")

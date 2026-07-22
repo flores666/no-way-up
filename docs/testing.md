@@ -1,6 +1,6 @@
 # Automated feature tests
 
-Line Zero uses a small built-in Godot C# test harness. It does not depend on a
+No Way Up uses a small built-in Godot C# test harness. It does not depend on a
 third-party plugin, a global service locator, or a separate copy of gameplay
 logic. Tests exercise plain domain models directly and instantiate the actual
 Godot scenes for physics, signals, collision, HUD, and composition-root checks.
@@ -78,9 +78,9 @@ The Godot runner always finishes with a compact result block:
 ```text
 [TEST][FINAL_SUMMARY]
   result: PASS
-  suites: 20
-  tests: 90
-  passed: 90
+  suites: 26
+  tests: 129
+  passed: 129
   failed: 0
   duration: 1.23s
   failed cases: none
@@ -124,6 +124,12 @@ non-zero exit code is preserved for local scripts and CI.
 | `movement-crawl` | Collision-profile invariants, blocked exit, and constant sensors |
 | `hud` | Honest stamina/flashlight values and event-driven objective status |
 | `scene-contracts` | Exported paths, TestLevel preservation, MetroLevel01 content/crawl/power contracts, inputs, and both main-scene smoke loads |
+| `foundation-3d` | XZ movement/aim math, fixed camera and occlusion, input/terminal suppression, full-level 3D collision/navigation contracts, and Main3D composition |
+| `world-3d-gameplay` | 3D interaction, pickup, inventory/item use, fixed hazard sensor, modal input, damage, and death |
+| `world-3d-stealth` | 3D flashlight/visibility, distance footsteps, HUD occurrence data, multi-wall attenuation, and listener isolation |
+| `world-3d-combat` | Atomic firearm damage, physical muzzle walls, first hit, reload cancellation, ammunition conservation, and terminal input |
+| `world-3d-mutant` | Navigation patrol, hearing, sight/Chase priority, melee LOS, death, and completion stopping AI |
+| `world-3d-objectives` | Fuse/power transaction, powered presentation, completed-open door, sensor-only/already-inside exit, death rejection, and exactly-once completion |
 
 ## Structure
 
@@ -142,11 +148,13 @@ sequentially and failures are aggregated instead of aborting the remaining tests
 
 ## Testing boundaries
 
-Plain C# models are tested without scene dependencies. Godot integration tests use
-the real project scenes and real physics server for behavior that depends on
-`Area2D`, `CharacterBody2D`, ray queries, tweens, signals, or UI nodes. The final
-`scene-contracts` suite loads both `Main.tscn` and `TestMain.tscn`, validates the MetroLevel01 greybox contracts, and requires each composition root to reach
-`Main.IsInitialized` without startup exceptions.
+Plain C# models and pure movement/aim calculations are tested without scene
+dependencies. Godot integration tests use the real project scenes and real physics
+server for behavior that depends on `Area2D`, `CharacterBody2D`, `CharacterBody3D`,
+ray queries, tweens, signals, or UI nodes. The `scene-contracts` suite loads both
+legacy compositions and validates MetroLevel01. The 3D suites load the player,
+complete technical level, and `Main3D.tscn`, requiring its composition root to reach
+`Main3D.IsInitialized` without startup exceptions.
 
 The harness is deterministic and intentionally avoids screenshots, rendered-pixel
 sampling, random timing, arbitrary sleeps for domain tests, and duplicated gameplay

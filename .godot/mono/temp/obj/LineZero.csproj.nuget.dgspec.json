@@ -1,0 +1,86 @@
+{
+  "format": 1,
+  "restore": {
+    "/home/me/no-way-up/LineZero.csproj": {}
+  },
+  "projects": {
+    "/home/me/no-way-up/LineZero.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/me/no-way-up/LineZero.csproj",
+        "projectName": "LineZero",
+        "projectPath": "/home/me/no-way-up/LineZero.csproj",
+        "packagesPath": "/home/me/.nuget/packages/",
+        "outputPath": "/home/me/no-way-up/.godot/mono/temp/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/me/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "http://nuget.asoft.local/nuget": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Godot.SourceGenerators": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[4.7.1, )",
+              "autoReferenced": true
+            },
+            "GodotSharp": {
+              "target": "Package",
+              "version": "[4.7.1, )",
+              "autoReferenced": true
+            },
+            "GodotSharpEditor": {
+              "target": "Package",
+              "version": "[4.7.1, )",
+              "autoReferenced": true
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.110/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

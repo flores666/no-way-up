@@ -173,7 +173,7 @@ public sealed partial class Main : Node2D
         player.BindNoiseSystem(noiseSystem);
         activeLevel.BindNoiseSystem(noiseSystem);
         activeLevel.BindMutantTargets(player, player, player);
-        noiseHud.Bind(noiseSystem, player);
+        noiseHud.Bind(noiseSystem, player, player.Health);
         PlayerMovementSettings movementSettings = player.MovementSettings
             ?? throw new InvalidOperationException(
                 $"{nameof(PlayerController2D)} requires movement settings before HUD binding.");

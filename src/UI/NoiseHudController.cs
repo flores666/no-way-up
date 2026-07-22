@@ -2,8 +2,6 @@ using System;
 using Godot;
 using LineZero.Gameplay.Health;
 using LineZero.Gameplay.Noise;
-using LineZero.World2D;
-using LineZero.World2D.Noise;
 
 namespace LineZero.UI;
 
@@ -16,8 +14,8 @@ public sealed partial class NoiseHudController : MarginContainer
 
     private Label _noiseLabel = null!;
     private Timer _silenceTimer = null!;
-    private NoiseSystem2D? _noiseSystem;
-    private PlayerController2D? _player;
+    private INoiseEventSource? _noiseSource;
+    private Node? _player;
     private HealthModel? _playerHealth;
     private bool _isPlayerDead;
 
@@ -67,29 +65,33 @@ public sealed partial class NoiseHudController : MarginContainer
         }
     }
 
-    public void Bind(NoiseSystem2D noiseSystem, PlayerController2D player)
+    public void Bind(
+        INoiseEventSource noiseSource,
+        Node player,
+        HealthModel playerHealth)
     {
-        ArgumentNullException.ThrowIfNull(noiseSystem);
+        ArgumentNullException.ThrowIfNull(noiseSource);
         ArgumentNullException.ThrowIfNull(player);
-        if (_noiseSystem is not null || _player is not null || _playerHealth is not null)
+        ArgumentNullException.ThrowIfNull(playerHealth);
+        if (_noiseSource is not null || _player is not null || _playerHealth is not null)
         {
             throw new InvalidOperationException(
                 $"{nameof(NoiseHudController)} on '{Name}' is already bound.");
         }
 
-        if (!GodotObject.IsInstanceValid(noiseSystem) ||
-            !noiseSystem.IsInsideTree() ||
-            !GodotObject.IsInstanceValid(player) ||
-            !player.IsInsideTree())
+        if (noiseSource is not Node noiseNode ||
+            !GodotObject.IsInstanceValid(noiseNode) ||
+            !noiseNode.IsInsideTree() ||
+            !GodotObject.IsInstanceValid(player) || !player.IsInsideTree())
         {
             throw new ArgumentException("Noise HUD dependencies must be active scene nodes.");
         }
 
-        _noiseSystem = noiseSystem;
+        _noiseSource = noiseSource;
         _player = player;
-        _playerHealth = player.Health;
+        _playerHealth = playerHealth;
         _isPlayerDead = _playerHealth.IsDead;
-        _noiseSystem.NoiseEmitted += OnNoiseEmitted;
+        _noiseSource.NoiseEventEmitted += OnNoiseEmitted;
         _playerHealth.Died += OnPlayerDied;
         ResetToSilent();
     }
@@ -101,9 +103,9 @@ public sealed partial class NoiseHudController : MarginContainer
 
     private void Unbind()
     {
-        if (_noiseSystem is not null && GodotObject.IsInstanceValid(_noiseSystem))
+        if (_noiseSource is not null)
         {
-            _noiseSystem.NoiseEmitted -= OnNoiseEmitted;
+            _noiseSource.NoiseEventEmitted -= OnNoiseEmitted;
         }
 
         if (_playerHealth is not null)
@@ -111,37 +113,37 @@ public sealed partial class NoiseHudController : MarginContainer
             _playerHealth.Died -= OnPlayerDied;
         }
 
-        _noiseSystem = null;
+        _noiseSource = null;
         _player = null;
         _playerHealth = null;
         _isPlayerDead = false;
     }
 
-    private void OnNoiseEmitted(NoiseOccurrence2D occurrence)
+    private void OnNoiseEmitted(NoiseEvent noise)
     {
         if (_isPlayerDead ||
             _playerHealth is null ||
             _playerHealth.IsDead ||
             _player is null ||
             !GodotObject.IsInstanceValid(_player) ||
-            !IsPlayerSource(occurrence.Noise.Source, _player))
+            !IsPlayerSource(noise.Source, _player))
         {
             return;
         }
 
-        NoisePresentation presentation = Classify(occurrence);
+        NoisePresentation presentation = Classify(noise);
         SetDisplay(presentation.Text, presentation.Color);
         _silenceTimer.Stop();
         _silenceTimer.Start(SilenceDelaySeconds);
     }
 
-    private NoisePresentation Classify(NoiseOccurrence2D occurrence)
+    private NoisePresentation Classify(NoiseEvent noise)
     {
-        return occurrence.Noise.Kind switch
+        return noise.Kind switch
         {
             NoiseKind.Gunshot => new NoisePresentation("NOISE: LOUD", LoudColor),
             NoiseKind.Footstep or NoiseKind.Interaction =>
-                occurrence.Noise.Intensity >= MediumIntensityThreshold
+                noise.Intensity >= MediumIntensityThreshold
                     ? new NoisePresentation("NOISE: MEDIUM", MediumColor)
                     : new NoisePresentation("NOISE: LOW", LowColor),
             _ => throw new InvalidOperationException("Unknown player noise kind."),
@@ -178,7 +180,7 @@ public sealed partial class NoiseHudController : MarginContainer
         _noiseLabel.Modulate = color;
     }
 
-    private static bool IsPlayerSource(Node source, PlayerController2D player)
+    private static bool IsPlayerSource(Node source, Node player)
     {
         return ReferenceEquals(source, player) || player.IsAncestorOf(source);
     }

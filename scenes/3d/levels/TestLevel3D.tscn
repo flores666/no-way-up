@@ -1,0 +1,379 @@
+[gd_scene load_steps=41 format=3]
+
+[ext_resource type="Script" path="res://src/World3D/CameraOccluder3D.cs" id="1_occluder"]
+[ext_resource type="PackedScene" path="res://scenes/3d/items/WorldItemPickup3D.tscn" id="2_pickup"]
+[ext_resource type="PackedScene" path="res://scenes/3d/interactables/LootContainer3D.tscn" id="3_container"]
+[ext_resource type="PackedScene" path="res://scenes/3d/hazards/DamageZone3D.tscn" id="4_hazard"]
+[ext_resource type="Resource" path="res://data/items/Battery.tres" id="5_battery"]
+[ext_resource type="Resource" path="res://data/items/Medkit.tres" id="6_medkit"]
+[ext_resource type="Resource" path="res://data/items/PistolAmmo.tres" id="7_ammo"]
+[ext_resource type="PackedScene" path="res://scenes/3d/levels/LightExposureZone3D.tscn" id="8_light_zone"]
+[ext_resource type="NavigationMesh" path="res://data/navigation/TestLevel3DNavigation.tres" id="9_navigation"]
+[ext_resource type="PackedScene" path="res://scenes/3d/enemies/TunnelMutant3D.tscn" id="10_mutant"]
+[ext_resource type="PackedScene" path="res://scenes/3d/interactables/FuseBox3D.tscn" id="11_fuse_box"]
+[ext_resource type="PackedScene" path="res://scenes/3d/interactables/EmergencyDoor3D.tscn" id="12_emergency_door"]
+[ext_resource type="PackedScene" path="res://scenes/3d/levels/ObjectiveExitZone3D.tscn" id="13_exit_zone"]
+[ext_resource type="PackedScene" path="res://scenes/3d/levels/PowerController3D.tscn" id="14_power_controller"]
+[ext_resource type="PackedScene" path="res://scenes/3d/levels/PowerControlledLight3D.tscn" id="15_powered_light"]
+[ext_resource type="Resource" path="res://data/items/ReplacementFuse.tres" id="16_replacement_fuse"]
+
+[sub_resource type="Environment" id="Environment_test"]
+background_mode = 1
+background_color = Color(0.008, 0.012, 0.015, 1)
+background_energy_multiplier = 0.35
+ambient_light_source = 2
+ambient_light_color = Color(0.15, 0.2, 0.22, 1)
+ambient_light_energy = 0.38
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.12, 0.15, 0.16, 1)
+roughness = 0.94
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
+albedo_color = Color(0.2, 0.25, 0.26, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_obstacle"]
+albedo_color = Color(0.27, 0.2, 0.16, 1)
+roughness = 0.86
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+material = SubResource("StandardMaterial3D_floor")
+size = Vector3(36, 0.4, 28)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(36, 0.4, 28)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_x"]
+material = SubResource("StandardMaterial3D_wall")
+size = Vector3(1, 3, 29)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_x"]
+size = Vector3(1, 3, 29)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_z"]
+material = SubResource("StandardMaterial3D_wall")
+size = Vector3(36, 3, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_z"]
+size = Vector3(36, 3, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_obstacle_a"]
+material = SubResource("StandardMaterial3D_obstacle")
+size = Vector3(5, 2, 2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_obstacle_a"]
+size = Vector3(5, 2, 2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_obstacle_b"]
+material = SubResource("StandardMaterial3D_obstacle")
+size = Vector3(4, 2, 3)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_obstacle_b"]
+size = Vector3(4, 2, 3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_passage"]
+material = SubResource("StandardMaterial3D_wall")
+size = Vector3(1, 2.4, 8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_passage"]
+size = Vector3(1, 2.4, 8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_occluder_demo"]
+material = SubResource("StandardMaterial3D_wall")
+size = Vector3(6, 0.5, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_occluder_demo"]
+size = Vector3(6, 0.5, 6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_exit_partition_long"]
+material = SubResource("StandardMaterial3D_wall")
+size = Vector3(29, 3, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_exit_partition_long"]
+size = Vector3(29, 3, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_exit_partition_short"]
+material = SubResource("StandardMaterial3D_wall")
+size = Vector3(3, 3, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_exit_partition_short"]
+size = Vector3(3, 3, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_crawl_overhead"]
+material = SubResource("StandardMaterial3D_wall")
+size = Vector3(2.2, 0.3, 3.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_crawl_overhead"]
+size = Vector3(2.2, 0.3, 3.2)
+
+[node name="TestLevel3D" type="Node3D"]
+unique_name_in_owner = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_test")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-52, -28, 0)
+light_color = Color(0.62, 0.72, 0.74, 1)
+light_energy = 1.1
+shadow_enabled = true
+directional_shadow_max_distance = 55.0
+
+[node name="PlayerSpawn3D" type="Marker3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 0.05, 7)
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+unique_name_in_owner = true
+navigation_mesh = ExtResource("9_navigation")
+navigation_layers = 1
+
+[node name="Geometry" type="Node3D" parent="."]
+
+[node name="Floor3D" type="StaticBody3D" parent="Geometry"]
+unique_name_in_owner = true
+position = Vector3(0, -0.2, 0)
+collision_layer = 1
+collision_mask = 1
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/Floor3D"]
+mesh = SubResource("BoxMesh_floor")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/Floor3D"]
+shape = SubResource("BoxShape3D_floor")
+
+[node name="WallWest3D" type="StaticBody3D" parent="Geometry"]
+unique_name_in_owner = true
+position = Vector3(-18.5, 1.5, 0)
+collision_layer = 1
+collision_mask = 1
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallWest3D"]
+mesh = SubResource("BoxMesh_wall_x")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallWest3D"]
+shape = SubResource("BoxShape3D_wall_x")
+
+[node name="WallEast3D" type="StaticBody3D" parent="Geometry"]
+unique_name_in_owner = true
+position = Vector3(18.5, 1.5, 0)
+collision_layer = 1
+collision_mask = 1
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallEast3D"]
+mesh = SubResource("BoxMesh_wall_x")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallEast3D"]
+shape = SubResource("BoxShape3D_wall_x")
+
+[node name="WallNorth3D" type="StaticBody3D" parent="Geometry"]
+unique_name_in_owner = true
+position = Vector3(0, 1.5, -14.5)
+collision_layer = 1
+collision_mask = 1
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallNorth3D"]
+mesh = SubResource("BoxMesh_wall_z")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallNorth3D"]
+shape = SubResource("BoxShape3D_wall_z")
+
+[node name="WallSouth3D" type="StaticBody3D" parent="Geometry"]
+unique_name_in_owner = true
+position = Vector3(0, 1.5, 14.5)
+collision_layer = 1
+collision_mask = 1
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallSouth3D"]
+mesh = SubResource("BoxMesh_wall_z")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallSouth3D"]
+shape = SubResource("BoxShape3D_wall_z")
+
+[node name="ObstacleWest3D" type="StaticBody3D" parent="Geometry"]
+unique_name_in_owner = true
+position = Vector3(-7, 1, -3)
+collision_layer = 1
+collision_mask = 1
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/ObstacleWest3D"]
+mesh = SubResource("BoxMesh_obstacle_a")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/ObstacleWest3D"]
+shape = SubResource("BoxShape3D_obstacle_a")
+
+[node name="ObstacleEast3D" type="StaticBody3D" parent="Geometry"]
+unique_name_in_owner = true
+position = Vector3(7, 1, 4)
+collision_layer = 1
+collision_mask = 1
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/ObstacleEast3D"]
+mesh = SubResource("BoxMesh_obstacle_b")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/ObstacleEast3D"]
+shape = SubResource("BoxShape3D_obstacle_b")
+
+[node name="PassageWallLeft3D" type="StaticBody3D" parent="Geometry"]
+unique_name_in_owner = true
+position = Vector3(-1.6, 1.2, -8)
+collision_layer = 1
+collision_mask = 1
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/PassageWallLeft3D"]
+mesh = SubResource("BoxMesh_passage")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/PassageWallLeft3D"]
+shape = SubResource("BoxShape3D_passage")
+
+[node name="PassageWallRight3D" type="StaticBody3D" parent="Geometry"]
+unique_name_in_owner = true
+position = Vector3(1.6, 1.2, -8)
+collision_layer = 1
+collision_mask = 1
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/PassageWallRight3D"]
+mesh = SubResource("BoxMesh_passage")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/PassageWallRight3D"]
+shape = SubResource("BoxShape3D_passage")
+
+[node name="CrawlOnlyOverhead3D" type="StaticBody3D" parent="Geometry"]
+unique_name_in_owner = true
+position = Vector3(0, 1.25, -7)
+collision_layer = 8193
+collision_mask = 0
+script = ExtResource("1_occluder")
+OccludedTransparency = 0.7
+
+[node name="OccluderMesh3D" type="MeshInstance3D" parent="Geometry/CrawlOnlyOverhead3D"]
+mesh = SubResource("BoxMesh_crawl_overhead")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/CrawlOnlyOverhead3D"]
+shape = SubResource("BoxShape3D_crawl_overhead")
+
+[node name="ExitPartitionWest3D" type="StaticBody3D" parent="Geometry"]
+unique_name_in_owner = true
+position = Vector3(-3.5, 1.5, -10)
+collision_layer = 1
+collision_mask = 0
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/ExitPartitionWest3D"]
+mesh = SubResource("BoxMesh_exit_partition_long")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/ExitPartitionWest3D"]
+shape = SubResource("BoxShape3D_exit_partition_long")
+
+[node name="ExitPartitionEast3D" type="StaticBody3D" parent="Geometry"]
+unique_name_in_owner = true
+position = Vector3(16.5, 1.5, -10)
+collision_layer = 1
+collision_mask = 0
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/ExitPartitionEast3D"]
+mesh = SubResource("BoxMesh_exit_partition_short")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/ExitPartitionEast3D"]
+shape = SubResource("BoxShape3D_exit_partition_short")
+
+[node name="CameraOccluderDemo3D" type="StaticBody3D" parent="Geometry"]
+unique_name_in_owner = true
+position = Vector3(5, 7, 12)
+collision_layer = 8193
+collision_mask = 0
+script = ExtResource("1_occluder")
+OccludedTransparency = 0.72
+
+[node name="OccluderMesh3D" type="MeshInstance3D" parent="Geometry/CameraOccluderDemo3D"]
+unique_name_in_owner = true
+mesh = SubResource("BoxMesh_occluder_demo")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/CameraOccluderDemo3D"]
+shape = SubResource("BoxShape3D_occluder_demo")
+
+[node name="Gameplay" type="Node3D" parent="."]
+
+[node name="TunnelMutant3D" parent="Gameplay" instance=ExtResource("10_mutant")]
+unique_name_in_owner = true
+position = Vector3(14, 0.05, -6)
+PatrolPointOffsets = PackedVector3Array(-5, 0, 0, 2, 0, 0)
+EnableDebugStateLabel = true
+EnableDebugHealthLabel = true
+
+[node name="ScrapPickup3D" parent="Gameplay" instance=ExtResource("2_pickup")]
+position = Vector3(-10, 0, -8)
+
+[node name="BatteryPickup3D" parent="Gameplay" instance=ExtResource("2_pickup")]
+position = Vector3(-5, 0, 6)
+ItemDefinition = ExtResource("5_battery")
+PickupColor = Color(0.78, 0.72, 0.2, 1)
+
+[node name="MedkitPickup3D" parent="Gameplay" instance=ExtResource("2_pickup")]
+position = Vector3(7, 0, -8)
+ItemDefinition = ExtResource("6_medkit")
+PickupColor = Color(0.72, 0.16, 0.14, 1)
+
+[node name="AmmoPickup3D" parent="Gameplay" instance=ExtResource("2_pickup")]
+position = Vector3(10, 0, 7)
+ItemDefinition = ExtResource("7_ammo")
+Quantity = 12
+PickupColor = Color(0.72, 0.58, 0.18, 1)
+
+[node name="ReplacementFusePickup3D" parent="Gameplay" instance=ExtResource("2_pickup")]
+unique_name_in_owner = true
+position = Vector3(-14, 0, -7)
+ItemDefinition = ExtResource("16_replacement_fuse")
+PickupColor = Color(0.38, 0.72, 0.74, 1)
+
+[node name="EmergencyCabinet3D" parent="Gameplay" instance=ExtResource("3_container")]
+unique_name_in_owner = true
+position = Vector3(-11, 0, 5)
+
+[node name="DamageZone3D" parent="Gameplay" instance=ExtResource("4_hazard")]
+unique_name_in_owner = true
+position = Vector3(0, 0, 2)
+
+[node name="DarkZone3D" parent="Gameplay" instance=ExtResource("8_light_zone")]
+unique_name_in_owner = true
+position = Vector3(-10, 0, -8)
+DisplayName = "Dark service bay"
+VisibilityMultiplier = 0.45
+ZonePriority = 10
+
+[node name="BrightZone3D" parent="Gameplay" instance=ExtResource("8_light_zone")]
+unique_name_in_owner = true
+position = Vector3(10, 0, -8)
+DisplayName = "Bright maintenance bay"
+VisibilityMultiplier = 1.4
+ZonePriority = 10
+
+[node name="BrightZoneLight3D" type="OmniLight3D" parent="Gameplay/BrightZone3D"]
+position = Vector3(0, 3.2, 0)
+light_color = Color(0.78, 0.91, 1, 1)
+light_energy = 5.0
+omni_range = 8.0
+shadow_enabled = true
+
+[node name="PowerSystems3D" type="Node3D" parent="Gameplay"]
+unique_name_in_owner = true
+
+[node name="PowerController3D" parent="Gameplay/PowerSystems3D" instance=ExtResource("14_power_controller")]
+unique_name_in_owner = true
+position = Vector3(-13, 0, 11)
+
+[node name="MaintenanceFuseBox3D" parent="Gameplay/PowerSystems3D" instance=ExtResource("11_fuse_box")]
+unique_name_in_owner = true
+position = Vector3(-13, 0, 8.5)
+
+[node name="ExitBayPoweredLight3D" parent="Gameplay/PowerSystems3D" instance=ExtResource("15_powered_light")]
+unique_name_in_owner = true
+position = Vector3(13, 0, -12)
+
+[node name="EmergencyExitDoor3D" parent="Gameplay" instance=ExtResource("12_emergency_door")]
+unique_name_in_owner = true
+position = Vector3(13, 0, -10)
+
+[node name="ObjectiveExitZone3D" parent="Gameplay" instance=ExtResource("13_exit_zone")]
+unique_name_in_owner = true
+position = Vector3(13, 0, -12.2)

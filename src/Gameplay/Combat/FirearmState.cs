@@ -10,6 +10,11 @@ internal readonly record struct FirearmReloadCompletionPlan(
     int LoadedRounds,
     int MagazineAmmoAfter);
 
+internal readonly record struct FirearmShotPlan(
+    FirearmState Firearm,
+    int MagazineAmmoBefore,
+    int MagazineAmmoAfter);
+
 public sealed class FirearmState
 {
     public FirearmState(FirearmDefinition definition, int initialMagazineAmmo)
@@ -46,27 +51,69 @@ public sealed class FirearmState
 
     public FirearmShotResult TryConsumeRound()
     {
+        if (!TryPrepareShot(
+                out FirearmShotPlan plan,
+                out FirearmShotResult rejection))
+        {
+            return rejection;
+        }
+
+        FirearmShotResult result = ApplyWithoutNotification(plan);
+        PublishChanged();
+        return result;
+    }
+
+    internal bool TryPrepareShot(
+        out FirearmShotPlan plan,
+        out FirearmShotResult rejection)
+    {
         if (IsReloading)
         {
-            return FirearmShotResult.Rejected(
+            plan = default;
+            rejection = FirearmShotResult.Rejected(
                 FirearmShotStatus.Reloading,
                 CurrentMagazineAmmo,
                 "Cannot fire while reloading.");
+            return false;
         }
 
         if (!HasMagazineAmmo)
         {
-            return FirearmShotResult.Rejected(
+            plan = default;
+            rejection = FirearmShotResult.Rejected(
                 FirearmShotStatus.EmptyMagazine,
                 CurrentMagazineAmmo,
                 "Magazine empty.");
+            return false;
         }
 
-        int magazineAmmoBefore = CurrentMagazineAmmo;
-        CurrentMagazineAmmo--;
-        FirearmShotResult result = FirearmShotResult.Fired(magazineAmmoBefore);
-        PublishChanged();
-        return result;
+        plan = new FirearmShotPlan(
+            this,
+            CurrentMagazineAmmo,
+            CurrentMagazineAmmo - 1);
+        rejection = null!;
+        return true;
+    }
+
+    internal bool CanApply(FirearmShotPlan plan)
+    {
+        return ReferenceEquals(plan.Firearm, this) &&
+               !IsReloading &&
+               CurrentMagazineAmmo == plan.MagazineAmmoBefore &&
+               plan.MagazineAmmoBefore > 0 &&
+               plan.MagazineAmmoAfter == plan.MagazineAmmoBefore - 1;
+    }
+
+    internal FirearmShotResult ApplyWithoutNotification(FirearmShotPlan plan)
+    {
+        if (!CanApply(plan))
+        {
+            throw new InvalidOperationException(
+                "The prepared firearm shot is no longer valid.");
+        }
+
+        CurrentMagazineAmmo = plan.MagazineAmmoAfter;
+        return FirearmShotResult.Fired(plan.MagazineAmmoBefore);
     }
 
     public ReloadResult TryBeginReload(int availableReserveAmmo)

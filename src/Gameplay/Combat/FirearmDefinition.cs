@@ -73,19 +73,20 @@ public sealed partial class FirearmDefinition : Resource
                 $"{nameof(FirearmDefinition)} '{Id}' requires positive damage.");
         }
 
-        if (FireIntervalSeconds < 0.0)
+        if (!double.IsFinite(FireIntervalSeconds) || FireIntervalSeconds < 0.0)
         {
             throw new InvalidOperationException(
                 $"{nameof(FirearmDefinition)} '{Id}' cannot have a negative fire interval.");
         }
 
-        if (ReloadDurationSeconds <= 0.0)
+        if (!double.IsFinite(ReloadDurationSeconds) ||
+            ReloadDurationSeconds <= 0.0)
         {
             throw new InvalidOperationException(
                 $"{nameof(FirearmDefinition)} '{Id}' requires a positive reload duration.");
         }
 
-        if (Range <= 0.0f)
+        if (!float.IsFinite(Range) || Range <= 0.0f)
         {
             throw new InvalidOperationException(
                 $"{nameof(FirearmDefinition)} '{Id}' requires positive range.");

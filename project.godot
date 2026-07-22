@@ -10,8 +10,8 @@ config_version=5
 
 [application]
 
-config/name="Line Zero"
-run/main_scene="res://scenes/main/Main.tscn"
+config/name="No Way Up"
+run/main_scene="res://scenes/3d/Main3D.tscn"
 config/features=PackedStringArray("4.7", "C#", "GL Compatibility")
 config/icon="res://assets/generated/icon.svg"
 
@@ -107,6 +107,20 @@ reload={
 2d_physics/layer_4="LightExposureSensor"
 2d_physics/layer_5="PlayerHazardSensor"
 2d_physics/layer_6="PlayerObjectiveSensor"
+3d_physics/layer_1="World3D"
+3d_physics/layer_2="PlayerMovementBody3D"
+3d_physics/layer_3="MutantMovementBody3D"
+3d_physics/layer_4="FirearmTarget3D"
+3d_physics/layer_5="InteractionArea3D"
+3d_physics/layer_6="AimSurface3D"
+3d_physics/layer_7="VisibilityZone3D"
+3d_physics/layer_8="HazardZone3D"
+3d_physics/layer_9="ObjectiveZone3D"
+3d_physics/layer_10="PlayerInteractionSensor3D"
+3d_physics/layer_11="PlayerVisibilitySensor3D"
+3d_physics/layer_12="PlayerHazardSensor3D"
+3d_physics/layer_13="PlayerObjectiveSensor3D"
+3d_physics/layer_14="CameraOccluder3D"
 
 [rendering]
 

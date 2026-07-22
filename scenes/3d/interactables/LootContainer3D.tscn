@@ -1,0 +1,55 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://src/World3D/Interaction/LootContainer3D.cs" id="1_container"]
+[ext_resource type="Script" path="res://src/Gameplay/Inventory/InventoryComponent.cs" id="2_inventory"]
+[ext_resource type="Resource" path="res://data/inventory/EmergencyCabinetMedkit.tres" id="3_medkit"]
+[ext_resource type="Resource" path="res://data/inventory/MaintenanceLockerBattery.tres" id="4_battery"]
+[ext_resource type="Script" path="res://src/Gameplay/Inventory/InventorySeedEntry.cs" id="5_seed_script"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_container"]
+albedo_color = Color(0.18, 0.23, 0.24, 1)
+roughness = 0.84
+
+[sub_resource type="BoxMesh" id="BoxMesh_container"]
+material = SubResource("StandardMaterial3D_container")
+size = Vector3(1.6, 1, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_solid"]
+size = Vector3(1.6, 1, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_interaction"]
+size = Vector3(2.2, 1.5, 1.8)
+
+[node name="LootContainer3D" type="Area3D"]
+collision_layer = 16
+collision_mask = 0
+monitoring = false
+monitorable = true
+script = ExtResource("1_container")
+InteractionPriority = 1
+ContainerDisplayName = "Emergency Cabinet"
+SlotCapacity = 8
+InitialContents = Array[ExtResource("5_seed_script")]([ExtResource("3_medkit"), ExtResource("4_battery")])
+
+[node name="InteractionShape3D" type="CollisionShape3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 0.65, 0)
+shape = SubResource("BoxShape3D_interaction")
+
+[node name="InventoryComponent" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("2_inventory")
+SlotCapacity = 8
+
+[node name="SolidBody3D" type="StaticBody3D" parent="."]
+unique_name_in_owner = true
+collision_layer = 1
+collision_mask = 0
+
+[node name="ContainerMesh3D" type="MeshInstance3D" parent="SolidBody3D"]
+position = Vector3(0, 0.5, 0)
+mesh = SubResource("BoxMesh_container")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SolidBody3D"]
+position = Vector3(0, 0.5, 0)
+shape = SubResource("BoxShape3D_solid")

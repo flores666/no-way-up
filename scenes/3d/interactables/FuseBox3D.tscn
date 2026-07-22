@@ -1,0 +1,52 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/World3D/Interaction/FuseBox3D.cs" id="1_fuse_box"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_case"]
+albedo_color = Color(0.17, 0.2, 0.2, 1)
+metallic = 0.35
+roughness = 0.62
+
+[sub_resource type="BoxMesh" id="BoxMesh_case"]
+material = SubResource("StandardMaterial3D_case")
+size = Vector3(1.2, 1.6, 0.65)
+
+[sub_resource type="BoxMesh" id="BoxMesh_indicator"]
+size = Vector3(0.5, 0.2, 0.08)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_solid"]
+size = Vector3(1.2, 1.6, 0.65)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_interaction"]
+size = Vector3(2.0, 2.1, 1.8)
+
+[node name="FuseBox3D" type="Area3D"]
+collision_layer = 16
+collision_mask = 0
+monitoring = false
+monitorable = true
+script = ExtResource("1_fuse_box")
+InteractionPriority = 3
+
+[node name="InteractionShape3D" type="CollisionShape3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 1, 0)
+shape = SubResource("BoxShape3D_interaction")
+
+[node name="FuseBoxSolidBody3D" type="StaticBody3D" parent="."]
+unique_name_in_owner = true
+collision_layer = 1
+collision_mask = 0
+
+[node name="CaseMesh3D" type="MeshInstance3D" parent="FuseBoxSolidBody3D"]
+position = Vector3(0, 0.8, 0)
+mesh = SubResource("BoxMesh_case")
+
+[node name="FuseStatusIndicator3D" type="MeshInstance3D" parent="FuseBoxSolidBody3D"]
+unique_name_in_owner = true
+position = Vector3(0, 1.05, -0.37)
+mesh = SubResource("BoxMesh_indicator")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FuseBoxSolidBody3D"]
+position = Vector3(0, 0.8, 0)
+shape = SubResource("BoxShape3D_solid")

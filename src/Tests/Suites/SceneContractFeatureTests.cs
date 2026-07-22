@@ -97,6 +97,7 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
         {
             TestLevelController2D level = context.InstantiateScene<TestLevelController2D>(
                 "res://scenes/levels/TestLevel.tscn");
+            PauseUnboundMutants(level);
             await context.WaitProcessFramesAsync(2);
 
             LightExposureZoneOverlay2D overlay = level.GetNode<LightExposureZoneOverlay2D>(
@@ -126,6 +127,7 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
         {
             MetroLevelController2D level = context.InstantiateScene<MetroLevelController2D>(
                 "res://scenes/levels/MetroLevel01.tscn");
+            PauseUnboundMutants(level);
             await context.WaitProcessFramesAsync(2);
             await context.WaitPhysicsFramesAsync(2);
 
@@ -197,6 +199,7 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
         {
             MetroLevelController2D level = context.InstantiateScene<MetroLevelController2D>(
                 "res://scenes/levels/MetroLevel01.tscn");
+            PauseUnboundMutants(level);
             await context.WaitProcessFramesAsync(2);
 
             Node2D landmarks = level.GetNode<Node2D>("Landmarks");
@@ -234,6 +237,7 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
         {
             MetroLevelController2D level = context.InstantiateScene<MetroLevelController2D>(
                 "res://scenes/levels/MetroLevel01.tscn");
+            PauseUnboundMutants(level);
             await context.WaitProcessFramesAsync(2);
 
             TestAssert.True(level.Mutants.Count > 0,
@@ -418,6 +422,14 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
         }
 
         return count;
+    }
+
+    private static void PauseUnboundMutants(PlayableLevelController2D level)
+    {
+        for (int index = 0; index < level.Mutants.Count; index++)
+        {
+            level.Mutants[index].SetPhysicsProcess(false);
+        }
     }
 
     private static void AssertNoHumanNpcNames(Node root)

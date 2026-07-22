@@ -1,0 +1,38 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/World3D/Power/PowerController3D.cs" id="1_controller"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_console"]
+albedo_color = Color(0.12, 0.15, 0.16, 1)
+metallic = 0.42
+roughness = 0.58
+
+[sub_resource type="BoxMesh" id="BoxMesh_console"]
+material = SubResource("StandardMaterial3D_console")
+size = Vector3(2.2, 1.2, 1.2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_indicator"]
+size = Vector3(0.8, 0.22, 0.08)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_console"]
+size = Vector3(2.2, 1.2, 1.2)
+
+[node name="PowerController3D" type="Node3D"]
+script = ExtResource("1_controller")
+
+[node name="ConsoleBody3D" type="StaticBody3D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="ConsoleMesh3D" type="MeshInstance3D" parent="ConsoleBody3D"]
+position = Vector3(0, 0.6, 0)
+mesh = SubResource("BoxMesh_console")
+
+[node name="PowerStatusIndicator3D" type="MeshInstance3D" parent="ConsoleBody3D"]
+unique_name_in_owner = true
+position = Vector3(0, 0.75, -0.65)
+mesh = SubResource("BoxMesh_indicator")
+
+[node name="ConsoleCollision3D" type="CollisionShape3D" parent="ConsoleBody3D"]
+position = Vector3(0, 0.6, 0)
+shape = SubResource("BoxShape3D_console")

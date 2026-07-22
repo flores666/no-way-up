@@ -1,0 +1,62 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/World3D/Power/PowerControlledLight3D.cs" id="1_light"]
+[ext_resource type="Script" path="res://src/World3D/Perception/LightExposureZone3D.cs" id="2_zone"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fixture"]
+albedo_color = Color(0.2, 0.23, 0.22, 1)
+metallic = 0.35
+roughness = 0.52
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_fixture"]
+material = SubResource("StandardMaterial3D_fixture")
+top_radius = 0.38
+bottom_radius = 0.38
+height = 0.14
+radial_segments = 16
+
+[sub_resource type="SphereMesh" id="SphereMesh_indicator"]
+radius = 0.13
+height = 0.26
+radial_segments = 12
+rings = 6
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_exposure"]
+size = Vector3(7.5, 3, 6)
+
+[node name="PowerControlledLight3D" type="Node3D"]
+script = ExtResource("1_light")
+
+[node name="FixtureMesh3D" type="MeshInstance3D" parent="."]
+position = Vector3(0, 3.15, 0)
+mesh = SubResource("CylinderMesh_fixture")
+
+[node name="PoweredLightIndicator3D" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 2.95, 0)
+mesh = SubResource("SphereMesh_indicator")
+
+[node name="PoweredLight3D" type="OmniLight3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 2.8, 0)
+light_color = Color(0.7, 0.92, 0.78, 1)
+light_energy = 4.5
+omni_range = 8.0
+shadow_enabled = true
+
+[node name="PoweredVisibilityZone3D" type="Area3D" parent="."]
+unique_name_in_owner = true
+collision_layer = 64
+collision_mask = 1024
+monitoring = true
+monitorable = false
+script = ExtResource("2_zone")
+DisplayName = "Powered exit bay"
+VisibilityMultiplier = 1.35
+ZonePriority = 20
+ExposureEnabled = false
+
+[node name="LightExposureShape3D" type="CollisionShape3D" parent="PoweredVisibilityZone3D"]
+unique_name_in_owner = true
+position = Vector3(0, 1.5, 0)
+shape = SubResource("BoxShape3D_exposure")

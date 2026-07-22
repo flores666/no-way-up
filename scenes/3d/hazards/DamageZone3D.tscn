@@ -1,0 +1,38 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/World3D/Hazards/DamageZone3D.cs" id="1_hazard"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hazard"]
+albedo_color = Color(0.62, 0.12, 0.035, 0.82)
+emission_enabled = true
+emission = Color(0.38, 0.035, 0.008, 1)
+emission_energy_multiplier = 0.65
+roughness = 0.74
+
+[sub_resource type="BoxMesh" id="BoxMesh_hazard"]
+material = SubResource("StandardMaterial3D_hazard")
+size = Vector3(4, 0.08, 3)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hazard"]
+size = Vector3(4, 0.9, 3)
+
+[node name="DamageZone3D" type="Area3D"]
+unique_name_in_owner = true
+collision_layer = 128
+collision_mask = 2048
+monitoring = true
+monitorable = false
+script = ExtResource("1_hazard")
+DamageAmount = 10
+TickIntervalSeconds = 1.0
+DamageKind = "Exposed electrical flooring"
+ApplyDamageImmediately = true
+
+[node name="DamageShape3D" type="CollisionShape3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 0.4, 0)
+shape = SubResource("BoxShape3D_hazard")
+
+[node name="HazardMesh3D" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.045, 0)
+mesh = SubResource("BoxMesh_hazard")

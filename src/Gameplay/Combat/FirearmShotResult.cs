@@ -8,6 +8,7 @@ public enum FirearmShotStatus
     EmptyMagazine,
     Reloading,
     FireInterval,
+    InvalidAim,
     MuzzleObstructed,
     CombatDisabled,
     OwnerDead,

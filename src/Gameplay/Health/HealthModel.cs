@@ -10,6 +10,14 @@ internal readonly record struct HealthHealingPlan(
     int AppliedAmount,
     int CurrentHealth);
 
+internal readonly record struct HealthDamagePlan(
+    HealthModel Health,
+    DamageInfo Damage,
+    int PreviousHealth,
+    int AppliedAmount,
+    int CurrentHealth,
+    bool CausedDeath);
+
 public sealed class HealthModel
 {
     private bool _hasDied;
@@ -50,32 +58,17 @@ public sealed class HealthModel
     {
         ArgumentNullException.ThrowIfNull(damage);
 
-        int previousHealth = CurrentHealth;
-        if (IsDead || !_acceptsDamage)
+        if (!TryPrepareDamage(damage, out HealthDamagePlan plan))
         {
             return new HealthChangeResult(
-                previousHealth,
-                previousHealth,
+                CurrentHealth,
+                CurrentHealth,
                 damage.Amount,
                 0,
                 causedDeath: false);
         }
 
-        int appliedAmount = Math.Min(damage.Amount, CurrentHealth);
-        CurrentHealth -= appliedAmount;
-        bool causedDeath = CurrentHealth == 0 && !_hasDied;
-        if (causedDeath)
-        {
-            _hasDied = true;
-        }
-
-        HealthChangeResult result = new(
-            previousHealth,
-            CurrentHealth,
-            damage.Amount,
-            appliedAmount,
-            causedDeath);
-
+        HealthChangeResult result = ApplyWithoutNotification(plan);
         PublishDamage(damage, result);
         return result;
     }
@@ -129,6 +122,30 @@ public sealed class HealthModel
         return true;
     }
 
+    internal bool TryPrepareDamage(
+        DamageInfo damage,
+        out HealthDamagePlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(damage);
+        if (IsDead || !_acceptsDamage)
+        {
+            plan = default;
+            return false;
+        }
+
+        int previousHealth = CurrentHealth;
+        int appliedAmount = Math.Min(damage.Amount, previousHealth);
+        int currentHealth = previousHealth - appliedAmount;
+        plan = new HealthDamagePlan(
+            this,
+            damage,
+            previousHealth,
+            appliedAmount,
+            currentHealth,
+            currentHealth == 0 && !_hasDied);
+        return true;
+    }
+
     internal bool CanApply(HealthHealingPlan plan)
     {
         return ReferenceEquals(plan.Health, this) &&
@@ -140,6 +157,21 @@ public sealed class HealthModel
                plan.CurrentHealth == plan.PreviousHealth + plan.AppliedAmount &&
                plan.CurrentHealth <= MaxHealth &&
                IsAlive;
+    }
+
+    internal bool CanApply(HealthDamagePlan plan)
+    {
+        return ReferenceEquals(plan.Health, this) &&
+               plan.Damage is not null &&
+               _acceptsDamage &&
+               IsAlive &&
+               plan.PreviousHealth == CurrentHealth &&
+               plan.AppliedAmount > 0 &&
+               plan.AppliedAmount <= plan.Damage.Amount &&
+               plan.CurrentHealth == plan.PreviousHealth - plan.AppliedAmount &&
+               plan.CurrentHealth >= 0 &&
+               plan.CausedDeath ==
+                   (plan.CurrentHealth == 0 && !_hasDied);
     }
 
     internal HealthChangeResult ApplyWithoutNotification(HealthHealingPlan plan)
@@ -157,6 +189,28 @@ public sealed class HealthModel
             plan.RequestedAmount,
             plan.AppliedAmount,
             causedDeath: false);
+    }
+
+    internal HealthChangeResult ApplyWithoutNotification(HealthDamagePlan plan)
+    {
+        if (!CanApply(plan))
+        {
+            throw new InvalidOperationException(
+                "The prepared health damage is no longer valid.");
+        }
+
+        CurrentHealth = plan.CurrentHealth;
+        if (plan.CausedDeath)
+        {
+            _hasDied = true;
+        }
+
+        return new HealthChangeResult(
+            plan.PreviousHealth,
+            plan.CurrentHealth,
+            plan.Damage.Amount,
+            plan.AppliedAmount,
+            plan.CausedDeath);
     }
 
     internal void PublishHealing(HealthChangeResult result)
@@ -178,8 +232,17 @@ public sealed class HealthModel
             $"{nameof(HealthModel)}.{nameof(Healed)}");
     }
 
-    private void PublishDamage(DamageInfo damage, HealthChangeResult result)
+    internal void PublishDamage(DamageInfo damage, HealthChangeResult result)
     {
+        ArgumentNullException.ThrowIfNull(damage);
+        ArgumentNullException.ThrowIfNull(result);
+        if (!result.Changed || result.RequestedAmount != damage.Amount)
+        {
+            throw new ArgumentException(
+                "Damage publication requires a completed matching health change.",
+                nameof(result));
+        }
+
         SafeEventPublisher.Publish(
             Changed,
             result,

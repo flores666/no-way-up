@@ -1,8 +1,38 @@
 # Line Zero architecture
 
-## Current scene structure
+## Current 3D scene structure
 
-`res://scenes/main/Main.tscn` is the default application entry point and composes
+`res://scenes/3d/Main3D.tscn` is the configured application entry point. `Main3D`
+is the composition root and explicitly binds one player, scene-owned noise system,
+camera, level adapters, shared objective/power models, and event-driven Canvas UI.
+
+```text
+Main3D
+├── TestLevel3D
+│   ├── authored NavigationRegion3D and primitive world collision
+│   ├── TunnelMutant3D
+│   ├── pickups, container, hazard, and exposure zones
+│   ├── PowerController3D, FuseBox3D, and powered light
+│   └── EmergencyDoor3D and ObjectiveExitZone3D
+├── Player3D
+│   ├── normal/Crawl physical profiles
+│   ├── four fixed gameplay sensors
+│   ├── health and inventory components
+│   └── aim, flashlight, footstep, and firearm adapters
+├── NoiseSystem3D
+├── fixed TopDownCamera3D and occlusion controller
+└── event-driven gameplay UI and completion panel
+```
+
+Shared gameplay authority stays under `src/Gameplay`. Godot-specific spatial work
+is split between `src/World2D` and `src/World3D`; there is no controller with a
+2D/3D branch. `Main3D` caches every authored dependency during `_Ready`, and no hot
+path searches the scene tree. The full hierarchy, collision map, and validation
+boundary are documented in [`3d-migration.md`](3d-migration.md).
+
+## Preserved legacy 2D scene structure
+
+`res://scenes/main/Main.tscn` remains a directly runnable regression reference and composes
 `MetroLevel01` as the current gameplay level. `res://scenes/main/TestMain.tscn`
 uses the same composition root, player, noise system, and UI but instantiates the
 technical `TestLevel` instead.
@@ -116,6 +146,14 @@ manual review after layout edits.
 | `src/World2D/Perception` | Player visibility composition and reusable ambient-light Area2D zones. |
 | `src/World2D/Interaction` | 2D detection, scoring, interactable areas, and demonstration behavior. |
 | `src/World2D/Items` | Interactable 2D world-pickup presentation and removal. |
+| `src/World3D` | Top-down 3D movement, camera, collision constants, and occlusion adapters. |
+| `src/World3D/Interaction` | 3D candidate sensing, pickups/containers, fuse box, and emergency door adapters. |
+| `src/World3D/Hazards` | Fixed 3D hazard sensing and bounded damage-zone timing. |
+| `src/World3D/Flashlight` / `Perception` | SpotLight presentation and deterministic fixed-sensor visibility adapters. |
+| `src/World3D/Noise` | Vector3 occurrences, bounded acoustic queries, and distance footstep emission. |
+| `src/World3D/Combat` | Muzzle-authoritative hitscan, reload timing, damage transaction, and primitive shot presentation. |
+| `src/World3D/Enemies` | NavigationAgent3D mutant movement, perception, hearing, melee, and terminal behavior. |
+| `src/World3D/Objectives` / `Power` | Fixed objective sensor, exit zone, circuit owner, and powered presentation. |
 | `src/UI` | Canvas-based developer and game user interfaces. |
 | `data/player` | Inspector-editable resource instances, currently the default movement tuning. |
 | `data/flashlight` | Static flashlight resource instances, currently the Service Flashlight. |
@@ -132,6 +170,7 @@ manual review after layout edits.
 | `scenes/combat` | Reusable greybox damageable-target presentation. |
 | `scenes/enemies` | Reusable composed 2D mutant presentation. |
 | `scenes/items` | Reusable 2D world-pickup scene. |
+| `scenes/3d` | Configured 3D main, player, technical level, adapters, enemy, hazards, and debug UI. |
 | `scenes/ui` | Reusable UI scene fragments. |
 | `assets/generated` | Text-based assets made specifically for the project. |
 
@@ -1437,73 +1476,47 @@ not direct scene-node references.
 This does not require a generic framework today. Boundaries should be added with
 each real system, using composition and the smallest API needed by its consumers.
 
-## 3D migration strategy
+## Completed 3D migration boundary
 
-The 3D version should add new presentation and movement scenes alongside the 2D
-implementation. It should not turn `PlayerController2D` into one controller full of
-2D/3D branches.
+The 3D version adds presentation and movement scenes alongside the preserved 2D
+implementation. `PlayerController2D` and `PlayerController3D` remain separate
+adapters; neither contains a 2D/3D branch.
 
-| Current 2D element | Future 3D element |
+| Legacy 2D element | Current 3D element |
 | --- | --- |
 | `CharacterBody2D` | `CharacterBody3D` |
-| `Camera2D` | `Camera3D` |
-| Normal/crawl `CollisionShape2D` profiles and 2D shape query | Equivalent `CollisionShape3D` profiles and a 3D clearance query |
-| `PlayerFlashlightController2D` and `PointLight2D` | A 3D flashlight controller and `SpotLight3D`, reusing the same definition/model/service |
-| 2D level scenes | Modular 3D level scenes |
+| `Camera2D` | fixed orthographic `TopDownCamera3D` |
+| Normal/crawl `CollisionShape2D` profiles and 2D shape query | distinct `CollisionShape3D` profiles and an owner-excluding clearance query |
+| `PlayerFlashlightController2D` and `PointLight2D` | `PlayerFlashlightController3D` and `SpotLight3D`, reusing the definition/model/service |
+| 2D level scenes | modular scenes under `scenes/3d` |
 | `PlayerController2D` | `PlayerController3D` |
-| 2D movement/input adapter | A 3D adapter consuming the same movement settings, mode, and stamina model |
+| 2D movement/input adapter | XZ camera-relative adapter consuming shared movement modes and stamina |
 | `WorldItemPickup2D` | `WorldItemPickup3D` |
 | `LootContainer2D` | `LootContainer3D` |
 | `DamageZone2D` | `DamageZone3D` |
 | `PlayerWeaponController2D` | `PlayerWeaponController3D` |
-| `DamageableTarget2D` | A 3D health-owning target adapter |
+| `DamageableTarget2D` | 3D `IHealthOwner` targets |
 | `MutantController2D` and `NavigationAgent2D` | `MutantController3D` and `NavigationAgent3D` |
 | 2D mutant sight ray and `Vector2` routes | 3D physics ray and `Vector3` routes |
-| `NoiseSystem2D` and `NoiseOccurrence2D` | `NoiseSystem3D` and a `Vector3` occurrence adapter |
+| `NoiseSystem2D` and `NoiseOccurrence2D` | `NoiseSystem3D` and `NoiseOccurrence3D` |
 | Health, damage, flashlight charge/replacement, stamina, movement-mode/visibility contracts, noise metadata/kinds, mutant state/configuration, firearm, inventory, and item-use models/resources | Remain reusable |
 
-A practical migration sequence is:
+The implemented sequence was:
 
 1. Keep existing dimension-independent data and gameplay assemblies unchanged.
 2. Add `World3D/PlayerController3D.cs` and a new 3D player scene.
-3. Build modular 3D level scenes that replace only the `TestLevel` presentation.
-4. Add a 3D composition scene that connects the same gameplay state to the new
-   controller and UI.
-5. Retire the 2D entry scene only after the 3D slice reaches feature parity.
+3. Build modular 3D level and gameplay adapters while retaining shared state.
+4. Compose each completed dependency phase through `Main3D` and validate it.
+5. Add the full objective loop and technical-level contract.
+6. Run all legacy and 3D regression gates, then make Main3D the configured entry.
 
-A future `PlayerInteractor3D` can use `Area3D`, `RayCast3D`, or 3D direct-space
-queries and still call the same `IInteractable` methods with the same
-`InteractionContext`. It can publish the same prompt/message events to the current
-Canvas-based UI. The 2D interactable adapter and scoring inputs are replaced; the
-shared interaction semantics do not need 2D/3D branches.
-
-The same future interactor can publish the shared interaction-completed event.
-`Main` and the transfer panel depend on `IInteractable`, `IInventoryOwner`, and
-`IInventoryContainer`, so they do not need a concrete `LootContainer2D` reference.
-
-A future `PlayerWeaponController3D` will replace only mouse-to-world aiming, muzzle
-coordinates, physics-ray construction, player-body exclusion, and tracer
-presentation. It can instantiate the same `FirearmState` from the same definition,
-count and remove the same ammunition items, enforce the same reload transaction,
-publish the same typed results, and apply the same `DamageInfo` to `IHealthOwner`.
-The weapon HUD can bind to that state and inventory without a 2D/3D branch.
-
-A future `MutantController3D` can consume the same validated `MutantDefinition`,
-use the same explicit `MutantState` transitions, expose the same `IHealthOwner`,
-accept the same `IVisibilityTarget`, implement the shared listener policy, and
-issue the same `DamageInfo`. It should
-replace only spatial concerns: navmesh agent, X/Z path following, 3D sight and
-acoustic queries, collider, model, and world feedback. Runtime target references,
-health, timers, and positions still belong to the controller instance rather than
-being added to the shared resource.
-
-The input actions can remain stable. A 3D controller will translate the same input
-intent into an X/Z movement vector, apply the same four modes, scalar settings,
-plain stamina rules, and actual-displacement sprint classification, then use a
-world-space mouse ray for aiming. It must replace the current top-down footprint
-query with real 3D standing/crawl geometry and clearance. This keeps player intent
-and domain rules reusable without pretending that `Vector2`/`Shape2D` and
-`Vector3`/`Shape3D` are the same implementation.
+`PlayerInteractor3D` calls the same `IInteractable` contract and publishes to the
+same Canvas UI. `PlayerWeaponController3D` reuses firearm state, ammunition,
+reload, damage, and weapon HUD while replacing only aim/muzzle physics and shot
+presentation. `MutantController3D` reuses validated configuration, health,
+visibility policy, noise kinds, and typed state while owning only 3D navigation,
+queries, transforms, and feedback. Runtime references and mutable state remain in
+controller/model instances, never shared Resources.
 
 
 ## Stage 13 objective progression and powered escape
@@ -1820,6 +1833,22 @@ and both prepared plans. It then removes one source item and applies one healing
 without notifications, followed by independent inventory and health publication. Full
 health, death, empty/invalid slots, unsupported effects, stale plans, and reentrant use
 change neither gameplay model.
+
+### 3D parity of the stabilization rules
+
+The migration carries the same guarantees into 3D rather than reimplementing them
+in UI or scene scripts. `NoiseHudController` consumes the dimension-neutral noise
+event emitted by `NoiseSystem3D`; `ObjectiveExitZone3D` listens only to
+`PlayerObjectiveSensor3D`; firearm/target damage uses `FirearmDischargeService` as
+an atomic two-model commit; and fuse installation continues through the existing
+inventory/circuit transaction. `MutantDecisionRules` is the one 3D state-priority
+path, so a gunshot cannot downgrade Chase.
+
+3D hazard, perception, chase-refresh, and footstep cadence preserve elapsed
+remainder behind bounded work limits. All four gameplay sensors retain their shape
+when normal/Crawl movement profiles change. `Main3D` latches death/completion and
+closes modal UI without ever restoring movement, aim, combat, interaction, item use,
+hazards, footsteps, or mutant AI.
 
 ### Permanent rules for future stages
 

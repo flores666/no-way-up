@@ -1,0 +1,118 @@
+[gd_scene load_steps=22 format=3]
+
+[ext_resource type="Script" path="res://src/Core/Main3D.cs" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/3d/levels/TestLevel3D.tscn" id="2_level"]
+[ext_resource type="PackedScene" path="res://scenes/3d/player/Player3D.tscn" id="3_player"]
+[ext_resource type="Script" path="res://src/World3D/TopDownCamera3D.cs" id="4_camera"]
+[ext_resource type="PackedScene" path="res://scenes/3d/ui/DebugHud3D.tscn" id="5_hud"]
+[ext_resource type="Script" path="res://src/World3D/CameraOcclusionController3D.cs" id="6_occlusion"]
+[ext_resource type="PackedScene" path="res://scenes/ui/InteractionPrompt.tscn" id="7_prompt"]
+[ext_resource type="PackedScene" path="res://scenes/ui/InteractionMessage.tscn" id="8_message"]
+[ext_resource type="PackedScene" path="res://scenes/ui/InventoryPanel.tscn" id="9_inventory"]
+[ext_resource type="PackedScene" path="res://scenes/ui/LootTransferPanel.tscn" id="10_loot"]
+[ext_resource type="PackedScene" path="res://scenes/ui/HealthHud.tscn" id="11_health"]
+[ext_resource type="PackedScene" path="res://scenes/ui/StaminaHud.tscn" id="12_stamina"]
+[ext_resource type="Script" path="res://src/World3D/Noise/NoiseSystem3D.cs" id="13_noise_system"]
+[ext_resource type="PackedScene" path="res://scenes/ui/FlashlightHud.tscn" id="14_flashlight_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/VisibilityHud.tscn" id="15_visibility_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/NoiseHud.tscn" id="16_noise_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/WeaponHud.tscn" id="17_weapon_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/ObjectiveHud.tscn" id="18_objective_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/EscapeCompletePanel.tscn" id="19_escape_panel"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_aim"]
+transparency = 1
+albedo_color = Color(1, 0.36, 0.08, 0.78)
+emission_enabled = true
+emission = Color(0.8, 0.12, 0.01, 1)
+emission_energy_multiplier = 1.8
+shading_mode = 0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_aim"]
+material = SubResource("StandardMaterial3D_aim")
+top_radius = 0.24
+bottom_radius = 0.24
+height = 0.05
+radial_segments = 20
+
+[node name="Main3D" type="Node3D"]
+script = ExtResource("1_main")
+EnableDebugHud3D = true
+
+[node name="TestLevel3D" parent="." instance=ExtResource("2_level")]
+unique_name_in_owner = true
+
+[node name="Player3D" parent="." instance=ExtResource("3_player")]
+unique_name_in_owner = true
+
+[node name="NoiseSystem3D" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("13_noise_system")
+
+[node name="AimPointMarker3D" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
+visible = false
+mesh = SubResource("CylinderMesh_aim")
+
+[node name="TopDownCamera3D" type="Camera3D" parent="."]
+unique_name_in_owner = true
+current = true
+script = ExtResource("4_camera")
+YawDegrees = 45.0
+PitchDegrees = 55.0
+CameraDistance = 24.0
+OrthographicSize = 22.0
+TargetHeightOffset = 0.9
+FollowSmoothing = 8.0
+SmoothingEnabled = true
+NearClipDistance = 0.1
+FarClipDistance = 120.0
+
+[node name="CameraOcclusionController3D" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("6_occlusion")
+QueryIntervalSeconds = 0.05
+MaximumOccludersPerQuery = 8
+OccluderCollisionMask = 8192
+
+[node name="DebugHud3D" parent="." instance=ExtResource("5_hud")]
+unique_name_in_owner = true
+
+[node name="GameplayUi3D" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="HealthHud" parent="GameplayUi3D" instance=ExtResource("11_health")]
+unique_name_in_owner = true
+
+[node name="WeaponHud" parent="GameplayUi3D" instance=ExtResource("17_weapon_hud")]
+unique_name_in_owner = true
+
+[node name="StaminaHud" parent="GameplayUi3D" instance=ExtResource("12_stamina")]
+unique_name_in_owner = true
+
+[node name="NoiseHud" parent="GameplayUi3D" instance=ExtResource("16_noise_hud")]
+unique_name_in_owner = true
+
+[node name="FlashlightHud" parent="GameplayUi3D" instance=ExtResource("14_flashlight_hud")]
+unique_name_in_owner = true
+
+[node name="VisibilityHud" parent="GameplayUi3D" instance=ExtResource("15_visibility_hud")]
+unique_name_in_owner = true
+
+[node name="ObjectiveHud" parent="GameplayUi3D" instance=ExtResource("18_objective_hud")]
+unique_name_in_owner = true
+
+[node name="InteractionPrompt" parent="GameplayUi3D" instance=ExtResource("7_prompt")]
+unique_name_in_owner = true
+
+[node name="InteractionMessage" parent="GameplayUi3D" instance=ExtResource("8_message")]
+unique_name_in_owner = true
+
+[node name="InventoryPanel" parent="GameplayUi3D" instance=ExtResource("9_inventory")]
+unique_name_in_owner = true
+
+[node name="LootTransferPanel" parent="GameplayUi3D" instance=ExtResource("10_loot")]
+unique_name_in_owner = true
+
+[node name="EscapeCompletePanel" parent="GameplayUi3D" instance=ExtResource("19_escape_panel")]
+unique_name_in_owner = true

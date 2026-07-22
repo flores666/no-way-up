@@ -29,6 +29,12 @@ public static class FeatureTestSuiteCatalog
             new MovementCrawlFeatureTests(),
             new HudFeatureTests(),
             new SceneContractFeatureTests(),
+            new Foundation3DFeatureTests(),
+            new World3DGameplayFeatureTests(),
+            new World3DStealthFeatureTests(),
+            new World3DCombatFeatureTests(),
+            new World3DMutantFeatureTests(),
+            new World3DObjectiveFeatureTests(),
         };
     }
 }

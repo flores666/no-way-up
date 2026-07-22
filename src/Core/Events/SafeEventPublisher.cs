@@ -94,6 +94,39 @@ public static class SafeEventPublisher
         return failureCount;
     }
 
+    public static int Publish<TFirst, TSecond, TThird>(
+        Action<TFirst, TSecond, TThird>? subscribers,
+        TFirst firstArgument,
+        TSecond secondArgument,
+        TThird thirdArgument,
+        string eventName)
+    {
+        ValidateEventName(eventName);
+        if (subscribers is null)
+        {
+            return 0;
+        }
+
+        int failureCount = 0;
+        Delegate[] invocationList = subscribers.GetInvocationList();
+        for (int index = 0; index < invocationList.Length; index++)
+        {
+            Action<TFirst, TSecond, TThird> subscriber =
+                (Action<TFirst, TSecond, TThird>)invocationList[index];
+            try
+            {
+                subscriber(firstArgument, secondArgument, thirdArgument);
+            }
+            catch (Exception exception)
+            {
+                failureCount++;
+                ReportSubscriberFailure(eventName, subscriber, exception);
+            }
+        }
+
+        return failureCount;
+    }
+
     private static void ValidateEventName(string eventName)
     {
         if (string.IsNullOrWhiteSpace(eventName))

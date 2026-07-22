@@ -529,7 +529,6 @@ public sealed class MutantPerceptionFeatureTests : IFeatureTestSuite
             ?? throw new InvalidOperationException("Could not load mutant scene.");
         MutantController2D mutant = scene.Instantiate<MutantController2D>();
         mutant.Name = "Mutant";
-        mutant.SetPhysicsProcess(false);
         if (withPatrol)
         {
             mutant.PatrolPointOffsets = new[]
@@ -540,6 +539,10 @@ public sealed class MutantPerceptionFeatureTests : IFeatureTestSuite
         }
 
         parent.AddChild(mutant);
+        // These tests drive the controller with explicit deltas. Disable engine
+        // scheduling after _Ready so an unbound fixture cannot run between setup
+        // frames or double-advance alongside the direct calls.
+        mutant.SetPhysicsProcess(false);
         return mutant;
     }
 }

@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using Godot;
+using LineZero.Core.Events;
 using LineZero.Gameplay.Noise;
 
 namespace LineZero.World2D.Noise;
 
-public sealed partial class NoiseSystem2D : Node2D
+public sealed partial class NoiseSystem2D : Node2D, INoiseEventSource
 {
     private const int MaxOcclusionBarriers = 4;
     private const int MaxOcclusionQueryResults = 16;
@@ -38,6 +39,8 @@ public sealed partial class NoiseSystem2D : Node2D
 
     public event Action<NoiseOccurrence2D>? NoiseEmitted;
 
+    public event Action<NoiseEvent>? NoiseEventEmitted;
+
     public event Action<INoiseListener2D, PerceivedNoise2D>? NoiseDelivered;
 
     public override void _Ready()
@@ -67,6 +70,7 @@ public sealed partial class NoiseSystem2D : Node2D
         _occlusionQueryExclusions.Clear();
         _occlusionBarriers.Clear();
         NoiseEmitted = null;
+        NoiseEventEmitted = null;
         NoiseDelivered = null;
     }
 
@@ -154,7 +158,14 @@ public sealed partial class NoiseSystem2D : Node2D
         _nextSequenceId++;
         NoiseOccurrence2D occurrence = new(candidateNoise, worldPosition);
         RememberEmission(occurrence, originCollider);
-        NoiseEmitted?.Invoke(occurrence);
+        SafeEventPublisher.Publish(
+            NoiseEmitted,
+            occurrence,
+            $"{nameof(NoiseSystem2D)}.{nameof(NoiseEmitted)}");
+        SafeEventPublisher.Publish(
+            NoiseEventEmitted,
+            occurrence.Noise,
+            $"{nameof(NoiseSystem2D)}.{nameof(NoiseEventEmitted)}");
         DeliverNoise(occurrence, originCollider);
         return occurrence;
     }
@@ -210,7 +221,11 @@ public sealed partial class NoiseSystem2D : Node2D
                 effectiveRadius,
                 wasOccluded);
             listener.ReceiveNoise(perceived);
-            NoiseDelivered?.Invoke(listener, perceived);
+            SafeEventPublisher.Publish(
+                NoiseDelivered,
+                listener,
+                perceived,
+                $"{nameof(NoiseSystem2D)}.{nameof(NoiseDelivered)}");
         }
     }
 

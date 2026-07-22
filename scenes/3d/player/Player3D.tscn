@@ -1,0 +1,264 @@
+[gd_scene load_steps=31 format=3]
+
+[ext_resource type="Script" path="res://src/World3D/PlayerController3D.cs" id="1_player"]
+[ext_resource type="Script" path="res://src/World3D/PlayerAimController3D.cs" id="2_aim"]
+[ext_resource type="Script" path="res://src/Gameplay/Inventory/InventoryComponent.cs" id="3_inventory"]
+[ext_resource type="Script" path="res://src/Gameplay/Health/HealthComponent.cs" id="4_health"]
+[ext_resource type="Script" path="res://src/World3D/Interaction/PlayerInteractor3D.cs" id="5_interactor"]
+[ext_resource type="Script" path="res://src/World3D/Hazards/PlayerHazardSensor3D.cs" id="6_hazard_sensor"]
+[ext_resource type="Script" path="res://src/World3D/Flashlight/PlayerFlashlightController3D.cs" id="7_flashlight"]
+[ext_resource type="Resource" path="res://data/flashlight/StandardFlashlight.tres" id="8_flashlight_definition"]
+[ext_resource type="Script" path="res://src/World3D/Perception/PlayerVisibilityController3D.cs" id="9_visibility"]
+[ext_resource type="Script" path="res://src/World3D/Perception/PlayerVisibilitySensor3D.cs" id="10_visibility_sensor"]
+[ext_resource type="Script" path="res://src/World3D/Noise/PlayerFootstepNoiseEmitter3D.cs" id="11_footsteps"]
+[ext_resource type="Script" path="res://src/World3D/Combat/PlayerWeaponController3D.cs" id="12_weapon"]
+[ext_resource type="Resource" path="res://data/weapons/ServicePistol.tres" id="13_weapon_definition"]
+[ext_resource type="Script" path="res://src/World3D/Objectives/PlayerObjectiveSensor3D.cs" id="14_objective_sensor"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.55
+height = 1.8
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_crawl"]
+radius = 0.45
+height = 0.9
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_body"]
+albedo_color = Color(0.18, 0.25, 0.28, 1)
+roughness = 0.82
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+material = SubResource("StandardMaterial3D_body")
+radius = 0.5
+height = 1.8
+radial_segments = 16
+rings = 8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_forward"]
+albedo_color = Color(0.98, 0.47, 0.12, 1)
+emission_enabled = true
+emission = Color(0.65, 0.13, 0.02, 1)
+emission_energy_multiplier = 1.5
+roughness = 0.7
+
+[sub_resource type="BoxMesh" id="BoxMesh_forward"]
+material = SubResource("StandardMaterial3D_forward")
+size = Vector3(0.24, 0.18, 0.8)
+
+[sub_resource type="SphereMesh" id="SphereMesh_forward_tip"]
+material = SubResource("StandardMaterial3D_forward")
+radius = 0.18
+height = 0.36
+radial_segments = 12
+rings = 6
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_interaction_sensor"]
+radius = 3.2
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_hazard_sensor"]
+radius = 0.42
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_visibility_sensor"]
+radius = 0.42
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_objective_sensor"]
+radius = 0.42
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pistol"]
+albedo_color = Color(0.22, 0.24, 0.24, 1)
+metallic = 0.65
+roughness = 0.36
+
+[sub_resource type="BoxMesh" id="BoxMesh_pistol"]
+material = SubResource("StandardMaterial3D_pistol")
+size = Vector3(0.24, 0.2, 0.82)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shot"]
+albedo_color = Color(1, 0.72, 0.2, 0.9)
+emission_enabled = true
+emission = Color(1, 0.28, 0.02, 1)
+emission_energy_multiplier = 3.0
+shading_mode = 0
+
+[sub_resource type="BoxMesh" id="BoxMesh_tracer"]
+material = SubResource("StandardMaterial3D_shot")
+size = Vector3(0.025, 0.025, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_impact"]
+material = SubResource("StandardMaterial3D_shot")
+radius = 0.09
+height = 0.18
+radial_segments = 10
+rings = 5
+
+[node name="Player3D" type="CharacterBody3D"]
+unique_name_in_owner = true
+collision_layer = 2
+collision_mask = 5
+floor_max_angle = 0.785398
+script = ExtResource("1_player")
+
+[node name="NormalCollisionShape3D" type="CollisionShape3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="CrawlCollisionShape3D" type="CollisionShape3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 0.45, 0)
+shape = SubResource("CapsuleShape3D_crawl")
+disabled = true
+
+[node name="InventoryComponent" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("3_inventory")
+SlotCapacity = 12
+
+[node name="HealthComponent" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("4_health")
+MaxHealth = 100
+
+[node name="PlayerInteractionSensor3D" type="Area3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 0.75, 0)
+collision_layer = 512
+collision_mask = 16
+monitorable = false
+script = ExtResource("5_interactor")
+InteractionRange = 3.2
+SwitchThreshold = 0.08
+SelectionIntervalSeconds = 0.05
+LineOfSightCollisionMask = 1
+
+[node name="PlayerInteractionSensorShape3D" type="CollisionShape3D" parent="PlayerInteractionSensor3D"]
+unique_name_in_owner = true
+shape = SubResource("SphereShape3D_interaction_sensor")
+
+[node name="PlayerHazardSensor3D" type="Area3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 0.45, 0)
+collision_layer = 2048
+collision_mask = 0
+monitoring = false
+script = ExtResource("6_hazard_sensor")
+
+[node name="PlayerHazardSensorShape3D" type="CollisionShape3D" parent="PlayerHazardSensor3D"]
+unique_name_in_owner = true
+shape = SubResource("SphereShape3D_hazard_sensor")
+
+[node name="PlayerVisibilitySensor3D" type="Area3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 0.45, 0)
+collision_layer = 1024
+collision_mask = 0
+monitoring = false
+monitorable = true
+script = ExtResource("10_visibility_sensor")
+
+[node name="PlayerVisibilitySensorShape3D" type="CollisionShape3D" parent="PlayerVisibilitySensor3D"]
+unique_name_in_owner = true
+shape = SubResource("SphereShape3D_visibility_sensor")
+
+[node name="PlayerObjectiveSensor3D" type="Area3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 0.45, 0)
+collision_layer = 4096
+collision_mask = 0
+monitoring = false
+monitorable = true
+script = ExtResource("14_objective_sensor")
+
+[node name="PlayerObjectiveSensorShape3D" type="CollisionShape3D" parent="PlayerObjectiveSensor3D"]
+unique_name_in_owner = true
+shape = SubResource("SphereShape3D_objective_sensor")
+
+[node name="PlayerVisibilityController3D" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("9_visibility")
+
+[node name="PlayerFootstepNoiseEmitter3D" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("11_footsteps")
+
+[node name="VisualPivot3D" type="Node3D" parent="."]
+unique_name_in_owner = true
+
+[node name="BodyMesh3D" type="MeshInstance3D" parent="VisualPivot3D"]
+position = Vector3(0, 0.9, 0)
+mesh = SubResource("CapsuleMesh_body")
+
+[node name="ForwardMarker3D" type="MeshInstance3D" parent="VisualPivot3D"]
+position = Vector3(0, 1.0, -0.67)
+mesh = SubResource("BoxMesh_forward")
+
+[node name="ForwardTip3D" type="MeshInstance3D" parent="VisualPivot3D"]
+position = Vector3(0, 1.0, -1.11)
+mesh = SubResource("SphereMesh_forward_tip")
+
+[node name="WeaponOrigin3D" type="Marker3D" parent="VisualPivot3D"]
+unique_name_in_owner = true
+position = Vector3(0, 1, -0.18)
+
+[node name="PistolMesh3D" type="MeshInstance3D" parent="VisualPivot3D"]
+position = Vector3(0.22, 1, -0.64)
+mesh = SubResource("BoxMesh_pistol")
+
+[node name="MuzzlePoint3D" type="Marker3D" parent="VisualPivot3D"]
+unique_name_in_owner = true
+position = Vector3(0, 1, -1.08)
+
+[node name="PlayerFlashlightController3D" type="Node3D" parent="VisualPivot3D"]
+unique_name_in_owner = true
+position = Vector3(0, 1.05, -0.52)
+rotation_degrees = Vector3(-20, 0, 0)
+script = ExtResource("7_flashlight")
+FlashlightDefinition = ExtResource("8_flashlight_definition")
+StartOn = true
+
+[node name="FlashlightSpotLight3D" type="SpotLight3D" parent="VisualPivot3D/PlayerFlashlightController3D"]
+unique_name_in_owner = true
+light_color = Color(0.92, 0.95, 0.82, 1)
+light_energy = 4.0
+shadow_enabled = true
+spot_range = 18.0
+spot_angle = 38.0
+spot_angle_attenuation = 0.7
+
+[node name="PlayerAimController3D" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("2_aim")
+AimPlaneHeight = 0.0
+MaximumAimDistance = 250.0
+
+[node name="PlayerWeaponController3D" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("12_weapon")
+WeaponDefinition = ExtResource("13_weapon_definition")
+InitialMagazineAmmo = 3
+ShotCollisionMask = 13
+WorldRangeScale = 0.04
+MuzzleClearanceMargin = 0.15
+
+[node name="TracerMesh3D" type="MeshInstance3D" parent="PlayerWeaponController3D"]
+unique_name_in_owner = true
+top_level = true
+visible = false
+cast_shadow = 0
+mesh = SubResource("BoxMesh_tracer")
+
+[node name="ShotImpactMarker3D" type="MeshInstance3D" parent="PlayerWeaponController3D"]
+unique_name_in_owner = true
+top_level = true
+visible = false
+cast_shadow = 0
+mesh = SubResource("SphereMesh_impact")
+
+[node name="ShotPresentationTimer3D" type="Timer" parent="PlayerWeaponController3D"]
+unique_name_in_owner = true
+wait_time = 0.08
+one_shot = true
+
+[node name="ReloadTimer3D" type="Timer" parent="PlayerWeaponController3D"]
+unique_name_in_owner = true
+one_shot = true

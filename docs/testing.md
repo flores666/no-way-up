@@ -125,6 +125,8 @@ non-zero exit code is preserved for local scripts and CI.
 | `hud` | Honest stamina/flashlight values and event-driven objective status |
 | `scene-contracts` | Exported paths, TestLevel preservation, MetroLevel01 content/crawl/power contracts, inputs, and both main-scene smoke loads |
 | `foundation-3d` | XZ movement/aim math, fixed camera and occlusion, input/terminal suppression, full-level 3D collision/navigation contracts, and Main3D composition |
+| `player-foundation-3d` | Equal vector speed/acceleration, Sprint/stamina rules, three safe posture profiles, constant sensors, fixed camera/independent aim, multi-occluder restore/collision, event-driven debug state, and both scene paths |
+| `lighting-occlusion-3d` | GL Compatibility material-alpha fades, shadow-only proxy continuity, proxy re-entry deduplication, shared-resource isolation, exact restore, bounded silhouette detection, authored blockers, zone-marker gating, flashlight render-layer isolation, tuned shadows, and both scene paths |
 | `world-3d-gameplay` | 3D interaction, pickup, inventory/item use, fixed hazard sensor, modal input, damage, and death |
 | `world-3d-stealth` | 3D flashlight/visibility, distance footsteps, HUD occurrence data, multi-wall attenuation, and listener isolation |
 | `world-3d-combat` | Atomic firearm damage, physical muzzle walls, first hit, reload cancellation, ammunition conservation, and terminal input |

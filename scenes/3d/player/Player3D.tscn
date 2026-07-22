@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=3]
+[gd_scene load_steps=32 format=3]
 
 [ext_resource type="Script" path="res://src/World3D/PlayerController3D.cs" id="1_player"]
 [ext_resource type="Script" path="res://src/World3D/PlayerAimController3D.cs" id="2_aim"]
@@ -18,6 +18,10 @@
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.55
 height = 1.8
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_crouch"]
+radius = 0.5
+height = 1.3
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_crawl"]
 radius = 0.45
@@ -103,6 +107,12 @@ unique_name_in_owner = true
 position = Vector3(0, 0.9, 0)
 shape = SubResource("CapsuleShape3D_player")
 
+[node name="CrouchCollisionShape3D" type="CollisionShape3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 0.65, 0)
+shape = SubResource("CapsuleShape3D_crouch")
+disabled = true
+
 [node name="CrawlCollisionShape3D" type="CollisionShape3D" parent="."]
 unique_name_in_owner = true
 position = Vector3(0, 0.45, 0)
@@ -184,16 +194,23 @@ script = ExtResource("11_footsteps")
 [node name="VisualPivot3D" type="Node3D" parent="."]
 unique_name_in_owner = true
 
-[node name="BodyMesh3D" type="MeshInstance3D" parent="VisualPivot3D"]
+[node name="PostureVisuals3D" type="Node3D" parent="VisualPivot3D"]
+unique_name_in_owner = true
+
+[node name="BodyMesh3D" type="MeshInstance3D" parent="VisualPivot3D/PostureVisuals3D"]
+unique_name_in_owner = true
 position = Vector3(0, 0.9, 0)
+layers = 2
 mesh = SubResource("CapsuleMesh_body")
 
-[node name="ForwardMarker3D" type="MeshInstance3D" parent="VisualPivot3D"]
+[node name="ForwardMarker3D" type="MeshInstance3D" parent="VisualPivot3D/PostureVisuals3D"]
 position = Vector3(0, 1.0, -0.67)
+layers = 2
 mesh = SubResource("BoxMesh_forward")
 
-[node name="ForwardTip3D" type="MeshInstance3D" parent="VisualPivot3D"]
+[node name="ForwardTip3D" type="MeshInstance3D" parent="VisualPivot3D/PostureVisuals3D"]
 position = Vector3(0, 1.0, -1.11)
+layers = 2
 mesh = SubResource("SphereMesh_forward_tip")
 
 [node name="WeaponOrigin3D" type="Marker3D" parent="VisualPivot3D"]
@@ -202,6 +219,7 @@ position = Vector3(0, 1, -0.18)
 
 [node name="PistolMesh3D" type="MeshInstance3D" parent="VisualPivot3D"]
 position = Vector3(0.22, 1, -0.64)
+layers = 2
 mesh = SubResource("BoxMesh_pistol")
 
 [node name="MuzzlePoint3D" type="Marker3D" parent="VisualPivot3D"]
@@ -210,8 +228,8 @@ position = Vector3(0, 1, -1.08)
 
 [node name="PlayerFlashlightController3D" type="Node3D" parent="VisualPivot3D"]
 unique_name_in_owner = true
-position = Vector3(0, 1.05, -0.52)
-rotation_degrees = Vector3(-20, 0, 0)
+position = Vector3(0, 1.15, -0.82)
+rotation_degrees = Vector3(-28, 0, 0)
 script = ExtResource("7_flashlight")
 FlashlightDefinition = ExtResource("8_flashlight_definition")
 StartOn = true
@@ -219,8 +237,10 @@ StartOn = true
 [node name="FlashlightSpotLight3D" type="SpotLight3D" parent="VisualPivot3D/PlayerFlashlightController3D"]
 unique_name_in_owner = true
 light_color = Color(0.92, 0.95, 0.82, 1)
-light_energy = 4.0
+light_energy = 3.4
+light_cull_mask = 1
 shadow_enabled = true
+shadow_opacity = 0.55
 spot_range = 18.0
 spot_angle = 38.0
 spot_angle_attenuation = 0.7
@@ -244,6 +264,7 @@ MuzzleClearanceMargin = 0.15
 unique_name_in_owner = true
 top_level = true
 visible = false
+layers = 4
 cast_shadow = 0
 mesh = SubResource("BoxMesh_tracer")
 
@@ -251,6 +272,7 @@ mesh = SubResource("BoxMesh_tracer")
 unique_name_in_owner = true
 top_level = true
 visible = false
+layers = 4
 cast_shadow = 0
 mesh = SubResource("SphereMesh_impact")
 

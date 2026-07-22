@@ -30,6 +30,8 @@ public static class FeatureTestSuiteCatalog
             new HudFeatureTests(),
             new SceneContractFeatureTests(),
             new Foundation3DFeatureTests(),
+            new PlayerFoundation3DFeatureTests(),
+            new LightingOcclusion3DFeatureTests(),
             new World3DGameplayFeatureTests(),
             new World3DStealthFeatureTests(),
             new World3DCombatFeatureTests(),

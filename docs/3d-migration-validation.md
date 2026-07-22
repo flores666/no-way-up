@@ -32,8 +32,14 @@ Completed behavior:
   or re-enabling input.
 - The camera is fixed-yaw, fixed-pitch, orthographic, and screen-relative movement
   uses its flattened basis.
-- Camera occlusion uses a dedicated collision layer, a bounded hit count, a
-  throttled query interval, and restores faded geometry.
+- Camera occlusion uses a dedicated collision layer, five bounded silhouette rays,
+  a throttled query interval, clear-query hysteresis, and Compatibility-safe local
+  material-alpha overrides that restore exact materials and shadow modes.
+
+Stage 3D-02 later hardened this foundation with a third authored Crouch profile,
+target-profile clearance checks for Crawl-to-Crouch and Crouch-to-Walk, Crawl Sprint
+rejection without posture mutation, four identity-stable sensors, faded-wall count
+events, designated colliding wall occluders, and an event-driven technical HUD.
 
 Files created or modified in this phase:
 
@@ -361,3 +367,114 @@ Executed final checks:
 - A non-headless Mobile-renderer attempt could not start because this runner has
   neither X11 nor Wayland. No hardware FPS, GPU profiler, or visual-play claim is
   made from that environment failure.
+
+## Stage 3D-02: completed 3D player foundation
+
+Completed behavior:
+
+- Added a distinct authored Crouch capsule between the Walk and Crawl profiles.
+- Taller transitions validate the target profile in place, exclude the player RID,
+  and never expose an intermediate collider state.
+- Crawl blocks Sprint without changing posture or stamina; blocked automatic
+  Crouch-to-Walk Sprint also latches until Shift release.
+- Four gameplay sensor resources, transforms, layers, and masks remain unchanged
+  through every posture.
+- TestLevel3D contains both Crouch-height and Crawl-only clearance geometry plus
+  designated colliding wall occluders.
+- Occlusion reports multiple active fades; the technical HUD consumes completed
+  player, stamina, clearance, input, and occlusion events without polling.
+
+Executed final checks on 2026-07-22:
+
+- `/tmp/no-way-up-dotnet/dotnet restore LineZero.csproj --disable-parallel`:
+  passed; dependencies were up to date.
+- `/tmp/no-way-up-dotnet/dotnet build LineZero.csproj --no-restore
+  -nodeReuse:false -p:UseSharedCompilation=false`: passed, 0 warnings, 0 errors.
+- `/tmp/no-way-up-godot/Godot_v4.7.1-stable_mono_linux_x86_64/
+  Godot_v4.7.1-stable_mono_linux.x86_64 --headless --path . --import`: passed
+  with exit code 0.
+- The same Godot executable with `--headless --path .
+  res://scenes/tests/FeatureTests.tscn`: 27 suites, 140 tests, 140 passed,
+  0 failed. Logged throwing-subscriber/listener exceptions were intentional
+  isolation fixtures and their cases passed.
+- The same Godot executable with `--headless --path . --quit-after 180
+  res://scenes/3d/Main3D.tscn`: passed with exit code 0.
+- The same Godot executable with `--headless --path . --quit-after 180
+  res://scenes/main/Main.tscn`: passed with exit code 0.
+- Manual hardware-rendered verification was unavailable: the runner exposed no X11
+  or Wayland graphics session. No manual-play or hardware-GPU claim is made.
+
+## 3D lighting and camera-occlusion correction
+
+Completed behavior:
+
+- Replaced Compatibility-incompatible geometry transparency with initialization-
+  time, per-instance `StandardMaterial3D` alpha overrides. Shared source resources
+  remain untouched; collision remains active; substantially faded visuals stop
+  casting shadows; exact original material references and shadow modes return after
+  the fade.
+- Replaced the centre-only ray with five bounded silhouette samples for lower,
+  centre, upper, left, and right coverage. The query remains dedicated-layer-only,
+  excludes the player, retains multiple simultaneous blockers, and waits for two
+  consecutive clear samples before restoring.
+- Authored both internal obstacles, both passage walls, both exit partitions, the
+  low ceiling, Crawl overhead, and camera-facing perimeter walls as World plus
+  CameraOccluder bodies. Floors and gameplay areas remain outside the query mask.
+- Hid exposure-zone markers by default behind an explicit development flag without
+  changing collision or deterministic visibility. Named render layers exclude the
+  player, pistol, shot markers, and aim marker from the flashlight while world walls
+  remain lit and shadow-casting.
+- Reduced directional, powered, bright-zone, and flashlight shadow opacity and
+  energy while increasing bounded ambient fill. The scene remains dark, but its
+  shadowed geometry is no longer configured for full black output.
+
+Files created or modified for this correction:
+
+- `src/World3D/CameraOccluder3D.cs`
+- `src/World3D/CameraOcclusionController3D.cs`
+- `src/World3D/RenderLayers3D.cs`
+- `src/World3D/Flashlight/PlayerFlashlightController3D.cs`
+- `src/World3D/Perception/LightExposureZone3D.cs`
+- `scenes/3d/Main3D.tscn`
+- `scenes/3d/player/Player3D.tscn`
+- `scenes/3d/levels/TestLevel3D.tscn`
+- `scenes/3d/levels/LightExposureZone3D.tscn`
+- `scenes/3d/levels/PowerControlledLight3D.tscn`
+- `src/Tests/Suites/LightingOcclusion3DFeatureTests.cs`
+- `src/Tests/Suites/Foundation3DFeatureTests.cs`
+- `src/Tests/Suites/PlayerFoundation3DFeatureTests.cs`
+- `src/Tests/Framework/FeatureTestSuiteCatalog.cs`
+- `project.godot`
+- `README.md`
+- `docs/3d-migration.md`
+- `docs/architecture.md`
+- `docs/testing.md`
+- `docs/3d-migration-validation.md`
+
+Executed final checks on 2026-07-22:
+
+- `/tmp/no-way-up-dotnet/dotnet restore LineZero.csproj --disable-parallel
+  -p:RestoreIgnoreFailedSources=true`: passed; all projects were up to date.
+- `/tmp/no-way-up-dotnet/dotnet build LineZero.csproj --no-restore
+  -nodeReuse:false -p:UseSharedCompilation=false`: passed, 0 warnings, 0 errors.
+- The Godot executable with `--headless --path .
+  res://scenes/tests/FeatureTests.tscn -- --suite=lighting-occlusion-3d,
+  player-foundation-3d,foundation-3d`: 3 suites, 33 tests, all passed.
+- The same executable with `--headless --path .
+  res://scenes/tests/FeatureTests.tscn`: 28 suites, 150 tests, 150 passed,
+  0 failed. Logged throwing-subscriber/listener exceptions were intentional
+  isolation fixtures and their cases passed.
+- The same executable with `--headless --path . --import`: passed with exit code 0.
+- The same executable with `--headless --path . --quit-after 180
+  res://scenes/3d/Main3D.tscn`: passed with exit code 0 and no runtime warning or
+  error output.
+- The same executable with `--headless --path . --quit-after 180
+  res://scenes/main/Main.tscn`: passed with exit code 0 and no runtime warning or
+  error output.
+- The focused suite moved the player through `(4.7, 0.05, 7.1)`,
+  `(7.9, 0.05, 8.6)`, the Crawl-only passage, and the low-ceiling area, then
+  confirmed that every bounded silhouette obstruction at those locations was in
+  active fade state and represented in the HUD count.
+- Hardware-rendered manual verification was unavailable: the runner exposed no
+  display server, Xvfb executable, or `/dev/dri` device. The position checks above
+  are automated physics/material checks, not a visual-play claim.

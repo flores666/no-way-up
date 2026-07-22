@@ -29,5 +29,9 @@ position = Vector3(0, 0.5, 0)
 shape = SubResource("BoxShape3D_zone")
 
 [node name="ZoneMarker3D" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
 position = Vector3(0, 0.02, 0)
+visible = false
+layers = 4
+cast_shadow = 0
 mesh = SubResource("BoxMesh_marker")

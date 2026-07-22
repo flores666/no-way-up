@@ -2,6 +2,7 @@ using System;
 using Godot;
 using LineZero.Core.Events;
 using LineZero.Gameplay.Flashlight;
+using LineZero.World3D;
 
 namespace LineZero.World3D.Flashlight;
 
@@ -42,6 +43,27 @@ public sealed partial class PlayerFlashlightController3D : Node3D
         {
             throw new InvalidOperationException(
                 "FlashlightSpotLight3D requires positive finite range and angle.");
+        }
+
+        if (_spotLight.LightCullMask != RenderLayers3D.World)
+        {
+            throw new InvalidOperationException(
+                "FlashlightSpotLight3D must illuminate only the world render layer.");
+        }
+
+        if (!float.IsFinite(_spotLight.ShadowOpacity) ||
+            _spotLight.ShadowOpacity <= 0.0f ||
+            _spotLight.ShadowOpacity >= 0.8f)
+        {
+            throw new InvalidOperationException(
+                "FlashlightSpotLight3D requires controlled shadow opacity below 0.8.");
+        }
+
+        if (!Position.IsFinite() || Position.Z >= -0.6f ||
+            !Rotation.IsFinite() || RotationDegrees.X >= -20.0f)
+        {
+            throw new InvalidOperationException(
+                "Flashlight origin must be finite, ahead of the player, and angled toward the floor.");
         }
 
         _model = new FlashlightModel(definition, StartOn);

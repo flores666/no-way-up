@@ -23,7 +23,7 @@ script = ExtResource("1_hud")
 offset_left = 12.0
 offset_top = 12.0
 offset_right = 302.0
-offset_bottom = 172.0
+offset_bottom = 238.0
 mouse_filter = 2
 
 [node name="Panel" type="PanelContainer" parent="HudMargin"]
@@ -42,4 +42,4 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.76, 0.89, 0.9, 1)
 theme_override_font_sizes/font_size = 14
-text = "FPS: --\nPosition: --\nHorizontal velocity: --\nGrounded: --\nAim point: --\nScene: --"
+text = "Movement mode: --\nStamina: --\nPosture: --\nClearance: --\nGameplay input enabled: --\nCan accept gameplay input: --\nTerminal: --\nFaded occluders: --\nScene: --"

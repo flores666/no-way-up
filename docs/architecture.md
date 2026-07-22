@@ -15,7 +15,7 @@ Main3D
 │   ├── PowerController3D, FuseBox3D, and powered light
 │   └── EmergencyDoor3D and ObjectiveExitZone3D
 ├── Player3D
-│   ├── normal/Crawl physical profiles
+│   ├── Walk/Crouch/Crawl physical profiles
 │   ├── four fixed gameplay sensors
 │   ├── health and inventory components
 │   └── aim, flashlight, footstep, and firearm adapters
@@ -29,6 +29,20 @@ is split between `src/World2D` and `src/World3D`; there is no controller with a
 2D/3D branch. `Main3D` caches every authored dependency during `_Ready`, and no hot
 path searches the scene tree. The full hierarchy, collision map, and validation
 boundary are documented in [`3d-migration.md`](3d-migration.md).
+
+Camera occlusion is presentation-only and Compatibility-renderer safe. Designated
+structural bodies keep both World and CameraOccluder collision bits while
+`CameraOccluder3D` prepares per-instance `StandardMaterial3D` alpha overrides once in
+`_Ready`. It never changes shared materials or physical collision. A bounded
+five-point silhouette query samples lower, centre, upper, left, and right player
+coverage, excludes the player RID, and uses consecutive clear queries before
+restoring. Original material references and shadow modes are restored exactly.
+
+Named 3D render layers separate world, player, and development visuals. The player
+flashlight illuminates only the world layer, so player meshes and aim markers cannot
+create a self-shadow, while structural walls still block its light. Exposure-zone
+markers default hidden behind an explicit development flag. These presentation
+choices do not alter the visibility model or any zone multiplier.
 
 ## Preserved legacy 2D scene structure
 
@@ -1486,7 +1500,7 @@ adapters; neither contains a 2D/3D branch.
 | --- | --- |
 | `CharacterBody2D` | `CharacterBody3D` |
 | `Camera2D` | fixed orthographic `TopDownCamera3D` |
-| Normal/crawl `CollisionShape2D` profiles and 2D shape query | distinct `CollisionShape3D` profiles and an owner-excluding clearance query |
+| Normal/crawl `CollisionShape2D` profiles and 2D shape query | distinct Walk/Crouch/Crawl `CollisionShape3D` profiles and owner-excluding target-profile clearance queries |
 | `PlayerFlashlightController2D` and `PointLight2D` | `PlayerFlashlightController3D` and `SpotLight3D`, reusing the definition/model/service |
 | 2D level scenes | modular scenes under `scenes/3d` |
 | `PlayerController2D` | `PlayerController3D` |
@@ -1846,9 +1860,11 @@ path, so a gunshot cannot downgrade Chase.
 
 3D hazard, perception, chase-refresh, and footstep cadence preserve elapsed
 remainder behind bounded work limits. All four gameplay sensors retain their shape
-when normal/Crawl movement profiles change. `Main3D` latches death/completion and
-closes modal UI without ever restoring movement, aim, combat, interaction, item use,
-hazards, footsteps, or mutant AI.
+when Walk/Crouch/Crawl movement profiles change. Taller posture transitions query
+the final target capsule directly and exclude the owning RID before any collider is
+switched. `Main3D` latches death/completion and closes modal UI without ever
+restoring movement, aim, combat, interaction, item use, hazards, footsteps, or
+mutant AI.
 
 ### Permanent rules for future stages
 

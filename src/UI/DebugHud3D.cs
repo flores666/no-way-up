@@ -1,18 +1,17 @@
 using System;
 using Godot;
+using LineZero.Gameplay.Movement;
 using LineZero.World3D;
 
 namespace LineZero.UI;
 
 public sealed partial class DebugHud3D : CanvasLayer
 {
-    private const double RefreshIntervalSeconds = 0.15;
-
     private Label _statsLabel = null!;
     private PlayerController3D? _player;
-    private PlayerAimController3D? _aimController;
+    private CameraOcclusionController3D? _cameraOcclusion;
+    private StaminaModel? _stamina;
     private string _activeSceneName = string.Empty;
-    private double _timeUntilRefresh;
 
     [Export]
     public bool HudEnabled { get; set; } = true;
@@ -22,33 +21,22 @@ public sealed partial class DebugHud3D : CanvasLayer
         _statsLabel = GetNodeOrNull<Label>("%StatsLabel3D")
             ?? throw new InvalidOperationException(
                 $"{nameof(DebugHud3D)} on '{Name}' requires a StatsLabel3D node.");
+        SetProcess(false);
         ApplyEnabledState();
     }
 
-    public override void _Process(double delta)
+    public override void _ExitTree()
     {
-        if (!HudEnabled || _player is null || _aimController is null)
-        {
-            return;
-        }
-
-        _timeUntilRefresh -= delta;
-        if (_timeUntilRefresh > 0.0)
-        {
-            return;
-        }
-
-        _timeUntilRefresh = RefreshIntervalSeconds;
-        UpdateText();
+        Unbind();
     }
 
     public void Bind(
         PlayerController3D player,
-        PlayerAimController3D aimController,
+        CameraOcclusionController3D cameraOcclusion,
         string activeSceneName)
     {
         ArgumentNullException.ThrowIfNull(player);
-        ArgumentNullException.ThrowIfNull(aimController);
+        ArgumentNullException.ThrowIfNull(cameraOcclusion);
         if (string.IsNullOrWhiteSpace(activeSceneName))
         {
             throw new ArgumentException(
@@ -56,18 +44,33 @@ public sealed partial class DebugHud3D : CanvasLayer
                 nameof(activeSceneName));
         }
 
-        if (_player is not null &&
-            (!ReferenceEquals(_player, player) ||
-             !ReferenceEquals(_aimController, aimController)))
+        if (_player is not null)
         {
+            if (ReferenceEquals(_player, player) &&
+                ReferenceEquals(_cameraOcclusion, cameraOcclusion) &&
+                string.Equals(
+                    _activeSceneName,
+                    activeSceneName,
+                    StringComparison.Ordinal))
+            {
+                return;
+            }
+
             throw new InvalidOperationException(
                 $"{nameof(DebugHud3D)} on '{Name}' is already bound.");
         }
 
         _player = player;
-        _aimController = aimController;
+        _cameraOcclusion = cameraOcclusion;
+        _stamina = player.Stamina;
         _activeSceneName = activeSceneName;
-        _timeUntilRefresh = 0.0;
+        player.MovementModeChanged += OnMovementModeChanged;
+        player.PostureChanged += OnPostureChanged;
+        player.ClearanceStateChanged += OnClearanceStateChanged;
+        player.InputStateChanged += OnInputStateChanged;
+        _stamina.Changed += OnStaminaChanged;
+        cameraOcclusion.FadedOccluderCountChanged +=
+            OnFadedOccluderCountChanged;
         if (HudEnabled)
         {
             UpdateText();
@@ -78,9 +81,8 @@ public sealed partial class DebugHud3D : CanvasLayer
     {
         HudEnabled = enabled;
         ApplyEnabledState();
-        if (enabled && _player is not null && _aimController is not null)
+        if (enabled && _player is not null && _cameraOcclusion is not null)
         {
-            _timeUntilRefresh = 0.0;
             UpdateText();
         }
     }
@@ -88,30 +90,95 @@ public sealed partial class DebugHud3D : CanvasLayer
     private void ApplyEnabledState()
     {
         Visible = HudEnabled;
-        SetProcess(HudEnabled);
+        SetProcess(false);
     }
 
     private void UpdateText()
     {
-        if (_player is null || _aimController is null)
+        if (_player is null || _cameraOcclusion is null)
         {
             return;
         }
 
-        Vector3 position = _player.GlobalPosition;
-        Vector2 horizontalVelocity = _player.HorizontalVelocity;
-        string aimText = _aimController.HasValidAimPoint
-            ? $"{_aimController.AimPoint.X:0.0}, " +
-              $"{_aimController.AimPoint.Y:0.0}, " +
-              $"{_aimController.AimPoint.Z:0.0}"
-            : "invalid";
-
         _statsLabel.Text =
-            $"FPS: {Engine.GetFramesPerSecond():0}\n" +
-            $"Position: {position.X:0.0}, {position.Y:0.0}, {position.Z:0.0}\n" +
-            $"Horizontal velocity: {horizontalVelocity.X:0.0}, {horizontalVelocity.Y:0.0}\n" +
-            $"Grounded: {_player.IsOnFloor()}\n" +
-            $"Aim point: {aimText}\n" +
+            $"Movement mode: {_player.CurrentMovementMode}\n" +
+            $"Stamina: {_player.Stamina.Current:0.0} / " +
+            $"{_player.Stamina.Maximum:0.0}\n" +
+            $"Posture: {_player.CurrentPosture}\n" +
+            $"Clearance: {_player.LastClearanceState}\n" +
+            $"Gameplay input enabled: {_player.IsGameplayInputEnabled}\n" +
+            $"Can accept gameplay input: {_player.CanAcceptGameplayInput}\n" +
+            $"Terminal: {_player.IsTerminalState}\n" +
+            $"Faded occluders: {_cameraOcclusion.FadedOccluderCount}\n" +
             $"Scene: {_activeSceneName}";
+    }
+
+    private void Unbind()
+    {
+        if (_player is not null)
+        {
+            _player.MovementModeChanged -= OnMovementModeChanged;
+            _player.PostureChanged -= OnPostureChanged;
+            _player.ClearanceStateChanged -= OnClearanceStateChanged;
+            _player.InputStateChanged -= OnInputStateChanged;
+        }
+
+        if (_stamina is not null)
+        {
+            _stamina.Changed -= OnStaminaChanged;
+        }
+
+        if (_cameraOcclusion is not null)
+        {
+            _cameraOcclusion.FadedOccluderCountChanged -=
+                OnFadedOccluderCountChanged;
+        }
+
+        _player = null;
+        _cameraOcclusion = null;
+        _stamina = null;
+        _activeSceneName = string.Empty;
+    }
+
+    private void OnMovementModeChanged(
+        MovementMode previousMode,
+        MovementMode currentMode)
+    {
+        UpdateTextIfEnabled();
+    }
+
+    private void OnPostureChanged(
+        MovementMode previousPosture,
+        MovementMode currentPosture)
+    {
+        UpdateTextIfEnabled();
+    }
+
+    private void OnClearanceStateChanged(PostureClearanceState state)
+    {
+        UpdateTextIfEnabled();
+    }
+
+    private void OnInputStateChanged()
+    {
+        UpdateTextIfEnabled();
+    }
+
+    private void OnStaminaChanged(StaminaChangeResult result)
+    {
+        UpdateTextIfEnabled();
+    }
+
+    private void OnFadedOccluderCountChanged(int count)
+    {
+        UpdateTextIfEnabled();
+    }
+
+    private void UpdateTextIfEnabled()
+    {
+        if (HudEnabled)
+        {
+            UpdateText();
+        }
     }
 }

@@ -48,7 +48,7 @@ Main3D (composition root)
 │   ├── NavigationRegion3D (authored NavigationMesh)
 │   ├── Geometry
 │   │   ├── floor, perimeter and sight/shot/noise blockers
-│   │   ├── standing and crawl-only passage
+│   │   ├── Crouch-height ceiling and Crawl-only passage
 │   │   └── camera-occluder demonstrations
 │   └── Gameplay
 │       ├── TunnelMutant3D
@@ -56,7 +56,7 @@ Main3D (composition root)
 │       ├── PowerController3D / FuseBox3D / powered light
 │       └── EmergencyDoor3D / ObjectiveExitZone3D
 ├── Player3D (CharacterBody3D)
-│   ├── normal and Crawl movement colliders
+│   ├── Walk, Crouch, and Crawl movement colliders
 │   ├── interaction, visibility, hazard, and objective sensors
 │   ├── inventory and health components
 │   ├── aim, flashlight, footsteps, and weapon adapters
@@ -103,11 +103,36 @@ camera forward/right basis onto XZ, normalizes input, and accelerates the horizo
 velocity as one vector, so cardinal and diagonal acceleration are equal.
 
 The player rotates only around Y toward a validated cursor projection. The last
-valid direction survives a near-zero projection. Normal and Crawl shapes are
-distinct; leaving Crawl uses a direct-space 3D shape query that excludes the
-player RID. Camera rays affect only `CameraOccluder3D` visuals. Collision remains
-enabled, material resources are not recreated per frame, and multiple blockers can
-fade concurrently.
+valid direction survives a near-zero projection. Walk, Crouch, and Crawl shapes are
+distinct authored resources. Leaving Crawl for Crouch and leaving Crouch for Walk
+query the disabled target profile at its final transform, exclude the player RID,
+and switch exactly one collider only after clearance succeeds. Shift and Space can
+request a direct return to Walk from Crouch or Crawl, but the request is rejected when
+the standing profile does not fit. Posture scaling affects only `PostureVisuals3D`;
+the aim pivot, muzzle, pistol, and flashlight keep stable transforms. Camera rays
+affect only `CameraOccluder3D` visuals.
+The GL Compatibility path never uses `GeometryInstance3D.Transparency`: every
+occluder prepares local `StandardMaterial3D` alpha overrides during initialization
+and keeps collision enabled. When fading begins, the transparent camera visual stops
+owning the shadow and a generated `ShadowsOnly` mesh with the exact original mesh and
+materials takes over atomically. Restore disables the proxy and reinstates the exact
+original material references and shadow mode, preserving shadows without duplicate
+casters or a missing-shadow frame. Five cached,
+bounded rays sample lower, centre, upper, and horizontal silhouette points. Queries
+use only the named camera-occluder physics layer, exclude the player, retain a
+two-clear-query release hysteresis, and support multiple concurrent blockers.
+
+World, player, and development visuals use named render layers. The flashlight cull
+mask includes world geometry but excludes player and aim presentation, preventing
+self-shadow while retaining wall shadows. Exposure-zone markers are hidden by
+default and can be revealed only through an explicit development flag; this does not
+change their collision or deterministic visibility multiplier.
+
+The four interaction, hazard, visibility, and objective areas remain constant in
+size, transform, layer, mask, and resource identity across all posture changes.
+`DebugHud3D` subscribes symmetrically to completed player/stamina/input/clearance and
+occlusion changes and reports movement mode, exact stamina, posture, clearance,
+input/terminal state, and active faded-wall count without `_Process` polling.
 
 Interaction rays exclude the player's RID and the selected interactable's own
 declared physical body. This keeps solid containers, the fuse box, and the emergency
@@ -180,7 +205,7 @@ The Godot GPU profiler and manual playthrough remain target-machine checks.
 
 ## Validation boundary
 
-The final automated catalog contains 26 suites and 129 cases. It covers the full 3D
+The current automated catalog contains 28 suites and 154 cases. It covers the full 3D
 objective loop, movement/posture constraints, scene contracts, transactions,
 throwing subscribers, low-FPS debt, muzzle walls, navigation/AI priority, sensors,
 death/completion, repeated input, and all legacy regressions. Throwing-subscriber

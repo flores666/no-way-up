@@ -320,7 +320,7 @@ public sealed partial class Main3D : Node3D
         interactionPrompt.SetPrompt(playerInteractor.CurrentPrompt);
 
         debugHud.SetHudEnabled(EnableDebugHud3D);
-        debugHud.Bind(player, aimController, SceneFilePath);
+        debugHud.Bind(player, cameraOcclusion, SceneFilePath);
         Input.MouseMode = Input.MouseModeEnum.Visible;
         RefreshGameplayInputState();
         SynchronizeFuseObjective();

@@ -7,7 +7,9 @@ namespace LineZero.World3D.Perception;
 public sealed partial class LightExposureZone3D : Area3D
 {
     private readonly HashSet<PlayerVisibilitySensor3D> _sensors = new();
+    private MeshInstance3D? _zoneMarker;
     private bool _exposureEnabled = true;
+    private bool _showDevelopmentMarker;
     private bool _isReady;
 
     [Export]
@@ -38,6 +40,17 @@ public sealed partial class LightExposureZone3D : Area3D
         }
     }
 
+    [Export]
+    public bool ShowDevelopmentMarker
+    {
+        get => _showDevelopmentMarker;
+        set
+        {
+            _showDevelopmentMarker = value;
+            ApplyDevelopmentMarkerVisibility();
+        }
+    }
+
     public override void _Ready()
     {
         ValidateConfiguration();
@@ -55,6 +68,18 @@ public sealed partial class LightExposureZone3D : Area3D
                 "LightExposureZone3D has invalid dedicated collision settings.");
         }
 
+        _zoneMarker = GetNodeOrNull<MeshInstance3D>("ZoneMarker3D");
+        if (_zoneMarker is not null &&
+            (_zoneMarker.Layers != RenderLayers3D.DevelopmentVisual ||
+             _zoneMarker.CastShadow !=
+             GeometryInstance3D.ShadowCastingSetting.Off))
+        {
+            throw new InvalidOperationException(
+                "ZoneMarker3D must use the development render layer without shadows.");
+        }
+
+        ApplyDevelopmentMarkerVisibility();
+
         AreaEntered += OnAreaEntered;
         AreaExited += OnAreaExited;
         _isReady = true;
@@ -70,6 +95,7 @@ public sealed partial class LightExposureZone3D : Area3D
         }
 
         _sensors.Clear();
+        _zoneMarker = null;
         _isReady = false;
     }
 
@@ -150,6 +176,14 @@ public sealed partial class LightExposureZone3D : Area3D
             target is not null)
         {
             target.ExitZone(this);
+        }
+    }
+
+    private void ApplyDevelopmentMarkerVisibility()
+    {
+        if (GodotObject.IsInstanceValid(_zoneMarker))
+        {
+            _zoneMarker!.Visible = _showDevelopmentMarker && OS.IsDebugBuild();
         }
     }
 }

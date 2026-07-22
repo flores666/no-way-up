@@ -17,9 +17,10 @@ dimension-independent.
 ## Playable isometric 3D slice
 
 The 3D slice uses a fixed orthographic camera, screen-relative XZ movement,
-independent mouse aiming, two physical posture colliders, dedicated constant-size
-gameplay sensors, occluder fading, `NavigationAgent3D`, physical muzzle validation,
-and a primitive but complete technical level. Run it with F5 or:
+independent mouse aiming, distinct Walk/Crouch/Crawl physical profiles, dedicated
+constant-size gameplay sensors, multi-wall occluder fading, `NavigationAgent3D`,
+physical muzzle validation, and a primitive but complete technical level. Run it
+with F5 or:
 
 ```bash
 godot --path . res://scenes/3d/Main3D.tscn
@@ -34,6 +35,43 @@ godot --path . res://scenes/main/Main.tscn
 See [`docs/3d-migration.md`](docs/3d-migration.md) for the final hierarchy,
 collision map, shared-model boundary, renderer result, phase record, and remaining
 validation limits.
+
+### Stage 3D-02 player foundation
+
+`PlayerController3D` is a `CharacterBody3D` that calls `MoveAndSlide` and treats Y
+as vertical. It normalizes camera-relative input before applying one vector
+acceleration/deceleration step, so cardinal and diagonal speed and acceleration are
+equal. The orthographic camera keeps fixed yaw and pitch; cursor aim rotates only
+`VisualPivot3D` around Y and never changes movement direction.
+
+Walk, Crouch, and Crawl have three persistent scene-authored capsule resources.
+Any transition to a taller profile first queries that disabled target shape at its
+final transform, excludes the player RID, and mutates colliders only when the whole
+profile fits. Sprint reuses the shared `StaminaModel`. Starting Sprint from
+Crouch or Crawl first
+requests the standing profile and begins Sprint only when the full standing collider
+fits. Space performs the same clearance-aware stand-up request without starting
+Sprint. Interaction, hazard, visibility, and objective sensors remain separate,
+constant-size areas through every posture transition.
+
+`TestLevel3D` includes a low ceiling that admits Crouch but blocks Walk and a lower
+passage that admits only Crawl. Designated near-side walls share the World and camera
+occluder layers. Each occluder prepares local `StandardMaterial3D` alpha overrides
+once, so fading works with GL Compatibility without mutating shared materials or
+disabling collision. Five bounded silhouette rays cover lower, centre, upper, and
+horizontal player edges; consecutive clear queries prevent edge flicker and multiple
+blockers can fade together. Faded camera visuals transfer shadow ownership to a
+runtime shadow-only mesh that uses the exact original opaque materials, so the world
+shadow remains stable while the camera-facing geometry becomes transparent. Restore
+hides the proxy and reinstates the exact original material and shadow mode without a
+missing-shadow frame or duplicate caster.
+
+Exposure-zone floor markers are hidden unless their explicit development flag is
+enabled. Player, presentation, and world visuals use named render layers, allowing
+the flashlight to illuminate and shadow world walls while excluding the player's own
+body, pistol, and aim markers. The technical HUD subscribes to completed player,
+stamina, input, clearance, and occlusion events; it performs no per-frame gameplay
+polling.
 
 
 ## Legacy MetroLevel01 gameplay greybox

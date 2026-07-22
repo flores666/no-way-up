@@ -12,12 +12,16 @@ public sealed partial class PlayerController3D : CharacterBody3D,
     IInventoryOwner,
     IHealthOwner
 {
-    private const string BlockedPostureMessage = "Cannot stand here.";
+    private const string BlockedPostureMessage =
+        "There is not enough clearance to change posture.";
+
+    private readonly Godot.Collections.Array<Rid> _clearanceExclusions = new();
 
     private Camera3D? _movementCamera;
     private CollisionShape3D _normalCollisionShape = null!;
+    private CollisionShape3D _crouchCollisionShape = null!;
     private CollisionShape3D _crawlCollisionShape = null!;
-    private Node3D _visualPivot = null!;
+    private Node3D _postureVisualRoot = null!;
     private InventoryModel? _inventory;
     private HealthModel? _health;
     private StaminaModel? _stamina;
@@ -28,6 +32,8 @@ public sealed partial class PlayerController3D : CharacterBody3D,
     private bool _isTerminalState;
     private bool _isSprintRequestActive;
     private bool _sprintRequiresRelease;
+    private PostureClearanceState _lastClearanceState =
+        PostureClearanceState.NotRequired;
 
     [Export(PropertyHint.Range, "0.1,20.0,0.1")]
     public float WalkingSpeed { get; set; } = 5.5f;
@@ -81,11 +87,17 @@ public sealed partial class PlayerController3D : CharacterBody3D,
     public bool IsUsingCrawlCollisionProfile =>
         !_crawlCollisionShape.Disabled;
 
+    public bool IsUsingCrouchCollisionProfile =>
+        !_crouchCollisionShape.Disabled;
+
     public Vector2 HorizontalVelocity => new(Velocity.X, Velocity.Z);
 
     public MovementMode CurrentMovementMode => _movementMode;
 
     public MovementMode CurrentPosture => _postureMode;
+
+    public PostureClearanceState LastClearanceState =>
+        _lastClearanceState;
 
     public StaminaModel Stamina => _stamina
         ?? throw new InvalidOperationException(
@@ -101,6 +113,12 @@ public sealed partial class PlayerController3D : CharacterBody3D,
 
     public event Action<MovementMode, MovementMode>? MovementModeChanged;
 
+    public event Action<MovementMode, MovementMode>? PostureChanged;
+
+    public event Action<PostureClearanceState>? ClearanceStateChanged;
+
+    public event Action? InputStateChanged;
+
     public event Action<string>? PostureChangeRejected;
 
     public override void _Ready()
@@ -108,9 +126,12 @@ public sealed partial class PlayerController3D : CharacterBody3D,
         ValidateConfiguration();
         _normalCollisionShape = RequireNode<CollisionShape3D>(
             "%NormalCollisionShape3D");
+        _crouchCollisionShape = RequireNode<CollisionShape3D>(
+            "%CrouchCollisionShape3D");
         _crawlCollisionShape = RequireNode<CollisionShape3D>(
             "%CrawlCollisionShape3D");
-        _visualPivot = RequireNode<Node3D>("%VisualPivot3D");
+        RequireNode<Node3D>("%VisualPivot3D");
+        _postureVisualRoot = RequireNode<Node3D>("%PostureVisuals3D");
         InventoryComponent inventoryComponent =
             RequireNode<InventoryComponent>("%InventoryComponent");
         HealthComponent healthComponent =
@@ -118,7 +139,10 @@ public sealed partial class PlayerController3D : CharacterBody3D,
         ValidateCollisionProfiles();
 
         _normalCollisionShape.Disabled = false;
+        _crouchCollisionShape.Disabled = true;
         _crawlCollisionShape.Disabled = true;
+        _clearanceExclusions.Clear();
+        _clearanceExclusions.Add(GetRid());
         _stamina = new StaminaModel(MaximumStamina);
         _inventory = inventoryComponent.Inventory;
         _health = healthComponent.Health;
@@ -137,6 +161,7 @@ public sealed partial class PlayerController3D : CharacterBody3D,
         }
 
         _movementCamera = null;
+        _clearanceExclusions.Clear();
         _inventory = null;
         _health = null;
         _stamina = null;
@@ -164,9 +189,17 @@ public sealed partial class PlayerController3D : CharacterBody3D,
             : Vector2.Zero;
         bool hasMovementIntent = !input.IsZeroApprox();
         bool isSprintRequested = CanRequestSprint(isSprintHeld, hasMovementIntent);
-        if (isSprintRequested && _postureMode == MovementMode.Crouch)
+        if (isSprintRequested && _postureMode != MovementMode.Walk)
         {
-            SetPostureWithoutCollisionChange(MovementMode.Walk);
+            if (!TryApplyPosture(
+                    MovementMode.Walk,
+                    notifyOnFailure: false,
+                    cancelSprintRequest: false))
+            {
+                _isSprintRequestActive = false;
+                _sprintRequiresRelease = true;
+                isSprintRequested = false;
+            }
         }
 
         MovementMode speedMode = isSprintRequested
@@ -218,7 +251,7 @@ public sealed partial class PlayerController3D : CharacterBody3D,
         {
             _isSprintRequestActive = false;
             _sprintRequiresRelease = true;
-            SetPostureWithoutCollisionChange(MovementMode.Walk);
+            SetMovementMode(_postureMode);
         }
     }
 
@@ -233,6 +266,17 @@ public sealed partial class PlayerController3D : CharacterBody3D,
         {
             _isSprintRequestActive = false;
             _sprintRequiresRelease = false;
+        }
+
+        if (@event.IsActionPressed("stand_up"))
+        {
+            if (_postureMode != MovementMode.Walk)
+            {
+                TrySetPosture(MovementMode.Walk);
+            }
+
+            GetViewport().SetInputAsHandled();
+            return;
         }
 
         if (@event.IsActionPressed("crouch"))
@@ -260,10 +304,13 @@ public sealed partial class PlayerController3D : CharacterBody3D,
         }
 
         if (@event.IsActionPressed("sprint") &&
-            _postureMode == MovementMode.Crawl &&
+            _postureMode != MovementMode.Walk &&
             !_sprintRequiresRelease)
         {
-            TrySetPosture(MovementMode.Walk);
+            TryApplyPosture(
+                MovementMode.Walk,
+                notifyOnFailure: true,
+                cancelSprintRequest: false);
             GetViewport().SetInputAsHandled();
         }
     }
@@ -284,6 +331,7 @@ public sealed partial class PlayerController3D : CharacterBody3D,
 
     public void SetGameplayInputEnabled(bool enabled)
     {
+        bool wasEnabled = _isGameplayInputEnabled;
         _isGameplayInputEnabled = enabled &&
                                   !_isTerminalState &&
                                   (_health is null || _health.IsAlive);
@@ -292,6 +340,13 @@ public sealed partial class PlayerController3D : CharacterBody3D,
             _sprintRequiresRelease = true;
             _isSprintRequestActive = false;
             StopHorizontalMovement();
+        }
+
+        if (wasEnabled != _isGameplayInputEnabled)
+        {
+            SafeEventPublisher.Publish(
+                InputStateChanged,
+                $"{nameof(PlayerController3D)}.{nameof(InputStateChanged)}");
         }
     }
 
@@ -305,64 +360,35 @@ public sealed partial class PlayerController3D : CharacterBody3D,
 
     public void EnterTerminalState()
     {
+        bool stateChanged = false;
         if (!_isTerminalState)
         {
             _isTerminalState = true;
             _isGameplayInputEnabled = false;
             _sprintRequiresRelease = true;
             _isSprintRequestActive = false;
+            stateChanged = true;
         }
 
         // Reassert the terminal invariant without repeating any state mutation
         // or notification. Adapters may call this defensively after closing UI.
         StopHorizontalMovement();
+        if (stateChanged)
+        {
+            SafeEventPublisher.Publish(
+                InputStateChanged,
+                $"{nameof(PlayerController3D)}.{nameof(InputStateChanged)}");
+        }
     }
 
     public bool TrySetPosture(
         MovementMode nextPosture,
         bool notifyOnFailure = true)
     {
-        if (nextPosture == MovementMode.Sprint)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(nextPosture),
-                "Sprint is an effective movement mode, not a posture.");
-        }
-
-        if (_isTerminalState || nextPosture == _postureMode)
-        {
-            return nextPosture == _postureMode;
-        }
-
-        _sprintRequiresRelease = true;
-        _isSprintRequestActive = false;
-        if (nextPosture == MovementMode.Crawl)
-        {
-            _normalCollisionShape.Disabled = true;
-            _crawlCollisionShape.Disabled = false;
-            SetPostureWithoutCollisionChange(MovementMode.Crawl);
-            ValidateExactlyOneActiveCollisionProfile();
-            return true;
-        }
-
-        if (_postureMode == MovementMode.Crawl && !CanNormalCollisionFit())
-        {
-            if (notifyOnFailure)
-            {
-                SafeEventPublisher.Publish(
-                    PostureChangeRejected,
-                    BlockedPostureMessage,
-                    $"{nameof(PlayerController3D)}.{nameof(PostureChangeRejected)}");
-            }
-
-            return false;
-        }
-
-        _crawlCollisionShape.Disabled = true;
-        _normalCollisionShape.Disabled = false;
-        SetPostureWithoutCollisionChange(nextPosture);
-        ValidateExactlyOneActiveCollisionProfile();
-        return true;
+        return TryApplyPosture(
+            nextPosture,
+            notifyOnFailure,
+            cancelSprintRequest: true);
     }
 
     public float GetMovementSpeed(MovementMode movementMode)
@@ -377,23 +403,133 @@ public sealed partial class PlayerController3D : CharacterBody3D,
         };
     }
 
-    private bool CanNormalCollisionFit()
+    private bool TryApplyPosture(
+        MovementMode nextPosture,
+        bool notifyOnFailure,
+        bool cancelSprintRequest)
     {
-        Shape3D normalShape = _normalCollisionShape.Shape
+        if (nextPosture == MovementMode.Sprint)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(nextPosture),
+                "Sprint is an effective movement mode, not a posture.");
+        }
+
+        if (_isTerminalState || nextPosture == _postureMode)
+        {
+            return nextPosture == _postureMode;
+        }
+
+        CollisionShape3D targetCollision = GetCollisionProfile(nextPosture);
+        bool needsClearance = GetPostureHeight(nextPosture) >
+                              GetPostureHeight(_postureMode);
+        PostureClearanceState clearanceState = needsClearance
+            ? PostureClearanceState.Clear
+            : PostureClearanceState.NotRequired;
+        if (needsClearance && !CanCollisionProfileFit(targetCollision))
+        {
+            bool clearanceChanged = UpdateClearanceState(
+                PostureClearanceState.Blocked);
+            PublishClearanceStateChanged(clearanceChanged);
+            if (notifyOnFailure)
+            {
+                SafeEventPublisher.Publish(
+                    PostureChangeRejected,
+                    BlockedPostureMessage,
+                    $"{nameof(PlayerController3D)}.{nameof(PostureChangeRejected)}");
+            }
+
+            return false;
+        }
+
+        if (cancelSprintRequest)
+        {
+            _sprintRequiresRelease = true;
+            _isSprintRequestActive = false;
+        }
+
+        MovementMode previousPosture = _postureMode;
+        bool successfulClearanceChanged = UpdateClearanceState(clearanceState);
+        _normalCollisionShape.Disabled =
+            !ReferenceEquals(targetCollision, _normalCollisionShape);
+        _crouchCollisionShape.Disabled =
+            !ReferenceEquals(targetCollision, _crouchCollisionShape);
+        _crawlCollisionShape.Disabled =
+            !ReferenceEquals(targetCollision, _crawlCollisionShape);
+        ValidateExactlyOneActiveCollisionProfile();
+        SetPostureWithoutCollisionChange(nextPosture);
+        PublishClearanceStateChanged(successfulClearanceChanged);
+        SafeEventPublisher.Publish(
+            PostureChanged,
+            previousPosture,
+            nextPosture,
+            $"{nameof(PlayerController3D)}.{nameof(PostureChanged)}");
+        return true;
+    }
+
+    private bool CanCollisionProfileFit(CollisionShape3D collisionShape)
+    {
+        Shape3D shape = collisionShape.Shape
             ?? throw new InvalidOperationException(
-                $"{nameof(PlayerController3D)} on '{Name}' lost its normal shape.");
+                $"{nameof(PlayerController3D)} on '{Name}' lost a posture shape.");
         PhysicsShapeQueryParameters3D query = new()
         {
-            Shape = normalShape,
-            Transform = _normalCollisionShape.GlobalTransform,
+            Shape = shape,
+            Transform = collisionShape.GlobalTransform,
             CollisionMask = CollisionMask,
             CollideWithAreas = false,
             CollideWithBodies = true,
-            Exclude = new Godot.Collections.Array<Rid> { GetRid() }
+            Exclude = _clearanceExclusions
         };
         Godot.Collections.Array<Godot.Collections.Dictionary> overlaps =
             GetWorld3D().DirectSpaceState.IntersectShape(query, maxResults: 1);
         return overlaps.Count == 0;
+    }
+
+    private CollisionShape3D GetCollisionProfile(MovementMode posture)
+    {
+        return posture switch
+        {
+            MovementMode.Walk => _normalCollisionShape,
+            MovementMode.Crouch => _crouchCollisionShape,
+            MovementMode.Crawl => _crawlCollisionShape,
+            _ => throw new ArgumentOutOfRangeException(nameof(posture))
+        };
+    }
+
+    private static int GetPostureHeight(MovementMode posture)
+    {
+        return posture switch
+        {
+            MovementMode.Crawl => 0,
+            MovementMode.Crouch => 1,
+            MovementMode.Walk => 2,
+            _ => throw new ArgumentOutOfRangeException(nameof(posture))
+        };
+    }
+
+    private bool UpdateClearanceState(PostureClearanceState state)
+    {
+        if (_lastClearanceState == state)
+        {
+            return false;
+        }
+
+        _lastClearanceState = state;
+        return true;
+    }
+
+    private void PublishClearanceStateChanged(bool stateChanged)
+    {
+        if (!stateChanged)
+        {
+            return;
+        }
+
+        SafeEventPublisher.Publish(
+            ClearanceStateChanged,
+            _lastClearanceState,
+            $"{nameof(PlayerController3D)}.{nameof(ClearanceStateChanged)}");
     }
 
     private bool CanRequestSprint(bool isSprintHeld, bool hasMovementIntent)
@@ -489,7 +625,7 @@ public sealed partial class PlayerController3D : CharacterBody3D,
             MovementMode.Crawl => 0.48f,
             _ => 1.0f
         };
-        _visualPivot.Scale = new Vector3(1.0f, verticalScale, 1.0f);
+        _postureVisualRoot.Scale = new Vector3(1.0f, verticalScale, 1.0f);
     }
 
     private void StopHorizontalMovement()
@@ -549,13 +685,16 @@ public sealed partial class PlayerController3D : CharacterBody3D,
     {
         Shape3D normalShape = _normalCollisionShape.Shape
             ?? throw new InvalidOperationException("Normal movement shape is missing.");
+        Shape3D crouchShape = _crouchCollisionShape.Shape
+            ?? throw new InvalidOperationException("Crouch movement shape is missing.");
         Shape3D crawlShape = _crawlCollisionShape.Shape
             ?? throw new InvalidOperationException("Crawl movement shape is missing.");
-        if (ReferenceEquals(normalShape, crawlShape) ||
-            normalShape.GetRid() == crawlShape.GetRid())
+        if (normalShape.GetRid() == crouchShape.GetRid() ||
+            normalShape.GetRid() == crawlShape.GetRid() ||
+            crouchShape.GetRid() == crawlShape.GetRid())
         {
             throw new InvalidOperationException(
-                "Normal and crawl movement shapes must be distinct resources.");
+                "Walk, Crouch, and Crawl shapes must be distinct resources.");
         }
 
         if (CollisionLayer != CollisionLayers3D.PlayerMovementBody ||
@@ -568,7 +707,11 @@ public sealed partial class PlayerController3D : CharacterBody3D,
 
     private void ValidateExactlyOneActiveCollisionProfile()
     {
-        if (_normalCollisionShape.Disabled == _crawlCollisionShape.Disabled)
+        int activeProfileCount = 0;
+        activeProfileCount += _normalCollisionShape.Disabled ? 0 : 1;
+        activeProfileCount += _crouchCollisionShape.Disabled ? 0 : 1;
+        activeProfileCount += _crawlCollisionShape.Disabled ? 0 : 1;
+        if (activeProfileCount != 1)
         {
             throw new InvalidOperationException(
                 "Player3D must have exactly one active movement collision profile.");

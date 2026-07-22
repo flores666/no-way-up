@@ -68,6 +68,11 @@ crawl={
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":90,"key_label":0,"unicode":122,"location":0,"echo":false,"script":null)
 ]
 }
+stand_up={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":32,"physical_keycode":32,"key_label":32,"unicode":32,"location":0,"echo":false,"script":null)
+]
+}
 toggle_flashlight={
 "deadzone": 0.2,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":70,"key_label":0,"unicode":102,"location":0,"echo":false,"script":null)
@@ -101,17 +106,20 @@ reload={
 
 [layer_names]
 
+3d_render/layer_1="WorldVisual3D"
+3d_render/layer_2="PlayerVisual3D"
+3d_render/layer_3="DevelopmentVisual3D"
 2d_physics/layer_1="World"
-2d_physics/layer_2="Interaction"
-2d_physics/layer_3="DamageableTarget"
-2d_physics/layer_4="LightExposureSensor"
-2d_physics/layer_5="PlayerHazardSensor"
-2d_physics/layer_6="PlayerObjectiveSensor"
 3d_physics/layer_1="World3D"
+2d_physics/layer_2="Interaction"
 3d_physics/layer_2="PlayerMovementBody3D"
+2d_physics/layer_3="DamageableTarget"
 3d_physics/layer_3="MutantMovementBody3D"
+2d_physics/layer_4="LightExposureSensor"
 3d_physics/layer_4="FirearmTarget3D"
+2d_physics/layer_5="PlayerHazardSensor"
 3d_physics/layer_5="InteractionArea3D"
+2d_physics/layer_6="PlayerObjectiveSensor"
 3d_physics/layer_6="AimSurface3D"
 3d_physics/layer_7="VisibilityZone3D"
 3d_physics/layer_8="HazardZone3D"

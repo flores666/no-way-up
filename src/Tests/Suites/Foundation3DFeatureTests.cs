@@ -159,26 +159,40 @@ public sealed class Foundation3DFeatureTests : IFeatureTestSuite
 
             CollisionShape3D normalCollisionShape =
                 player.GetNode<CollisionShape3D>("%NormalCollisionShape3D");
+            CollisionShape3D crouchCollisionShape =
+                player.GetNode<CollisionShape3D>("%CrouchCollisionShape3D");
             CollisionShape3D crawlCollisionShape =
                 player.GetNode<CollisionShape3D>("%CrawlCollisionShape3D");
             TestAssert.True(normalCollisionShape.Shape is CapsuleShape3D,
                 "Player3D does not use an explicit normal capsule shape.");
+            TestAssert.True(crouchCollisionShape.Shape is CapsuleShape3D,
+                "Player3D does not use an explicit crouch capsule shape.");
             TestAssert.True(crawlCollisionShape.Shape is CapsuleShape3D,
                 "Player3D does not use an explicit crawl capsule shape.");
             TestAssert.False(normalCollisionShape.Disabled,
                 "Normal movement collision is not initially active.");
+            TestAssert.True(crouchCollisionShape.Disabled,
+                "Crouch movement collision is initially active.");
             TestAssert.True(crawlCollisionShape.Disabled,
                 "Crawl movement collision is initially active.");
             TestAssert.True(
-                !ReferenceEquals(normalCollisionShape.Shape, crawlCollisionShape.Shape),
-                "Normal and crawl collision profiles share a mutable shape resource.");
+                !ReferenceEquals(
+                    normalCollisionShape.Shape,
+                    crouchCollisionShape.Shape) &&
+                !ReferenceEquals(
+                    normalCollisionShape.Shape,
+                    crawlCollisionShape.Shape) &&
+                !ReferenceEquals(
+                    crouchCollisionShape.Shape,
+                    crawlCollisionShape.Shape),
+                "Movement collision profiles share a mutable shape resource.");
             TestAssert.True(
                 player.GetNodeOrNull<Node3D>("%VisualPivot3D") is not null,
                 "Player3D has no separate visual pivot.");
             TestAssert.True(
                 player.GetNodeOrNull<MeshInstance3D>(
-                    "VisualPivot3D/ForwardMarker3D") is not null,
-                "Player3D has no visible forward marker.");
+                    "VisualPivot3D/PostureVisuals3D/ForwardMarker3D") is not null,
+                "Player3D has no visible forward marker inside the posture visuals root.");
             TestAssert.True(
                 player.GetNodeOrNull<PlayerAimController3D>(
                     "%PlayerAimController3D") is not null,
@@ -249,14 +263,25 @@ public sealed class Foundation3DFeatureTests : IFeatureTestSuite
                     "TestLevel3D has no camera occluder demonstration.");
             MeshInstance3D occluderMesh =
                 occluder.GetNode<MeshInstance3D>("%OccluderMesh3D");
+            Material? originalMaterial = occluderMesh.GetActiveMaterial(0);
             occluder.SetOccluded(true);
-            TestAssert.True(occluder.IsOccluded && occluderMesh.Transparency > 0.0f,
-                "Camera occluder did not fade when obstructing the player.");
+            occluder._Process(1.0);
+            StandardMaterial3D fadedMaterial =
+                occluderMesh.GetActiveMaterial(0) as StandardMaterial3D
+                ?? throw new TestAssertionException(
+                    "Camera occluder installed no Compatibility fade material.");
+            TestAssert.True(
+                occluder.IsOccluded && fadedMaterial.AlbedoColor.A < 1.0f,
+                "Camera occluder did not fade its material alpha.");
+            TestAssert.NearlyEqual(0.0, occluderMesh.Transparency, Tolerance,
+                "Camera occluder used unsupported geometry transparency.");
             occluder.SetOccluded(false);
+            occluder._Process(1.0);
             TestAssert.False(occluder.IsOccluded,
                 "Camera occluder did not restore its visible state.");
-            TestAssert.NearlyEqual(0.0, occluderMesh.Transparency, Tolerance,
-                "Camera occluder retained transparency after restore.");
+            TestAssert.True(
+                ReferenceEquals(originalMaterial, occluderMesh.GetActiveMaterial(0)),
+                "Camera occluder did not restore its original material state.");
             TestAssert.True(level.GetNodeOrNull<WorldEnvironment>("WorldEnvironment") is not null,
                 "TestLevel3D has no WorldEnvironment.");
             TestAssert.True(level.GetNodeOrNull<DirectionalLight3D>("DirectionalLight3D") is not null,
@@ -286,12 +311,19 @@ public sealed class Foundation3DFeatureTests : IFeatureTestSuite
                 CollisionShape3D normalCollision =
                     detachedPlayer.GetNode<CollisionShape3D>(
                         "%NormalCollisionShape3D");
+                CollisionShape3D crouchCollision =
+                    detachedPlayer.GetNode<CollisionShape3D>(
+                        "%CrouchCollisionShape3D");
                 CollisionShape3D crawlCollision =
                     detachedPlayer.GetNode<CollisionShape3D>(
                         "%CrawlCollisionShape3D");
                 CapsuleShape3D normalShape = normalCollision.Shape as CapsuleShape3D
                     ?? throw new TestAssertionException(
                         "Normal Player3D collision is not a capsule.");
+                CapsuleShape3D crouchShape =
+                    crouchCollision.Shape as CapsuleShape3D
+                    ?? throw new TestAssertionException(
+                        "Crouch Player3D collision is not a capsule.");
                 CapsuleShape3D crawlShape = crawlCollision.Shape as CapsuleShape3D
                     ?? throw new TestAssertionException(
                         "Crawl Player3D collision is not a capsule.");
@@ -299,10 +331,14 @@ public sealed class Foundation3DFeatureTests : IFeatureTestSuite
                     crawlOverhead.Position.Y - (overheadShape.Size.Y * 0.5f);
                 float normalTop = normalCollision.Position.Y +
                                   (normalShape.Height * 0.5f);
+                float crouchTop = crouchCollision.Position.Y +
+                                  (crouchShape.Height * 0.5f);
                 float crawlTop = crawlCollision.Position.Y +
                                  (crawlShape.Height * 0.5f);
                 TestAssert.True(overheadBottom < normalTop,
                     "Normal Player3D profile fits under the crawl-only overhead.");
+                TestAssert.True(overheadBottom < crouchTop,
+                    "Crouch Player3D profile fits under the crawl-only overhead.");
                 TestAssert.True(overheadBottom > crawlTop,
                     "Crawl Player3D profile cannot fit under its authored overhead.");
                 detachedPlayer.Free();

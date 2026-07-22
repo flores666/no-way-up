@@ -52,6 +52,8 @@ script = ExtResource("13_noise_system")
 [node name="AimPointMarker3D" type="MeshInstance3D" parent="."]
 unique_name_in_owner = true
 visible = false
+layers = 4
+cast_shadow = 0
 mesh = SubResource("CylinderMesh_aim")
 
 [node name="TopDownCamera3D" type="Camera3D" parent="."]

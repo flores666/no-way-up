@@ -1,4 +1,4 @@
-[gd_scene load_steps=41 format=3]
+[gd_scene load_steps=43 format=3]
 
 [ext_resource type="Script" path="res://src/World3D/CameraOccluder3D.cs" id="1_occluder"]
 [ext_resource type="PackedScene" path="res://scenes/3d/items/WorldItemPickup3D.tscn" id="2_pickup"]
@@ -22,8 +22,8 @@ background_mode = 1
 background_color = Color(0.008, 0.012, 0.015, 1)
 background_energy_multiplier = 0.35
 ambient_light_source = 2
-ambient_light_color = Color(0.15, 0.2, 0.22, 1)
-ambient_light_energy = 0.38
+ambient_light_color = Color(0.18, 0.23, 0.26, 1)
+ambient_light_energy = 0.52
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
 albedo_color = Color(0.12, 0.15, 0.16, 1)
@@ -107,6 +107,13 @@ size = Vector3(2.2, 0.3, 3.2)
 [sub_resource type="BoxShape3D" id="BoxShape3D_crawl_overhead"]
 size = Vector3(2.2, 0.3, 3.2)
 
+[sub_resource type="BoxMesh" id="BoxMesh_low_ceiling"]
+material = SubResource("StandardMaterial3D_wall")
+size = Vector3(4, 0.3, 3.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_low_ceiling"]
+size = Vector3(4, 0.3, 3.2)
+
 [node name="TestLevel3D" type="Node3D"]
 unique_name_in_owner = true
 
@@ -116,8 +123,9 @@ environment = SubResource("Environment_test")
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 rotation_degrees = Vector3(-52, -28, 0)
 light_color = Color(0.62, 0.72, 0.74, 1)
-light_energy = 1.1
+light_energy = 0.78
 shadow_enabled = true
+shadow_opacity = 0.55
 directional_shadow_max_distance = 55.0
 
 [node name="PlayerSpawn3D" type="Marker3D" parent="."]
@@ -158,10 +166,12 @@ shape = SubResource("BoxShape3D_wall_x")
 [node name="WallEast3D" type="StaticBody3D" parent="Geometry"]
 unique_name_in_owner = true
 position = Vector3(18.5, 1.5, 0)
-collision_layer = 1
-collision_mask = 1
+collision_layer = 8193
+collision_mask = 0
+script = ExtResource("1_occluder")
+OccludedTransparency = 0.72
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallEast3D"]
+[node name="OccluderMesh3D" type="MeshInstance3D" parent="Geometry/WallEast3D"]
 mesh = SubResource("BoxMesh_wall_x")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallEast3D"]
@@ -182,10 +192,12 @@ shape = SubResource("BoxShape3D_wall_z")
 [node name="WallSouth3D" type="StaticBody3D" parent="Geometry"]
 unique_name_in_owner = true
 position = Vector3(0, 1.5, 14.5)
-collision_layer = 1
-collision_mask = 1
+collision_layer = 8193
+collision_mask = 0
+script = ExtResource("1_occluder")
+OccludedTransparency = 0.72
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallSouth3D"]
+[node name="OccluderMesh3D" type="MeshInstance3D" parent="Geometry/WallSouth3D"]
 mesh = SubResource("BoxMesh_wall_z")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallSouth3D"]
@@ -194,8 +206,10 @@ shape = SubResource("BoxShape3D_wall_z")
 [node name="ObstacleWest3D" type="StaticBody3D" parent="Geometry"]
 unique_name_in_owner = true
 position = Vector3(-7, 1, -3)
-collision_layer = 1
-collision_mask = 1
+collision_layer = 8193
+collision_mask = 0
+script = ExtResource("1_occluder")
+OccludedTransparency = 0.72
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/ObstacleWest3D"]
 mesh = SubResource("BoxMesh_obstacle_a")
@@ -206,8 +220,10 @@ shape = SubResource("BoxShape3D_obstacle_a")
 [node name="ObstacleEast3D" type="StaticBody3D" parent="Geometry"]
 unique_name_in_owner = true
 position = Vector3(7, 1, 4)
-collision_layer = 1
-collision_mask = 1
+collision_layer = 8193
+collision_mask = 0
+script = ExtResource("1_occluder")
+OccludedTransparency = 0.72
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/ObstacleEast3D"]
 mesh = SubResource("BoxMesh_obstacle_b")
@@ -218,8 +234,10 @@ shape = SubResource("BoxShape3D_obstacle_b")
 [node name="PassageWallLeft3D" type="StaticBody3D" parent="Geometry"]
 unique_name_in_owner = true
 position = Vector3(-1.6, 1.2, -8)
-collision_layer = 1
-collision_mask = 1
+collision_layer = 8193
+collision_mask = 0
+script = ExtResource("1_occluder")
+OccludedTransparency = 0.72
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/PassageWallLeft3D"]
 mesh = SubResource("BoxMesh_passage")
@@ -230,8 +248,10 @@ shape = SubResource("BoxShape3D_passage")
 [node name="PassageWallRight3D" type="StaticBody3D" parent="Geometry"]
 unique_name_in_owner = true
 position = Vector3(1.6, 1.2, -8)
-collision_layer = 1
-collision_mask = 1
+collision_layer = 8193
+collision_mask = 0
+script = ExtResource("1_occluder")
+OccludedTransparency = 0.72
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/PassageWallRight3D"]
 mesh = SubResource("BoxMesh_passage")
@@ -253,11 +273,27 @@ mesh = SubResource("BoxMesh_crawl_overhead")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/CrawlOnlyOverhead3D"]
 shape = SubResource("BoxShape3D_crawl_overhead")
 
+[node name="LowCeiling3D" type="StaticBody3D" parent="Geometry"]
+unique_name_in_owner = true
+position = Vector3(-10, 1.55, 8)
+collision_layer = 8193
+collision_mask = 0
+script = ExtResource("1_occluder")
+OccludedTransparency = 0.7
+
+[node name="OccluderMesh3D" type="MeshInstance3D" parent="Geometry/LowCeiling3D"]
+mesh = SubResource("BoxMesh_low_ceiling")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/LowCeiling3D"]
+shape = SubResource("BoxShape3D_low_ceiling")
+
 [node name="ExitPartitionWest3D" type="StaticBody3D" parent="Geometry"]
 unique_name_in_owner = true
 position = Vector3(-3.5, 1.5, -10)
-collision_layer = 1
+collision_layer = 8193
 collision_mask = 0
+script = ExtResource("1_occluder")
+OccludedTransparency = 0.72
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/ExitPartitionWest3D"]
 mesh = SubResource("BoxMesh_exit_partition_long")
@@ -268,8 +304,10 @@ shape = SubResource("BoxShape3D_exit_partition_long")
 [node name="ExitPartitionEast3D" type="StaticBody3D" parent="Geometry"]
 unique_name_in_owner = true
 position = Vector3(16.5, 1.5, -10)
-collision_layer = 1
+collision_layer = 8193
 collision_mask = 0
+script = ExtResource("1_occluder")
+OccludedTransparency = 0.72
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/ExitPartitionEast3D"]
 mesh = SubResource("BoxMesh_exit_partition_short")
@@ -351,9 +389,10 @@ ZonePriority = 10
 [node name="BrightZoneLight3D" type="OmniLight3D" parent="Gameplay/BrightZone3D"]
 position = Vector3(0, 3.2, 0)
 light_color = Color(0.78, 0.91, 1, 1)
-light_energy = 5.0
+light_energy = 3.2
 omni_range = 8.0
 shadow_enabled = true
+shadow_opacity = 0.4
 
 [node name="PowerSystems3D" type="Node3D" parent="Gameplay"]
 unique_name_in_owner = true

@@ -40,9 +40,10 @@ mesh = SubResource("SphereMesh_indicator")
 unique_name_in_owner = true
 position = Vector3(0, 2.8, 0)
 light_color = Color(0.7, 0.92, 0.78, 1)
-light_energy = 4.5
+light_energy = 3.2
 omni_range = 8.0
 shadow_enabled = true
+shadow_opacity = 0.42
 
 [node name="PoweredVisibilityZone3D" type="Area3D" parent="."]
 unique_name_in_owner = true

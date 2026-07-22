@@ -13,6 +13,11 @@ namespace LineZero.Tests.Suites;
 public sealed class LightingOcclusion3DFeatureTests : IFeatureTestSuite
 {
     private const double Tolerance = 0.0001;
+    private const float ReferenceViewportWidth = 1280.0f;
+    private const float ReferenceViewportHeight = 720.0f;
+    private const float TestLevelGroundHeight = 0.0f;
+    private const float MaximumRelevantCasterHeight = 7.25f;
+    private const float DirectionalShadowSafetyMargin = 4.0f;
 
     public string Id => "lighting-occlusion-3d";
 
@@ -656,6 +661,173 @@ public sealed class LightingOcclusion3DFeatureTests : IFeatureTestSuite
                     "Powered local light retained its excessive original energy.");
             });
 
+        await context.RunAsync(
+            "orthographic-camera-and-directional-shadow-cover-visible-ground",
+            async () =>
+            {
+                Main3D main = context.InstantiateScene<Main3D>(
+                    "res://scenes/3d/Main3D.tscn");
+                await context.WaitProcessFramesAsync(2);
+                TopDownCamera3D camera = main.GetNode<TopDownCamera3D>(
+                    "%TopDownCamera3D");
+                Node3D level = main.GetNode<Node3D>("%TestLevel3D");
+                DirectionalLight3D directional =
+                    level.GetNode<DirectionalLight3D>("DirectionalLight3D");
+
+                TestAssert.Equal(Camera3D.ProjectionType.Orthogonal,
+                    camera.Projection,
+                    "TopDownCamera3D no longer uses orthographic projection.");
+                TestAssert.True(
+                    float.IsFinite(camera.Near) &&
+                    float.IsFinite(camera.Far) &&
+                    camera.Near > 0.0f &&
+                    camera.Far > camera.Near,
+                    "TopDownCamera3D has invalid near/far clip distances.");
+                TestAssert.True(camera.Far <= 64.0f,
+                    "TopDownCamera3D far clip is larger than the technical level requires.");
+                TestAssert.True(directional.ShadowEnabled,
+                    "DirectionalLight3D shadows were disabled instead of stabilized.");
+                TestAssert.Equal(0, (int)directional.DirectionalShadowMode,
+                    "Fixed orthographic camera must use one orthogonal directional shadow map.");
+                TestAssert.False(directional.DirectionalShadowBlendSplits,
+                    "Orthogonal directional shadows should not retain split blending state.");
+                TestAssert.NearlyEqual(1.0,
+                    directional.DirectionalShadowFadeStart,
+                    Tolerance,
+                    "Directional shadows begin fading inside the configured coverage.");
+
+                float pitchRadians = Mathf.DegToRad(camera.PitchDegrees);
+                float lightElevationRadians = Mathf.DegToRad(
+                    Mathf.Abs(directional.RotationDegrees.X));
+                float focusHeightAboveGround =
+                    main.Player.GlobalPosition.Y +
+                    camera.TargetHeightOffset -
+                    TestLevelGroundHeight;
+                float centreGroundDepth =
+                    camera.CameraDistance +
+                    (focusHeightAboveGround / MathF.Sin(pitchRadians));
+                float farVisibleGroundDepth =
+                    centreGroundDepth +
+                    ((camera.OrthographicSize * 0.5f) *
+                     MathF.Cos(pitchRadians) /
+                     MathF.Sin(pitchRadians));
+                float maximumGroundShadowReach =
+                    MaximumRelevantCasterHeight /
+                    MathF.Tan(lightElevationRadians);
+                float maximumCameraDepthReach =
+                    maximumGroundShadowReach * MathF.Cos(pitchRadians);
+                float requiredShadowDistance =
+                    farVisibleGroundDepth +
+                    maximumCameraDepthReach +
+                    DirectionalShadowSafetyMargin;
+
+                float aspectRatio =
+                    ReferenceViewportWidth / ReferenceViewportHeight;
+                float visibleGroundWidth =
+                    camera.OrthographicSize * aspectRatio;
+                float visibleGroundDepth =
+                    camera.OrthographicSize / MathF.Sin(pitchRadians);
+                TestAssert.True(
+                    visibleGroundWidth > 39.0f &&
+                    visibleGroundDepth > 26.0f,
+                    "Reference orthographic ground footprint calculation is invalid.");
+                TestAssert.True(
+                    directional.DirectionalShadowMaxDistance >=
+                    requiredShadowDistance,
+                    $"Directional shadow distance {directional.DirectionalShadowMaxDistance:0.00} " +
+                    $"does not cover required camera depth {requiredShadowDistance:0.00}.");
+                TestAssert.True(
+                    directional.DirectionalShadowMaxDistance <=
+                    requiredShadowDistance + 6.0f,
+                    "Directional shadow distance is excessively large and wastes resolution.");
+                TestAssert.True(
+                    camera.Far >=
+                    directional.DirectionalShadowMaxDistance + 4.0f,
+                    "Camera far clip does not retain a bounded margin beyond directional shadows.");
+                TestAssert.True(
+                    directional.DirectionalShadowPancakeSize >=
+                    MaximumRelevantCasterHeight + 1.0f &&
+                    directional.DirectionalShadowPancakeSize <= 12.0f,
+                    "Directional shadow pancake does not cover level height with a bounded margin.");
+            });
+
+        await context.RunAsync(
+            "positional-shadow-lights-use-real-ranges-without-camera-fade",
+            async () =>
+            {
+                Main3D main = context.InstantiateScene<Main3D>(
+                    "res://scenes/3d/Main3D.tscn");
+                Node3D poweredLightScene = context.InstantiateScene<Node3D>(
+                    "res://scenes/3d/levels/PowerControlledLight3D.tscn");
+                await context.WaitProcessFramesAsync(2);
+
+                SpotLight3D flashlight = main.Player.GetNode<SpotLight3D>(
+                    "%FlashlightSpotLight3D");
+                Node3D level = main.GetNode<Node3D>("%TestLevel3D");
+                OmniLight3D bright = level.GetNode<OmniLight3D>(
+                    "%BrightZone3D/BrightZoneLight3D");
+                OmniLight3D powered = poweredLightScene.GetNode<OmniLight3D>(
+                    "%PoweredLight3D");
+
+                AssertPositionalShadowLight(
+                    flashlight,
+                    flashlight.SpotRange,
+                    18.0f,
+                    "FlashlightSpotLight3D");
+                AssertPositionalShadowLight(
+                    bright,
+                    bright.OmniRange,
+                    8.0f,
+                    "BrightZoneLight3D");
+                AssertPositionalShadowLight(
+                    powered,
+                    powered.OmniRange,
+                    8.0f,
+                    "PoweredLight3D");
+            });
+
+        await context.RunAsync(
+            "important-world-casters-have-no-distance-visibility-culling",
+            async () =>
+            {
+                Node3D level = context.InstantiateScene<Node3D>(
+                    "res://scenes/3d/levels/TestLevel3D.tscn");
+                await context.WaitProcessFramesAsync(2);
+                string[] casterPaths =
+                {
+                    "%Floor3D",
+                    "%ObstacleWest3D",
+                    "%ObstacleEast3D",
+                    "%PassageWallLeft3D",
+                    "%PassageWallRight3D",
+                    "%CrawlOnlyOverhead3D",
+                    "%LowCeiling3D",
+                    "%ExitPartitionWest3D",
+                    "%ExitPartitionEast3D"
+                };
+
+                for (int index = 0; index < casterPaths.Length; index++)
+                {
+                    Node3D caster = level.GetNode<Node3D>(casterPaths[index]);
+                    MeshInstance3D visual = GetFirstMesh(caster);
+                    TestAssert.False(
+                        visual.CastShadow ==
+                        GeometryInstance3D.ShadowCastingSetting.Off,
+                        $"Important caster '{casterPaths[index]}' has shadows disabled.");
+                    TestAssert.NearlyEqual(0.0,
+                        visual.VisibilityRangeBegin,
+                        Tolerance,
+                        $"Important caster '{casterPaths[index]}' has a visibility begin distance.");
+                    TestAssert.NearlyEqual(0.0,
+                        visual.VisibilityRangeEnd,
+                        Tolerance,
+                        $"Important caster '{casterPaths[index]}' has a visibility end distance.");
+                    TestAssert.Equal(0,
+                        (int)visual.VisibilityRangeFadeMode,
+                        $"Important caster '{casterPaths[index]}' has visibility-range fading.");
+                }
+            });
+
         await context.RunAsync("main3d-and-legacy-2d-scenes-still-load", async () =>
         {
             Main3D main = context.InstantiateScene<Main3D>(
@@ -934,6 +1106,26 @@ public sealed class LightingOcclusion3DFeatureTests : IFeatureTestSuite
 
         throw new TestAssertionException(
             $"Occluder '{root.Name}' has no configured mesh visual.");
+    }
+
+    private static void AssertPositionalShadowLight(
+        Light3D light,
+        float actualRange,
+        float expectedRange,
+        string name)
+    {
+        TestAssert.True(light.ShadowEnabled,
+            $"{name} no longer casts required world shadows.");
+        TestAssert.False(light.DistanceFadeEnabled,
+            $"{name} shadows depend on camera distance fade.");
+        TestAssert.NearlyEqual(expectedRange,
+            actualRange,
+            Tolerance,
+            $"{name} range changed without level-layout justification.");
+        TestAssert.True(
+            light.ShadowOpacity > 0.0f &&
+            light.ShadowOpacity < 0.8f,
+            $"{name} shadow opacity is outside the controlled range.");
     }
 
     private static void AssertReducedShadow(Light3D light, string name)

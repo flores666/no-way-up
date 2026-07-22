@@ -244,6 +244,7 @@ shadow_opacity = 0.55
 spot_range = 18.0
 spot_angle = 38.0
 spot_angle_attenuation = 0.7
+distance_fade_enabled = false
 
 [node name="PlayerAimController3D" type="Node" parent="."]
 unique_name_in_owner = true

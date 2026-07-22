@@ -66,6 +66,14 @@ shadow remains stable while the camera-facing geometry becomes transparent. Rest
 hides the proxy and reinstates the exact original material and shadow mode without a
 missing-shadow frame or duplicate caster.
 
+The fixed orthographic camera now uses one explicit orthogonal directional shadow
+map instead of the default four-split PSSM. The previous third split crossed the
+visible floor footprint and produced the screen-fixed shadow boundary seen while the
+camera followed the player. The configured 44-unit shadow distance covers the
+calculated visible receiver depth plus the highest relevant off-screen caster reach
+and a four-unit safety margin. The camera far clip is bounded to 48 units, and local
+Spot/Omni lights keep explicit world-space ranges with camera-distance fading off.
+
 Exposure-zone floor markers are hidden unless their explicit development flag is
 enabled. Player, presentation, and world visuals use named render layers, allowing
 the flashlight to illuminate and shadow world walls while excluding the player's own

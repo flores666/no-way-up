@@ -68,7 +68,7 @@ TargetHeightOffset = 0.9
 FollowSmoothing = 8.0
 SmoothingEnabled = true
 NearClipDistance = 0.1
-FarClipDistance = 120.0
+FarClipDistance = 48.0
 
 [node name="CameraOcclusionController3D" type="Node" parent="."]
 unique_name_in_owner = true

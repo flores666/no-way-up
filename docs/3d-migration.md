@@ -102,6 +102,21 @@ It follows smoothly without player rotation or mouse capture. Movement flattens 
 camera forward/right basis onto XZ, normalizes input, and accelerates the horizontal
 velocity as one vector, so cardinal and diagonal acceleration are equal.
 
+Directional shadows use `SHADOW_ORTHOGONAL` explicitly. The former default
+four-split PSSM placed split 3 at 50% of the old 55-unit distance, or 27.5 camera
+units. The visible ground depth spans approximately 17.46–32.86 camera units, so that
+unblended split crossed the gameplay viewport and created a camera-relative cutoff.
+The orthogonal map removes cascade transitions. Its 44-unit maximum distance covers
+the 32.86-unit far visible receiver depth, approximately 3.25 units of maximum
+off-screen caster reach from the 7.25-unit-high technical geometry, and a four-unit
+safety margin without unnecessarily diluting resolution. Shadow fading begins only
+at the map limit, the pancake is bounded to 10 units, and the camera far clip is 48
+units. The flashlight remains at 18 units and both important Omni lights remain at 8
+units; all three explicitly disable camera-distance fading. The positional shadow
+atlas is unchanged because the repository contains only these three bounded
+shadow-casting positional lights and no source evidence identified atlas eviction as
+the screen-fixed boundary.
+
 The player rotates only around Y toward a validated cursor projection. The last
 valid direction survives a near-zero projection. Walk, Crouch, and Crawl shapes are
 distinct authored resources. Leaving Crawl for Crouch and leaving Crouch for Walk

@@ -78,9 +78,9 @@ The Godot runner always finishes with a compact result block:
 ```text
 [TEST][FINAL_SUMMARY]
   result: PASS
-  suites: 26
-  tests: 129
-  passed: 129
+  suites: 28
+  tests: 157
+  passed: 157
   failed: 0
   duration: 1.23s
   failed cases: none
@@ -126,7 +126,7 @@ non-zero exit code is preserved for local scripts and CI.
 | `scene-contracts` | Exported paths, TestLevel preservation, MetroLevel01 content/crawl/power contracts, inputs, and both main-scene smoke loads |
 | `foundation-3d` | XZ movement/aim math, fixed camera and occlusion, input/terminal suppression, full-level 3D collision/navigation contracts, and Main3D composition |
 | `player-foundation-3d` | Equal vector speed/acceleration, Sprint/stamina rules, three safe posture profiles, constant sensors, fixed camera/independent aim, multi-occluder restore/collision, event-driven debug state, and both scene paths |
-| `lighting-occlusion-3d` | GL Compatibility material-alpha fades, shadow-only proxy continuity, proxy re-entry deduplication, shared-resource isolation, exact restore, bounded silhouette detection, authored blockers, zone-marker gating, flashlight render-layer isolation, tuned shadows, and both scene paths |
+| `lighting-occlusion-3d` | GL Compatibility material-alpha fades, shadow-only proxy continuity, explicit orthogonal directional coverage, bounded camera clipping, positional-light range/fade contracts, important caster visibility contracts, authored blockers, flashlight render-layer isolation, and both scene paths |
 | `world-3d-gameplay` | 3D interaction, pickup, inventory/item use, fixed hazard sensor, modal input, damage, and death |
 | `world-3d-stealth` | 3D flashlight/visibility, distance footsteps, HUD occurrence data, multi-wall attenuation, and listener isolation |
 | `world-3d-combat` | Atomic firearm damage, physical muzzle walls, first hit, reload cancellation, ammunition conservation, and terminal input |
@@ -191,3 +191,18 @@ already-overlapping objective sensors, safe health/stamina/firearm subscriber
 publication, transactional partial/full/no-reserve/canceled/reentrant reload paths,
 ammunition conservation, transactional medkit success/full/dead/final-stack paths,
 and subscriber failures during reload and healing notifications.
+
+## 3D shadow stability validation
+
+`lighting-occlusion-3d` verifies the non-pixel contracts behind stable rendered
+shadows: orthographic projection, finite 0.1/48 camera clipping, explicit orthogonal
+directional shadow mode, calculated 44-unit directional coverage, no split fading,
+bounded pancake depth, fixed positional-light ranges, disabled camera-distance fade,
+important world casters without visibility-range fading, and the existing
+camera-occlusion proxy lifecycle. These tests intentionally do not compare pixels.
+
+Hardware validation must still traverse the same TestLevel3D path upward and
+downward with the flashlight both enabled and disabled. The directional shadow
+coverage must remain identical at a fixed world position, no screen-fixed transition
+line may cross the viewport, and Spot/Omni shadows may end only at their authored
+18-unit or 8-unit light volumes.

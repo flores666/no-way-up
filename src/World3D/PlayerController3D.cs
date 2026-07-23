@@ -4,6 +4,7 @@ using LineZero.Core.Events;
 using LineZero.Gameplay.Health;
 using LineZero.Gameplay.Inventory;
 using LineZero.Gameplay.Movement;
+using LineZero.World3D.Presentation;
 
 namespace LineZero.World3D;
 
@@ -21,7 +22,7 @@ public sealed partial class PlayerController3D : CharacterBody3D,
     private CollisionShape3D _normalCollisionShape = null!;
     private CollisionShape3D _crouchCollisionShape = null!;
     private CollisionShape3D _crawlCollisionShape = null!;
-    private Node3D _postureVisualRoot = null!;
+    private PlayerVisualController3D? _visual;
     private InventoryModel? _inventory;
     private HealthModel? _health;
     private StaminaModel? _stamina;
@@ -111,6 +112,10 @@ public sealed partial class PlayerController3D : CharacterBody3D,
         ?? throw new InvalidOperationException(
             $"{nameof(PlayerController3D)} on '{Name}' has no health model.");
 
+    public PlayerVisualController3D Visual => _visual
+        ?? throw new InvalidOperationException(
+            $"{nameof(PlayerController3D)} on '{Name}' has no visual adapter.");
+
     public event Action<MovementMode, MovementMode>? MovementModeChanged;
 
     public event Action<MovementMode, MovementMode>? PostureChanged;
@@ -131,7 +136,7 @@ public sealed partial class PlayerController3D : CharacterBody3D,
         _crawlCollisionShape = RequireNode<CollisionShape3D>(
             "%CrawlCollisionShape3D");
         RequireNode<Node3D>("%VisualPivot3D");
-        _postureVisualRoot = RequireNode<Node3D>("%PostureVisuals3D");
+        _visual = RequireNode<PlayerVisualController3D>("%PlayerVisual3D");
         InventoryComponent inventoryComponent =
             RequireNode<InventoryComponent>("%InventoryComponent");
         HealthComponent healthComponent =
@@ -149,7 +154,6 @@ public sealed partial class PlayerController3D : CharacterBody3D,
         _health.Died += OnDied;
         MotionMode = MotionModeEnum.Grounded;
         FloorSnapLength = GroundSnapLength;
-        ApplyVisualPosture();
         SetPhysicsProcess(false);
     }
 
@@ -165,6 +169,7 @@ public sealed partial class PlayerController3D : CharacterBody3D,
         _inventory = null;
         _health = null;
         _stamina = null;
+        _visual = null;
     }
 
     public override void _PhysicsProcess(double delta)
@@ -597,7 +602,6 @@ public sealed partial class PlayerController3D : CharacterBody3D,
         _postureMode = posture;
         Vector2 horizontal = HorizontalVelocity.LimitLength(GetMovementSpeed(posture));
         Velocity = new Vector3(horizontal.X, Velocity.Y, horizontal.Y);
-        ApplyVisualPosture();
         SetMovementMode(posture);
     }
 
@@ -615,17 +619,6 @@ public sealed partial class PlayerController3D : CharacterBody3D,
             previousMode,
             nextMode,
             $"{nameof(PlayerController3D)}.{nameof(MovementModeChanged)}");
-    }
-
-    private void ApplyVisualPosture()
-    {
-        float verticalScale = _postureMode switch
-        {
-            MovementMode.Crouch => 0.78f,
-            MovementMode.Crawl => 0.48f,
-            _ => 1.0f
-        };
-        _postureVisualRoot.Scale = new Vector3(1.0f, verticalScale, 1.0f);
     }
 
     private void StopHorizontalMovement()

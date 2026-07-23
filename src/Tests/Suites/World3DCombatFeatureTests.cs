@@ -89,10 +89,8 @@ public sealed class World3DCombatFeatureTests : IFeatureTestSuite
                     "Combat fixture could not establish a valid world aim point.");
                 await context.WaitPhysicsFramesAsync();
 
-                Marker3D weaponOrigin =
-                    main.Player.GetNode<Marker3D>("%WeaponOrigin3D");
-                Marker3D muzzle =
-                    main.Player.GetNode<Marker3D>("%MuzzlePoint3D");
+                Marker3D weaponOrigin = main.PlayerVisual.WeaponOrigin;
+                Marker3D muzzle = main.PlayerVisual.MuzzleSocket;
                 StaticBody3D muzzleWall = CreateWall(
                     "ThinMuzzleWall3D",
                     weaponOrigin.GlobalPosition.Lerp(

@@ -59,8 +59,17 @@ Main3D (composition root)
 │   ├── Walk, Crouch, and Crawl movement colliders
 │   ├── interaction, visibility, hazard, and objective sensors
 │   ├── inventory and health components
-│   ├── aim, flashlight, footsteps, and weapon adapters
-│   └── primitive body, pistol, muzzle, tracer, and hit marker
+│   ├── aim, footsteps, and weapon gameplay adapters
+│   └── VisualPivot3D
+│       └── PlayerVisual3D (replaceable presentation wrapper)
+│           ├── ModelYawRoot3D / ModelAlignmentRoot3D
+│           │   ├── ImportedModelRoot3D
+│           │   └── DevelopmentFallbackRoot3D
+│           ├── RightHandSocket / WeaponSocket
+│           │   ├── WeaponOrigin / MuzzleSocket
+│           │   └── FlashlightSocket / flashlight adapter
+│           ├── CameraTarget
+│           └── AnimationPlayer / AnimationTree
 ├── NoiseSystem3D
 ├── TopDownCamera3D / CameraOcclusionController3D
 └── CanvasLayer UI
@@ -117,15 +126,20 @@ atlas is unchanged because the repository contains only these three bounded
 shadow-casting positional lights and no source evidence identified atlas eviction as
 the screen-fixed boundary.
 
-The player rotates only around Y toward a validated cursor projection. The last
-valid direction survives a near-zero projection. Walk, Crouch, and Crawl shapes are
+The aim pivot rotates only around Y toward a validated cursor projection. The last
+valid direction survives a near-zero projection. The model-facing root converges on
+that authored aim yaw with frame-rate-independent exponential smoothing while the
+CharacterBody3D and fixed camera remain unrotated. Walk, Crouch, and Crawl shapes are
 distinct authored resources. Leaving Crawl for Crouch and leaving Crouch for Walk
 query the disabled target profile at its final transform, exclude the player RID,
 and switch exactly one collider only after clearance succeeds. Shift and Space can
 request a direct return to Walk from Crouch or Crawl, but the request is rejected when
-the standing profile does not fit. Posture scaling affects only `PostureVisuals3D`;
-the aim pivot, muzzle, pistol, and flashlight keep stable transforms. Camera rays
-affect only `CameraOccluder3D` visuals.
+the standing profile does not fit. Successful posture events select predefined
+presentation profiles; rejected clearance requests publish no posture change and
+cannot advance the visual state. The primitive fallback changes only its isolated
+figure root, never an imported skeleton or physical collider. Authored sockets lower
+with the accepted profile, while their local transforms and the aim pivot remain
+stable. Camera rays affect only `CameraOccluder3D` visuals.
 The GL Compatibility path never uses `GeometryInstance3D.Transparency`: every
 occluder prepares local `StandardMaterial3D` alpha overrides during initialization
 and keeps collision enabled. When fading begins, the transparent camera visual stops
@@ -146,8 +160,66 @@ change their collision or deterministic visibility multiplier.
 The four interaction, hazard, visibility, and objective areas remain constant in
 size, transform, layer, mask, and resource identity across all posture changes.
 `DebugHud3D` subscribes symmetrically to completed player/stamina/input/clearance and
-occlusion changes and reports movement mode, exact stamina, posture, clearance,
-input/terminal state, and active faded-wall count without `_Process` polling.
+occlusion changes. `PlayerVisual3D` publishes a bounded, changed-only debug snapshot
+at five hertz. The HUD reports movement mode, exact stamina, posture, clearance,
+input/terminal state, active faded-wall count, animation state, local blend, action,
+visual source, yaw, clip availability, and socket validation without per-frame text
+formatting or gameplay polling.
+
+## Player model and animation replacement contract
+
+The repository currently contains no `.glb`, `.gltf`, `.fbx`, `.blend`, skeletal
+player, or animation set. `PlayerVisual3D` consequently activates its clearly named
+development humanoid and pistol primitives and leaves the empty imported root and
+`AnimationTree` inactive. Missing clips freeze or hold presentation safely: missing
+one-shots never map to an unrelated locomotion loop, and missing locomotion may use a
+configured Idle only. Gameplay remains fully runnable when optional art is absent.
+
+The presentation state machine is a plain C# type. Its strict priority is:
+
+1. Death (latched).
+2. Terminal or currently disabled presentation.
+3. Hit Reaction.
+4. Reload.
+5. Fire.
+6. Walk, Sprint, Crouch Walk, or Crawl Move.
+7. The posture-appropriate Idle state.
+
+Reload starts only for `ReloadStatus.Started` and clears only after Completed or
+Canceled. Fire observes `ShotResolved`, not attempted or rejected input. Damage
+observes one completed health change; lethal damage immediately latches Death and
+the later death notification is idempotent. Neither animation tracks nor visual
+events mutate gameplay.
+
+Directional locomotion samples `CharacterBody3D.Velocity` during idle processing,
+after physics has produced the latest movement result. Horizontal velocity is dotted
+against aim-right and aim-forward, divided by the authoritative movement-mode speed,
+and length-limited for a stable two-dimensional blend. Separate 0.05 m/s stop and
+0.12 m/s start thresholds provide hysteresis. Optional AnimationTree blend and speed
+parameter paths are cached once; there are no process-time path searches, string
+construction, resource creation, or collection allocation.
+
+To replace the fallback safely:
+
+1. Import a licensed `.glb` authored at 1 metre per Godot unit, Y-up, facing `-Z`,
+   with its origin on the ground. Preserve its `Skeleton3D` and required clips;
+   disable imported cameras and lights.
+2. Instance or inherit the generated import beneath `ImportedModelRoot3D`. Never edit
+   the generated import directly. Normalize scale and orientation exactly once at
+   `ModelAlignmentRoot3D`.
+3. Create a `PlayerAnimationSet3D` configuration resource that records each exact
+   imported clip name. Author the stable Idle/Walk/Sprint/Crouch/Crawl/Fire/Reload/
+   HitReaction/Death states in the wrapper `AnimationTree` and assign the resource.
+4. Adjust `RightHandSocket`, `WeaponSocket`, `MuzzleSocket`, and `FlashlightSocket`,
+   or replace their presentation attachment with validated bone attachments. Keep
+   the gameplay-safe `WeaponOrigin` to muzzle segment and wall query intact.
+5. Confirm root motion does not write to `CharacterBody3D.GlobalPosition`, all player
+   meshes use the player visual render layer, and the flashlight still illuminates
+   only the World layer.
+
+Final art still required: one licensed player `.glb` with a compatible skeleton; the
+eleven mapped clips (or a documented subset with safe gaps); production pistol and
+flashlight meshes; and final socket/bone transforms. None is claimed by this stage.
 
 Interaction rays exclude the player's RID and the selected interactable's own
 declared physical body. This keeps solid containers, the fuse box, and the emergency

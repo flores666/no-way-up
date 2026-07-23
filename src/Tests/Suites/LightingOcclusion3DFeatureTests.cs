@@ -583,10 +583,11 @@ public sealed class LightingOcclusion3DFeatureTests : IFeatureTestSuite
                 Main3D main = context.InstantiateScene<Main3D>(
                     "res://scenes/3d/Main3D.tscn");
                 await context.WaitProcessFramesAsync(2);
-                SpotLight3D flashlight = main.Player.GetNode<SpotLight3D>(
-                    "%FlashlightSpotLight3D");
-                Node3D flashlightController = main.Player.GetNode<Node3D>(
-                    "%PlayerFlashlightController3D");
+                SpotLight3D flashlight =
+                    main.PlayerVisual.FlashlightController.GetNode<SpotLight3D>(
+                        "%FlashlightSpotLight3D");
+                Node3D flashlightController =
+                    main.PlayerVisual.FlashlightController;
                 Node3D visualPivot = main.Player.GetNode<Node3D>("%VisualPivot3D");
                 foreach (MeshInstance3D visual in EnumerateMeshDescendants(visualPivot))
                 {
@@ -607,7 +608,8 @@ public sealed class LightingOcclusion3DFeatureTests : IFeatureTestSuite
                 TestAssert.Equal(0u,
                     aimMarker.Layers & flashlight.LightCullMask,
                     "Aim marker participates in flashlight lighting.");
-                TestAssert.True(flashlightController.Position.Z < -0.6f,
+                TestAssert.True(
+                    main.PlayerVisual.FlashlightSocket.Position.Z < -0.6f,
                     "Flashlight origin is not clearly in front of the player body.");
                 TestAssert.True(flashlightController.RotationDegrees.X < -20.0f,
                     "Flashlight does not point down toward the floor predictably.");
@@ -761,8 +763,9 @@ public sealed class LightingOcclusion3DFeatureTests : IFeatureTestSuite
                     "res://scenes/3d/levels/PowerControlledLight3D.tscn");
                 await context.WaitProcessFramesAsync(2);
 
-                SpotLight3D flashlight = main.Player.GetNode<SpotLight3D>(
-                    "%FlashlightSpotLight3D");
+                SpotLight3D flashlight =
+                    main.PlayerVisual.FlashlightController.GetNode<SpotLight3D>(
+                        "%FlashlightSpotLight3D");
                 Node3D level = main.GetNode<Node3D>("%TestLevel3D");
                 OmniLight3D bright = level.GetNode<OmniLight3D>(
                     "%BrightZone3D/BrightZoneLight3D");

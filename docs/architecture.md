@@ -44,6 +44,33 @@ create a self-shadow, while structural walls still block its light. Exposure-zon
 markers default hidden behind an explicit development flag. These presentation
 choices do not alter the visibility model or any zone multiplier.
 
+### Player presentation boundary
+
+`PlayerController3D` remains the physical and movement adapter. It owns no model
+pose, animation state, or visual scaling. `PlayerVisualController3D` is an explicitly
+bound observer beneath `VisualPivot3D`; `Main3D` passes it the player, aim adapter,
+weapon adapter, health model, and aim pivot once. The visual wrapper owns no gameplay
+model and exposes authored weapon, flashlight, and muzzle sockets back to the
+composition root. `PlayerWeaponController3D` receives its safe origin and muzzle
+markers as explicit initialization dependencies instead of searching across a
+nested scene.
+
+`PlayerPresentationStateMachine` is a plain typed state resolver. It latches terminal
+and death states, tracks exactly one transient action plus the authoritative reload
+state, and cannot issue commands. The Godot adapter derives its directional blend
+from actual post-physics velocity and cached aim axes. AnimationTree identifiers,
+optional parameter paths, node references, baseline transforms, clip availability,
+and effect nodes are all cached during initialization. Repeated effects reuse scene-
+authored nodes; imported/shared materials and model resources are never mutated.
+
+The visual model and fallback are mutually exclusive. Physical collision and all
+four gameplay sensors stay direct Player3D children, so changing model scale,
+skeleton, clips, or sockets cannot change speed, clearance, visibility,
+interaction, hazards, or objectives. Presentation posture follows only completed
+`PostureChanged`; a blocked clearance attempt leaves it unchanged. Completed shot,
+reload, damage, death, and input/terminal events are subscribed and unsubscribed
+symmetrically through the existing isolated safe publisher.
+
 ## Preserved legacy 2D scene structure
 
 `res://scenes/main/Main.tscn` remains a directly runnable regression reference and composes

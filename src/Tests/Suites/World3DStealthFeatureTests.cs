@@ -69,8 +69,7 @@ public sealed class World3DStealthFeatureTests : IFeatureTestSuite
                     "res://scenes/3d/Main3D.tscn");
                 await context.WaitPhysicsFramesAsync(8);
                 PlayerFlashlightController3D flashlight =
-                    main.Player.GetNode<PlayerFlashlightController3D>(
-                        "%PlayerFlashlightController3D");
+                    main.PlayerVisual.FlashlightController;
                 PlayerVisibilityController3D visibility =
                     main.Player.GetNode<PlayerVisibilityController3D>(
                         "%PlayerVisibilityController3D");

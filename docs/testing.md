@@ -126,6 +126,7 @@ non-zero exit code is preserved for local scripts and CI.
 | `scene-contracts` | Exported paths, TestLevel preservation, MetroLevel01 content/crawl/power contracts, inputs, and both main-scene smoke loads |
 | `foundation-3d` | XZ movement/aim math, fixed camera and occlusion, input/terminal suppression, full-level 3D collision/navigation contracts, and Main3D composition |
 | `player-foundation-3d` | Equal vector speed/acceleration, Sprint/stamina rules, three safe posture profiles, constant sensors, fixed camera/independent aim, multi-occluder restore/collision, event-driven debug state, and both scene paths |
+| `player-presentation-3d` | Separate visual/physics hierarchy, aim-relative directional blend and idle hysteresis, authoritative profiles, blocked posture, completed fire/reload/hit/death priority, sockets, safe missing-asset fallback, render-layer isolation, no animation gameplay callbacks, and both scene paths |
 | `lighting-occlusion-3d` | GL Compatibility material-alpha fades, shadow-only proxy continuity, explicit orthogonal directional coverage, bounded camera clipping, positional-light range/fade contracts, important caster visibility contracts, authored blockers, flashlight render-layer isolation, and both scene paths |
 | `world-3d-gameplay` | 3D interaction, pickup, inventory/item use, fixed hazard sensor, modal input, damage, and death |
 | `world-3d-stealth` | 3D flashlight/visibility, distance footsteps, HUD occurrence data, multi-wall attenuation, and listener isolation |

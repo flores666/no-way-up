@@ -2,6 +2,7 @@ using System;
 using Godot;
 using LineZero.Gameplay.Movement;
 using LineZero.World3D;
+using LineZero.World3D.Presentation;
 
 namespace LineZero.UI;
 
@@ -10,6 +11,7 @@ public sealed partial class DebugHud3D : CanvasLayer
     private Label _statsLabel = null!;
     private PlayerController3D? _player;
     private CameraOcclusionController3D? _cameraOcclusion;
+    private PlayerVisualController3D? _playerVisual;
     private StaminaModel? _stamina;
     private string _activeSceneName = string.Empty;
 
@@ -33,10 +35,12 @@ public sealed partial class DebugHud3D : CanvasLayer
     public void Bind(
         PlayerController3D player,
         CameraOcclusionController3D cameraOcclusion,
+        PlayerVisualController3D playerVisual,
         string activeSceneName)
     {
         ArgumentNullException.ThrowIfNull(player);
         ArgumentNullException.ThrowIfNull(cameraOcclusion);
+        ArgumentNullException.ThrowIfNull(playerVisual);
         if (string.IsNullOrWhiteSpace(activeSceneName))
         {
             throw new ArgumentException(
@@ -48,6 +52,7 @@ public sealed partial class DebugHud3D : CanvasLayer
         {
             if (ReferenceEquals(_player, player) &&
                 ReferenceEquals(_cameraOcclusion, cameraOcclusion) &&
+                ReferenceEquals(_playerVisual, playerVisual) &&
                 string.Equals(
                     _activeSceneName,
                     activeSceneName,
@@ -62,6 +67,7 @@ public sealed partial class DebugHud3D : CanvasLayer
 
         _player = player;
         _cameraOcclusion = cameraOcclusion;
+        _playerVisual = playerVisual;
         _stamina = player.Stamina;
         _activeSceneName = activeSceneName;
         player.MovementModeChanged += OnMovementModeChanged;
@@ -71,6 +77,7 @@ public sealed partial class DebugHud3D : CanvasLayer
         _stamina.Changed += OnStaminaChanged;
         cameraOcclusion.FadedOccluderCountChanged +=
             OnFadedOccluderCountChanged;
+        playerVisual.DebugSnapshotChanged += OnVisualDebugSnapshotChanged;
         if (HudEnabled)
         {
             UpdateText();
@@ -95,7 +102,9 @@ public sealed partial class DebugHud3D : CanvasLayer
 
     private void UpdateText()
     {
-        if (_player is null || _cameraOcclusion is null)
+        if (_player is null ||
+            _cameraOcclusion is null ||
+            _playerVisual is null)
         {
             return;
         }
@@ -110,6 +119,16 @@ public sealed partial class DebugHud3D : CanvasLayer
             $"Can accept gameplay input: {_player.CanAcceptGameplayInput}\n" +
             $"Terminal: {_player.IsTerminalState}\n" +
             $"Faded occluders: {_cameraOcclusion.FadedOccluderCount}\n" +
+            $"Animation: {_playerVisual.CurrentState}\n" +
+            $"Locomotion blend: " +
+            $"({_playerVisual.LocalLocomotionBlend.X:0.00}, " +
+            $"{_playerVisual.LocalLocomotionBlend.Y:0.00})\n" +
+            $"Presentation action: {_playerVisual.ActiveAction}\n" +
+            $"Visual source: " +
+            $"{(_playerVisual.IsUsingDevelopmentFallback ? "fallback" : "imported")}\n" +
+            $"Visual yaw: {Mathf.RadToDeg(_playerVisual.CurrentVisualYaw):0.0} deg\n" +
+            $"Sockets valid: {_playerVisual.HasValidSocketHierarchy}\n" +
+            $"Missing animation clips: {_playerVisual.MissingClipCount}\n" +
             $"Scene: {_activeSceneName}";
     }
 
@@ -134,8 +153,14 @@ public sealed partial class DebugHud3D : CanvasLayer
                 OnFadedOccluderCountChanged;
         }
 
+        if (_playerVisual is not null)
+        {
+            _playerVisual.DebugSnapshotChanged -= OnVisualDebugSnapshotChanged;
+        }
+
         _player = null;
         _cameraOcclusion = null;
+        _playerVisual = null;
         _stamina = null;
         _activeSceneName = string.Empty;
     }
@@ -170,6 +195,11 @@ public sealed partial class DebugHud3D : CanvasLayer
     }
 
     private void OnFadedOccluderCountChanged(int count)
+    {
+        UpdateTextIfEnabled();
+    }
+
+    private void OnVisualDebugSnapshotChanged(PlayerVisualDebugSnapshot snapshot)
     {
         UpdateTextIfEnabled();
     }

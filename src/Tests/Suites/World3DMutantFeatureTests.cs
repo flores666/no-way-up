@@ -82,8 +82,7 @@ public sealed class World3DMutantFeatureTests : IFeatureTestSuite
                     "Authored 3D mutant did not begin on its patrol route.");
 
                 PlayerFlashlightController3D flashlight =
-                    main.Player.GetNode<PlayerFlashlightController3D>(
-                        "%PlayerFlashlightController3D");
+                    main.PlayerVisual.FlashlightController;
                 flashlight.TurnOff();
                 Vector3 patrolStart = mutant.GlobalPosition;
                 await context.WaitPhysicsFramesAsync(70);
@@ -117,8 +116,7 @@ public sealed class World3DMutantFeatureTests : IFeatureTestSuite
                 await context.WaitPhysicsFramesAsync(6);
                 MutantController3D mutant = main.Mutant;
                 PlayerFlashlightController3D flashlight =
-                    main.Player.GetNode<PlayerFlashlightController3D>(
-                        "%PlayerFlashlightController3D");
+                    main.PlayerVisual.FlashlightController;
                 flashlight.TurnOff();
                 main.Player.GlobalPosition =
                     mutant.GlobalPosition + (Vector3.Left * 6.0f);
@@ -233,8 +231,7 @@ public sealed class World3DMutantFeatureTests : IFeatureTestSuite
                 await context.WaitPhysicsFramesAsync(6);
                 MutantController3D mutant = main.Mutant;
                 PlayerFlashlightController3D flashlight =
-                    main.Player.GetNode<PlayerFlashlightController3D>(
-                        "%PlayerFlashlightController3D");
+                    main.PlayerVisual.FlashlightController;
                 flashlight.TurnOff();
                 main.Player.GlobalPosition =
                     mutant.GlobalPosition + (Vector3.Left * 6.0f);

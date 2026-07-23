@@ -120,8 +120,6 @@ public sealed partial class PlayerWeaponController3D : Node3D
                 "The 3D firearm effective range must be between 1 and 200 world units.");
         }
 
-        _weaponOrigin = RequireNode<Marker3D>("%WeaponOrigin3D");
-        _muzzlePoint = RequireNode<Marker3D>("%MuzzlePoint3D");
         _tracerMesh = RequireNode<MeshInstance3D>("%TracerMesh3D");
         _impactMarker = RequireNode<MeshInstance3D>("%ShotImpactMarker3D");
         _presentationTimer = RequireNode<Timer>("%ShotPresentationTimer3D");
@@ -206,13 +204,17 @@ public sealed partial class PlayerWeaponController3D : Node3D
         PlayerAimController3D aimController,
         InventoryModel inventory,
         HealthModel health,
-        NoiseSystem3D noiseSystem)
+        NoiseSystem3D noiseSystem,
+        Marker3D weaponOrigin,
+        Marker3D muzzlePoint)
     {
         ArgumentNullException.ThrowIfNull(player);
         ArgumentNullException.ThrowIfNull(aimController);
         ArgumentNullException.ThrowIfNull(inventory);
         ArgumentNullException.ThrowIfNull(health);
         ArgumentNullException.ThrowIfNull(noiseSystem);
+        ArgumentNullException.ThrowIfNull(weaponOrigin);
+        ArgumentNullException.ThrowIfNull(muzzlePoint);
         if (_isInitialized)
         {
             throw new InvalidOperationException(
@@ -225,7 +227,14 @@ public sealed partial class PlayerWeaponController3D : Node3D
             !GodotObject.IsInstanceValid(aimController) ||
             !aimController.IsInsideTree() ||
             !GodotObject.IsInstanceValid(noiseSystem) ||
-            !noiseSystem.IsInsideTree())
+            !noiseSystem.IsInsideTree() ||
+            !GodotObject.IsInstanceValid(weaponOrigin) ||
+            !GodotObject.IsInstanceValid(muzzlePoint) ||
+            !weaponOrigin.IsInsideTree() ||
+            !muzzlePoint.IsInsideTree() ||
+            !player.IsAncestorOf(weaponOrigin) ||
+            !player.IsAncestorOf(muzzlePoint) ||
+            ReferenceEquals(weaponOrigin, muzzlePoint))
         {
             throw new ArgumentException(
                 "3D firearm dependencies must be active scene nodes.");
@@ -236,6 +245,8 @@ public sealed partial class PlayerWeaponController3D : Node3D
         _inventory = inventory;
         _health = health;
         _noiseSystem = noiseSystem;
+        _weaponOrigin = weaponOrigin;
+        _muzzlePoint = muzzlePoint;
         _rayExclusions.Add(player.GetRid());
         _health.Died += OnOwnerDied;
         _isInitialized = true;

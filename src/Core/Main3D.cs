@@ -20,6 +20,7 @@ using LineZero.World3D.Combat;
 using LineZero.World3D.Enemies;
 using LineZero.World3D.Objectives;
 using LineZero.World3D.Power;
+using LineZero.World3D.Presentation;
 
 namespace LineZero.Core;
 
@@ -35,6 +36,7 @@ public sealed partial class Main3D : Node3D
     private PlayerAimController3D? _aimController;
     private PlayerInteractor3D? _playerInteractor;
     private PlayerWeaponController3D? _playerWeapon;
+    private PlayerVisualController3D? _playerVisual;
     private PlayerFlashlightController3D? _playerFlashlight;
     private PlayerFootstepNoiseEmitter3D? _footstepEmitter;
     private PlayerVisibilityController3D? _visibilityController;
@@ -80,6 +82,10 @@ public sealed partial class Main3D : Node3D
         ?? throw new InvalidOperationException(
             $"{nameof(Main3D)} has not initialized its weapon.");
 
+    public PlayerVisualController3D PlayerVisual => _playerVisual
+        ?? throw new InvalidOperationException(
+            $"{nameof(Main3D)} has not initialized its player visual.");
+
     public MutantController3D Mutant => _mutant
         ?? throw new InvalidOperationException(
             $"{nameof(Main3D)} has not initialized its mutant.");
@@ -123,6 +129,7 @@ public sealed partial class Main3D : Node3D
             player.GetNodeOrNull<Node3D>("%VisualPivot3D")
             ?? throw new InvalidOperationException(
                 "Player3D requires a unique VisualPivot3D node.");
+        PlayerVisualController3D playerVisual = player.Visual;
         PlayerAimController3D aimController =
             player.GetNodeOrNull<PlayerAimController3D>(
                 "%PlayerAimController3D")
@@ -139,10 +146,7 @@ public sealed partial class Main3D : Node3D
             ?? throw new InvalidOperationException(
                 "Player3D requires PlayerHazardSensor3D.");
         PlayerFlashlightController3D playerFlashlight =
-            player.GetNodeOrNull<PlayerFlashlightController3D>(
-                "%PlayerFlashlightController3D")
-            ?? throw new InvalidOperationException(
-                "Player3D requires PlayerFlashlightController3D.");
+            playerVisual.FlashlightController;
         PlayerVisibilityController3D visibilityController =
             player.GetNodeOrNull<PlayerVisibilityController3D>(
                 "%PlayerVisibilityController3D")
@@ -230,6 +234,7 @@ public sealed partial class Main3D : Node3D
         _aimController = aimController;
         _playerInteractor = playerInteractor;
         _playerWeapon = playerWeapon;
+        _playerVisual = playerVisual;
         _playerFlashlight = playerFlashlight;
         _footstepEmitter = footstepEmitter;
         _visibilityController = visibilityController;
@@ -268,7 +273,15 @@ public sealed partial class Main3D : Node3D
             aimController,
             player.Inventory,
             player.Health,
-            noiseSystem);
+            noiseSystem,
+            playerVisual.WeaponOrigin,
+            playerVisual.MuzzleSocket);
+        playerVisual.Bind(
+            player,
+            aimController,
+            playerWeapon,
+            player.Health,
+            visualPivot);
         mutant.BindTarget(
             player,
             player.Health,
@@ -320,7 +333,7 @@ public sealed partial class Main3D : Node3D
         interactionPrompt.SetPrompt(playerInteractor.CurrentPrompt);
 
         debugHud.SetHudEnabled(EnableDebugHud3D);
-        debugHud.Bind(player, cameraOcclusion, SceneFilePath);
+        debugHud.Bind(player, cameraOcclusion, playerVisual, SceneFilePath);
         Input.MouseMode = Input.MouseModeEnum.Visible;
         RefreshGameplayInputState();
         SynchronizeFuseObjective();
@@ -416,6 +429,7 @@ public sealed partial class Main3D : Node3D
         _aimController = null;
         _playerInteractor = null;
         _playerWeapon = null;
+        _playerVisual = null;
         _playerFlashlight = null;
         _footstepEmitter = null;
         _visibilityController = null;

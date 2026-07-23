@@ -81,6 +81,41 @@ body, pistol, and aim markers. The technical HUD subscribes to completed player,
 stamina, input, clearance, and occlusion events; it performs no per-frame gameplay
 polling.
 
+### Stage 3D-04 player presentation pipeline
+
+`Player3D` still owns the authoritative `CharacterBody3D`, three posture colliders,
+four constant gameplay sensors, health/inventory components, and gameplay adapters.
+Its `VisualPivot3D` now contains the replaceable
+`res://scenes/3d/player/PlayerVisual3D.tscn` wrapper. The wrapper owns only visual
+state, imported-model alignment, animation nodes, development art, explicit hand,
+weapon, muzzle, and flashlight sockets, and reusable effects. It receives completed
+shot, reload, damage, death, posture, movement-mode, and terminal state; it never
+changes health, ammunition, stamina, collision, position, inventory, or objectives.
+
+No licensed skeletal player model or animation clips are present in this repository.
+The game therefore runs with one isolated low-detail humanoid and pistol fallback.
+The imported-model root is hidden, the fallback root is visible, and the
+`AnimationTree` remains inactive. They cannot render simultaneously. A short
+material-only muzzle flash, recoil offset, locomotion bob, smooth visual yaw, and
+smooth posture profile are reused without creating runtime nodes or materials.
+
+Locomotion uses the actual post-physics XZ velocity projected onto the validated aim
+forward/right axes. A stop/start hysteresis prevents idle oscillation; direction and
+speed are exposed to a future `BlendSpace2D`. Presentation priority is Death,
+terminal/disabled, Hit Reaction, Reload, Fire, posture locomotion, then Idle.
+Completed gameplay events start one-shots; animation callbacks never issue gameplay
+commands. Player meshes and primitive equipment remain on the named player visual
+layer, outside the flashlight cull mask, while world walls retain shadows.
+
+Future player art must use `.glb`, 1 unit = 1 metre, Y-up, visual forward `-Z`, a
+ground-level origin, and presentation-only meshes/skeleton/animations. Normalize
+orientation and scale once at `ModelAlignmentRoot3D`; do not edit Godot's generated
+imported scene or generate gameplay collision from the mesh. Create a
+`PlayerAnimationSet3D` resource containing the exact imported clip names and author
+matching stable states in the wrapper's `AnimationTree`. Root motion must remain
+disabled. Replacing art should require only the imported-model child, animation map,
+tree, and socket/bone-attachment transforms, not gameplay-controller changes.
+
 
 ## Legacy MetroLevel01 gameplay greybox
 

@@ -59,11 +59,12 @@ public sealed partial class PlayerFlashlightController3D : Node3D
                 "FlashlightSpotLight3D requires controlled shadow opacity below 0.8.");
         }
 
-        if (!Position.IsFinite() || Position.Z >= -0.6f ||
+        if (!Position.IsFinite() ||
             !Rotation.IsFinite() || RotationDegrees.X >= -20.0f)
         {
             throw new InvalidOperationException(
-                "Flashlight origin must be finite, ahead of the player, and angled toward the floor.");
+                "Flashlight adapter transform must be finite and angled toward the floor. " +
+                "Its forward offset is authored and validated by PlayerVisual3D's socket.");
         }
 
         _model = new FlashlightModel(definition, StartOn);

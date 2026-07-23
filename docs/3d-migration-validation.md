@@ -478,3 +478,93 @@ Executed final checks on 2026-07-22:
 - Hardware-rendered manual verification was unavailable: the runner exposed no
   display server, Xvfb executable, or `/dev/dri` device. The position checks above
   are automated physics/material checks, not a visual-play claim.
+
+## Stage 3D-04: player model, animation, and presentation pipeline
+
+Repository and asset state found before editing:
+
+- `Player3D.tscn` directly contained a capsule body, forward marker, primitive
+  pistol, muzzle markers, and flashlight. `PlayerController3D` scaled a visual node
+  as part of authoritative posture mutation.
+- Completed typed events already existed for resolved shots, reload status, damage,
+  death, posture, movement mode, and terminal input. Those events were reused.
+- No `.glb`, `.gltf`, `.fbx`, `.blend`, `.dae`, skeletal player, animation clip set,
+  production pistol, or production flashlight mesh was present. No external asset
+  was downloaded or generated.
+
+Completed behavior:
+
+- Added a dedicated `PlayerVisual3D` wrapper with mutually exclusive imported-model
+  and development-fallback roots, one normalized alignment root, a model-yaw root,
+  `AnimationPlayer`, inactive-but-configurable `AnimationTree`, CameraTarget, and
+  explicit RightHand, Weapon, WeaponOrigin, Muzzle, and Flashlight sockets.
+- Moved all primitive presentation into an isolated low-detail humanoid/pistol
+  fallback. Physical capsules, gameplay sensors, models, rules, and controllers stay
+  on `Player3D`. The visual tree contains no collision object or gameplay sensor.
+- Added a plain typed presentation state machine with Death > terminal/disabled >
+  Hit > Reload > Fire > posture locomotion > Idle priority. It observes only
+  completed gameplay state, latches terminal/death, and cannot issue commands.
+- Added post-physics aim-relative XZ locomotion blending, directional cardinal and
+  diagonal output, 0.05/0.12 m/s idle hysteresis, authoritative movement-mode speed,
+  bounded animation speed, and cached optional AnimationTree parameter identifiers.
+- Added frame-rate-independent visual-yaw, posture, recoil, and fallback-bob
+  smoothing. Reused scene-authored muzzle flash and recoil nodes; no repeated node,
+  shape, material, or resource creation was introduced.
+- Passed weapon origin and muzzle markers explicitly from `Main3D` to the firearm
+  adapter. The existing player-excluding, World-masked muzzle clearance and first-hit
+  ray rules remain unchanged.
+- Kept player meshes and equipment on the named player render layer, outside the
+  flashlight cull mask. World lighting, wall shadowing, and camera occlusion remain
+  unchanged.
+- Extended the event-driven debug HUD with presentation state, local blend, action,
+  source, visual yaw, clip count, and socket validity. Debug snapshots are bounded
+  to five hertz, preserve a remainder, discard excess non-critical debt after the
+  documented catch-up cap, and publish only when changed.
+
+Created files:
+
+- `scenes/3d/player/PlayerVisual3D.tscn`
+- `src/Gameplay/Presentation/PlayerPresentationState.cs`
+- `src/Gameplay/Presentation/PlayerPresentationStateMachine.cs`
+- `src/World3D/Presentation/PlayerAnimationSet3D.cs`
+- `src/World3D/Presentation/PlayerLocomotionBlend3D.cs`
+- `src/World3D/Presentation/PlayerVisualController3D.cs`
+- `src/World3D/Presentation/PlayerVisualDebugSnapshot.cs`
+- `src/Tests/Suites/PlayerPresentation3DFeatureTests.cs`
+
+Focused coverage verifies physical/visual separation, directional blend, idle
+hysteresis, all movement profiles, independent aim, blocked posture, resolved-shot
+deduplication, successful-only reload presentation, cancellation, one hit per health
+event, death priority, terminal latching, socket hierarchy, muzzle-flash origin,
+missing-clip safety, fallback exclusivity, callback non-mutation, flashlight render
+isolation, and both 3D/legacy scene paths.
+
+Executed final checks on 2026-07-22:
+
+- `/tmp/no-way-up-dotnet/dotnet restore LineZero.csproj`: passed; all projects were
+  up to date.
+- `/tmp/no-way-up-dotnet/dotnet build LineZero.csproj --no-restore`: passed with
+  0 warnings and 0 errors.
+- `/tmp/no-way-up-godot/Godot_v4.7.1-stable_mono_linux_x86_64/
+  Godot_v4.7.1-stable_mono_linux.x86_64 --headless --path . --import`: passed. The
+  isolated runner required explicit temporary .NET/MSBuild and HOME/XDG environment
+  paths; import emitted no scene or script error.
+- The same Godot executable with `--headless --path .
+  res://scenes/tests/FeatureTests.tscn`: 29 suites, 173 tests, 173 passed, 0 failed.
+  Logged throwing-subscriber/listener exceptions are intentional isolation fixtures,
+  and every associated test passed.
+- The same executable with `--headless --path . --quit-after 180
+  res://scenes/3d/Main3D.tscn`: passed with exit code 0. The sole message explicitly
+  reports the expected development fallback because no model asset exists.
+- The same executable with `--headless --path . --quit-after 180
+  res://scenes/main/Main.tscn`: the legacy 2D reference passed with exit code 0 and
+  no runtime error output.
+- A normal hardware-rendered launch was attempted with `--path . --quit-after 2
+  res://scenes/3d/Main3D.tscn`. It could not initialize X11 or Wayland because this
+  runner has no display session, Xvfb, or `/dev/dri`. Consequently no visual-play,
+  hardware-FPS, foot-contact, model-scale, or animation-quality claim is made.
+
+Remaining presentation assets are a licensed metre-scale player `.glb` with a
+compatible skeleton, up to eleven required clips, final pistol/flashlight meshes,
+and final bone/socket transforms. The wrapper, clip mapping resource, state machine,
+and safe fallback are ready for those assets without a gameplay rewrite.

@@ -190,9 +190,11 @@ public sealed class Foundation3DFeatureTests : IFeatureTestSuite
                 player.GetNodeOrNull<Node3D>("%VisualPivot3D") is not null,
                 "Player3D has no separate visual pivot.");
             TestAssert.True(
-                player.GetNodeOrNull<MeshInstance3D>(
-                    "VisualPivot3D/PostureVisuals3D/ForwardMarker3D") is not null,
-                "Player3D has no visible forward marker inside the posture visuals root.");
+                player.Visual.GetNodeOrNull<MeshInstance3D>(
+                    "ModelYawRoot3D/ModelAlignmentRoot3D/DevelopmentFallbackRoot3D/" +
+                    "FallbackMotionRoot3D/FallbackFigureRoot3D/FallbackFacingMarker3D")
+                is not null,
+                "PlayerVisual3D has no isolated fallback facing marker.");
             TestAssert.True(
                 player.GetNodeOrNull<PlayerAimController3D>(
                     "%PlayerAimController3D") is not null,

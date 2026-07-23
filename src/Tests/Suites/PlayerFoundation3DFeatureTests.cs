@@ -151,7 +151,7 @@ public sealed class PlayerFoundation3DFeatureTests : IFeatureTestSuite
             });
 
         await context.RunAsync(
-            "space-stand-up-and-posture-visual-scaling-keep-equipment-stable",
+            "space-stand-up-and-authored-visual-sockets-stay-stable",
             async () =>
             {
                 PlayerController3D player =
@@ -160,10 +160,8 @@ public sealed class PlayerFoundation3DFeatureTests : IFeatureTestSuite
                 await context.WaitPhysicsFramesAsync(2);
 
                 Node3D visualPivot = player.GetNode<Node3D>("%VisualPivot3D");
-                Node3D postureVisuals = player.GetNode<Node3D>("%PostureVisuals3D");
-                Node3D flashlight = player.GetNode<Node3D>(
-                    "%PlayerFlashlightController3D");
-                Marker3D muzzle = player.GetNode<Marker3D>("%MuzzlePoint3D");
+                Node3D flashlight = player.Visual.FlashlightController;
+                Marker3D muzzle = player.Visual.MuzzleSocket;
                 Vector3 originalFlashlightPosition = flashlight.Position;
                 Vector3 originalMuzzlePosition = muzzle.Position;
                 Vector3 originalVisualPivotScale = visualPivot.Scale;
@@ -181,9 +179,8 @@ public sealed class PlayerFoundation3DFeatureTests : IFeatureTestSuite
                     "Posture changes moved the muzzle origin unexpectedly.");
                 AssertVectorNearlyEqual(originalVisualPivotScale, visualPivot.Scale,
                     "The shared visual pivot still scales equipment and lighting.");
-                TestAssert.True(postureVisuals.Scale.Y > 0.45f &&
-                                postureVisuals.Scale.Y <= 1.0f,
-                    "Posture-only presentation root has no bounded posture scaling.");
+                TestAssert.True(player.Visual.HasValidSocketHierarchy,
+                    "Posture input invalidated the visual socket hierarchy.");
 
                 TestAssert.True(player.TrySetPosture(MovementMode.Crouch),
                     "Player could not re-enter Crouch.");
@@ -192,8 +189,10 @@ public sealed class PlayerFoundation3DFeatureTests : IFeatureTestSuite
                     "Crouch changed the flashlight local origin.");
                 AssertVectorNearlyEqual(originalMuzzlePosition, muzzle.Position,
                     "Crouch changed the muzzle local origin.");
-                TestAssert.True(postureVisuals.Scale.Y < 1.0f,
-                    "Crouch did not shrink only the posture visuals.");
+                TestAssert.True(
+                    player.Visual.DevelopmentFallbackRoot.Visible !=
+                    player.Visual.ImportedModelRoot.Visible,
+                    "Development fallback and imported model rendered together.");
             });
 
         await context.RunAsync(

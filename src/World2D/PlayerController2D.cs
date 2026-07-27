@@ -151,7 +151,7 @@ public sealed partial class PlayerController2D : CharacterBody2D,
             return;
         }
 
-        Vector2 aimDirection = GetGlobalMousePosition() - GlobalPosition;
+        Vector2 aimDirection = GetGlobalMousePosition() - _aimPivot.GlobalPosition;
         if (aimDirection.LengthSquared() > MinimumAimDistanceSquared)
         {
             _aimPivot.GlobalRotation = aimDirection.Angle();

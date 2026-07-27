@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://src/World2D/Interaction/InspectableObject2D.cs" id="1_inspectable"]
+[ext_resource type="Script" path="res://src/World2D/Presentation/DepthSortAnchor2D.cs" id="2_depth_sort"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_interaction"]
 size = Vector2(54, 44)
@@ -16,6 +17,11 @@ InteractionPriority = 1
 PromptText = "Inspect terminal"
 MessageText = "The terminal has no power."
 IsReusable = true
+
+[node name="DepthSortAnchor2D" type="Node" parent="."]
+script = ExtResource("2_depth_sort")
+SortOffsetY = 23.0
+UpdateContinuously = false
 
 [node name="InteractionShape" type="CollisionShape2D" parent="."]
 unique_name_in_owner = true

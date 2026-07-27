@@ -66,6 +66,8 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
     private double _nextAttackAllowedAtSeconds;
     private double _investigationAcceptedAtSeconds;
     private float _investigationPriorityScore;
+    private float _visualFacingSign = 1.0f;
+    private float _visualFeedbackScale = 1.0f;
     private float _pendingNoisePriorityScore;
     private ulong _lastProcessedNoiseSequence;
     private bool _bindingEstablished;
@@ -229,7 +231,8 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
         _navigationAgent.MaxSpeed = _definition.MoveSpeed;
         _navigationAgent.AvoidanceEnabled = false;
         _stateLabel.Visible = EnableDebugStateLabel;
-        _visualPivot.Rotation = _facingDirection.Angle();
+        _visualFacingSign = _facingDirection.X < 0.0f ? -1.0f : 1.0f;
+        ApplyVisualTransform();
         _sightRayExclusions.Add(GetRid());
 
         _health.Changed += OnHealthChanged;
@@ -828,7 +831,8 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
 
         _isAttackPending = true;
         _coreVisual.Color = AttackTelegraphColor;
-        _visualPivot.Scale = new Vector2(1.08f, 1.08f);
+        _visualFeedbackScale = 1.08f;
+        ApplyVisualTransform();
         _attackWindupTimer.Start(AttackTelegraphSeconds);
     }
 
@@ -1263,7 +1267,25 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
         }
 
         _facingDirection = direction.Normalized();
-        _visualPivot.Rotation = _facingDirection.Angle();
+        if (Mathf.Abs(_facingDirection.X) > 0.05f)
+        {
+            _visualFacingSign = _facingDirection.X < 0.0f ? -1.0f : 1.0f;
+        }
+
+        ApplyVisualTransform();
+    }
+
+    private void ApplyVisualTransform()
+    {
+        if (!GodotObject.IsInstanceValid(_visualPivot))
+        {
+            return;
+        }
+
+        _visualPivot.Rotation = 0.0f;
+        _visualPivot.Scale = new Vector2(
+            _visualFacingSign * _visualFeedbackScale,
+            _visualFeedbackScale);
     }
 
     private void OnAttackWindupTimeout()
@@ -1333,7 +1355,8 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
             return;
         }
 
-        _visualPivot.Scale = Vector2.One;
+        _visualFeedbackScale = 1.0f;
+        ApplyVisualTransform();
         if (Health.IsAlive && GodotObject.IsInstanceValid(_coreVisual))
         {
             _coreVisual.Color = _aliveCoreColor;
@@ -1405,7 +1428,8 @@ public sealed partial class MutantController2D : CharacterBody2D, IHealthOwner, 
         _navigationAgent.AvoidanceEnabled = false;
         _bodyVisual.Color = DeadBodyColor;
         _coreVisual.Color = DeadCoreColor;
-        _visualPivot.Scale = Vector2.One;
+        _visualFeedbackScale = 1.0f;
+        ApplyVisualTransform();
         DetachTargetSubscriptions(clearReferences: true);
         RefreshHealthDisplay();
     }

@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://src/World2D/Interaction/SlidingDoor2D.cs" id="1_door"]
+[ext_resource type="Script" path="res://src/World2D/Presentation/DepthSortAnchor2D.cs" id="2_depth_sort"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_interaction"]
 size = Vector2(120, 190)
@@ -18,6 +19,11 @@ InteractionPriority = 3
 OpeningDirection = Vector2(0, -1)
 OpeningDistance = 190.0
 AnimationDuration = 0.7
+
+[node name="DepthSortAnchor2D" type="Node" parent="."]
+script = ExtResource("2_depth_sort")
+SortOffsetY = 78.0
+UpdateContinuously = false
 
 [node name="InteractionShape" type="CollisionShape2D" parent="."]
 unique_name_in_owner = true

@@ -1,4 +1,4 @@
-[gd_scene load_steps=72 format=3]
+[gd_scene load_steps=73 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/interactables/SlidingDoor2D.tscn" id="1_door"]
 [ext_resource type="PackedScene" path="res://scenes/interactables/InspectableObject2D.tscn" id="2_inspectable"]
@@ -28,6 +28,7 @@
 [ext_resource type="Resource" path="res://data/inventory/MaintenanceFuseCrateReplacementFuse.tres" id="26_fuse_seed"]
 [ext_resource type="Script" path="res://src/World2D/Levels/MetroLevelController2D.cs" id="27_controller"]
 [ext_resource type="Texture2D" path="res://assets/generated/emergency_light.svg" id="28_light_texture"]
+[ext_resource type="Script" path="res://src/World2D/Presentation/MetroObliquePresentation2D.cs" id="29_oblique_presentation"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_TicketTop"]
 size = Vector2(490, 20)
@@ -160,6 +161,11 @@ size = Vector2(120, 30)
 
 [node name="MetroLevel01" type="Node2D"]
 script = ExtResource("27_controller")
+
+[node name="ObliquePresentation" type="Node2D" parent="."]
+script = ExtResource("29_oblique_presentation")
+DefaultWallHeight = 36.0
+ShadowOffset = Vector2(11, 13)
 
 [node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
 unique_name_in_owner = true

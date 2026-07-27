@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/World2D/Interaction/LootContainer2D.cs" id="1_container"]
 [ext_resource type="Script" path="res://src/Gameplay/Inventory/InventoryComponent.cs" id="2_inventory"]
+[ext_resource type="Script" path="res://src/World2D/Presentation/DepthSortAnchor2D.cs" id="3_depth_sort"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_interaction"]
 size = Vector2(132, 104)
@@ -10,7 +11,6 @@ size = Vector2(132, 104)
 size = Vector2(82, 56)
 
 [node name="LootContainer2D" type="Area2D"]
-z_index = 1
 collision_layer = 2
 collision_mask = 0
 monitoring = false
@@ -19,6 +19,11 @@ script = ExtResource("1_container")
 InteractionPriority = 1
 ContainerDisplayName = "Storage Container"
 SlotCapacity = 8
+
+[node name="DepthSortAnchor2D" type="Node" parent="."]
+script = ExtResource("3_depth_sort")
+SortOffsetY = 29.0
+UpdateContinuously = false
 
 [node name="InteractionShape" type="CollisionShape2D" parent="."]
 unique_name_in_owner = true
@@ -39,36 +44,49 @@ shape = SubResource("RectangleShape2D_solid")
 [node name="VisualRoot" type="Node2D" parent="."]
 
 [node name="Shadow" type="Polygon2D" parent="VisualRoot"]
-position = Vector2(4, 5)
-color = Color(0.008, 0.012, 0.015, 0.72)
-polygon = PackedVector2Array(-44, -31, 44, -31, 44, 31, -44, 31)
+z_index = -1
+position = Vector2(7, 8)
+color = Color(0.008, 0.012, 0.015, 0.62)
+polygon = PackedVector2Array(-46, -15, 40, -15, 49, 8, 35, 24, -45, 24, -53, 8)
 
-[node name="Body" type="Polygon2D" parent="VisualRoot"]
-color = Color(0.17, 0.205, 0.215, 1)
-polygon = PackedVector2Array(-44, -31, 44, -31, 44, 31, -44, 31)
+[node name="FrontFace" type="Polygon2D" parent="VisualRoot"]
+z_index = 1
+color = Color(0.14, 0.17, 0.18, 1)
+polygon = PackedVector2Array(-44, -15, 43, -15, 43, 24, -44, 24)
+
+[node name="TopFace" type="Polygon2D" parent="VisualRoot"]
+z_index = 2
+color = Color(0.24, 0.28, 0.29, 1)
+polygon = PackedVector2Array(-44, -15, -31, -34, 39, -34, 43, -15)
+
+[node name="RightFace" type="Polygon2D" parent="VisualRoot"]
+z_index = 2
+color = Color(0.09, 0.115, 0.125, 1)
+polygon = PackedVector2Array(43, -15, 51, -25, 51, 12, 43, 24)
 
 [node name="Inset" type="Polygon2D" parent="VisualRoot"]
-z_index = 1
-color = Color(0.075, 0.095, 0.105, 1)
-polygon = PackedVector2Array(-36, -23, 36, -23, 36, 23, -36, 23)
+z_index = 3
+color = Color(0.055, 0.07, 0.078, 1)
+polygon = PackedVector2Array(-35, -9, 34, -9, 34, 15, -35, 15)
 
 [node name="WarningStripe" type="Polygon2D" parent="VisualRoot"]
-z_index = 2
+z_index = 4
 color = Color(0.73, 0.51, 0.13, 0.9)
-polygon = PackedVector2Array(-36, 9, 36, 9, 36, 16, -36, 16)
+polygon = PackedVector2Array(-35, 5, 34, 5, 34, 11, -35, 11)
 
 [node name="Latch" type="Polygon2D" parent="VisualRoot"]
-z_index = 3
+z_index = 5
+position = Vector2(0, -4)
 color = Color(0.64, 0.69, 0.69, 1)
 polygon = PackedVector2Array(-7, -4, 7, -4, 7, 7, -7, 7)
 
 [node name="ContainerLabel" type="Label" parent="VisualRoot"]
 unique_name_in_owner = true
-z_index = 4
+z_index = 8
 offset_left = -88.0
-offset_top = -57.0
+offset_top = -62.0
 offset_right = 88.0
-offset_bottom = -34.0
+offset_bottom = -39.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.9, 0.93, 0.91, 1)
 theme_override_colors/font_outline_color = Color(0.01, 0.015, 0.02, 0.95)

@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=32 format=3]
 
 [ext_resource type="Script" path="res://src/World2D/PlayerController2D.cs" id="1_controller"]
 [ext_resource type="Resource" path="res://data/player/DefaultPlayerMovement.tres" id="2_movement"]
@@ -17,6 +17,14 @@
 [ext_resource type="Script" path="res://src/World2D/Levels/PlayerObjectiveSensor2D.cs" id="15_objective_sensor"]
 [ext_resource type="Script" path="res://src/World2D/Presentation/PlayerMiniDayzPresentation2D.cs" id="16_presentation"]
 [ext_resource type="Script" path="res://src/World2D/Presentation/DepthSortAnchor2D.cs" id="17_depth_sort"]
+[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/idle_down.png" id="18_idle_down"]
+[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/idle_up.png" id="19_idle_up"]
+[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/idle_left.png" id="20_idle_left"]
+[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/idle_right.png" id="21_idle_right"]
+[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/run_down.png" id="22_run_down"]
+[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/run_up.png" id="23_run_up"]
+[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/run_left.png" id="24_run_left"]
+[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/run_right.png" id="25_run_right"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
 radius = 14.0
@@ -73,30 +81,35 @@ z_index = 12
 position = Vector2(0, -28)
 
 [node name="RearArm" type="Polygon2D" parent="AimPivot"]
+visible = false
 z_index = 1
 position = Vector2(2, 0)
 color = Color(0.47, 0.34, 0.25, 1)
 polygon = PackedVector2Array(-4, -4, 17, -3, 24, 0, 17, 4, -4, 5)
 
 [node name="Sleeve" type="Polygon2D" parent="AimPivot"]
+visible = false
 z_index = 2
 position = Vector2(-2, 0)
 color = Color(0.17, 0.24, 0.22, 1)
 polygon = PackedVector2Array(-8, -7, 8, -6, 12, 0, 8, 6, -8, 7)
 
 [node name="FrontArm" type="Polygon2D" parent="AimPivot"]
+visible = false
 z_index = 4
 position = Vector2(5, 5)
 color = Color(0.58, 0.42, 0.3, 1)
 polygon = PackedVector2Array(-4, -3, 19, -2, 25, 0, 19, 3, -4, 4)
 
 [node name="ServicePistolVisual" type="Polygon2D" parent="AimPivot"]
+visible = false
 z_index = 3
 position = Vector2(21, 0)
 color = Color(0.2, 0.22, 0.22, 1)
 polygon = PackedVector2Array(-8, -4, 15, -4, 20, -2, 20, 2, 5, 2, 3, 10, -4, 10, -4, 2, -8, 2)
 
 [node name="PistolHighlight" type="Line2D" parent="AimPivot"]
+visible = false
 z_index = 5
 points = PackedVector2Array(15, -2, 36, -2)
 width = 1.5
@@ -130,6 +143,22 @@ texture_scale = 1.15
 [node name="CharacterVisual" type="Node2D" parent="."]
 z_index = 6
 script = ExtResource("16_presentation")
+IdleDownTexture = ExtResource("18_idle_down")
+IdleUpTexture = ExtResource("19_idle_up")
+IdleLeftTexture = ExtResource("20_idle_left")
+IdleRightTexture = ExtResource("21_idle_right")
+RunDownTexture = ExtResource("22_run_down")
+RunUpTexture = ExtResource("23_run_up")
+RunLeftTexture = ExtResource("24_run_left")
+RunRightTexture = ExtResource("25_run_right")
+
+[node name="CharacterSprite" type="Sprite2D" parent="CharacterVisual"]
+unique_name_in_owner = true
+texture_filter = 1
+position = Vector2(0, -34)
+scale = Vector2(2, 2)
+texture = ExtResource("18_idle_down")
+hframes = 5
 
 [node name="GroundShadow" type="Polygon2D" parent="CharacterVisual"]
 unique_name_in_owner = true
@@ -140,6 +169,7 @@ polygon = PackedVector2Array(-18, 0, -14, -5, -5, -8, 7, -8, 17, -4, 20, 0, 16, 
 
 [node name="BodyRig" type="Node2D" parent="CharacterVisual"]
 unique_name_in_owner = true
+visible = false
 
 [node name="RearLeg" type="Polygon2D" parent="CharacterVisual/BodyRig"]
 unique_name_in_owner = true
@@ -300,13 +330,6 @@ unique_name_in_owner = true
 shape = SubResource("CircleShape2D_interaction")
 
 [node name="Camera2D" type="Camera2D" parent="."]
-zoom = Vector2(1.15, 1.15)
-position_smoothing_enabled = true
-position_smoothing_speed = 6.0
-drag_horizontal_enabled = true
-drag_vertical_enabled = true
-drag_left_margin = 0.08
-drag_top_margin = 0.08
-drag_right_margin = 0.08
-drag_bottom_margin = 0.08
+process_callback = 0
+zoom = Vector2(1, 1)
 enabled = true

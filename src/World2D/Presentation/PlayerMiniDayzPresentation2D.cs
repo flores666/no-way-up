@@ -6,135 +6,167 @@ namespace LineZero.World2D.Presentation;
 
 public sealed partial class PlayerMiniDayzPresentation2D : Node2D
 {
-    private const float MinimumFacingHorizontal = 3.0f;
+    private const int SourceFrameWidth = 88;
+    private const int SourceFrameHeight = 88;
     private const float MinimumAnimationSpeed = 4.0f;
+    private const float MinimumFacingDistanceSquared = 36.0f;
+
+    private enum FacingDirection
+    {
+        Down,
+        Up,
+        Left,
+        Right
+    }
 
     private PlayerController2D _player = null!;
-    private Node2D _bodyRig = null!;
-    private Node2D _aimPivot = null!;
-    private Polygon2D _frontLeg = null!;
-    private Polygon2D _rearLeg = null!;
-    private Polygon2D _groundShadow = null!;
-    private float _stridePhase;
-    private float _facingSign = 1.0f;
+    private Sprite2D _characterSprite = null!;
+    private FacingDirection _facingDirection = FacingDirection.Down;
+    private bool _isMoving;
+    private float _frameCursor;
+
+    [Export] public Texture2D? IdleDownTexture { get; set; }
+    [Export] public Texture2D? IdleUpTexture { get; set; }
+    [Export] public Texture2D? IdleLeftTexture { get; set; }
+    [Export] public Texture2D? IdleRightTexture { get; set; }
+    [Export] public Texture2D? RunDownTexture { get; set; }
+    [Export] public Texture2D? RunUpTexture { get; set; }
+    [Export] public Texture2D? RunLeftTexture { get; set; }
+    [Export] public Texture2D? RunRightTexture { get; set; }
+
+    [Export(PropertyHint.Range, "1,16,0.5")]
+    public float IdleFramesPerSecond { get; set; } = 4.0f;
+
+    [Export(PropertyHint.Range, "1,24,0.5")]
+    public float WalkFramesPerSecond { get; set; } = 7.0f;
+
+    [Export(PropertyHint.Range, "1,24,0.5")]
+    public float SprintFramesPerSecond { get; set; } = 11.0f;
+
+    [Export(PropertyHint.Range, "1,24,0.5")]
+    public float CrouchFramesPerSecond { get; set; } = 5.0f;
 
     public override void _Ready()
     {
         _player = GetParent() as PlayerController2D
             ?? throw new InvalidOperationException(
-                $"{nameof(PlayerMiniDayzPresentation2D)} on '{Name}' requires " +
-                $"a {nameof(PlayerController2D)} parent.");
-        _bodyRig = RequireNode<Node2D>("%BodyRig");
-        _aimPivot = RequireNode<Node2D>("%AimPivot");
-        _frontLeg = RequireNode<Polygon2D>("%FrontLeg");
-        _rearLeg = RequireNode<Polygon2D>("%RearLeg");
-        _groundShadow = RequireNode<Polygon2D>("%GroundShadow");
+                $"{nameof(PlayerMiniDayzPresentation2D)} on '{Name}' requires a {nameof(PlayerController2D)} parent.");
+        _characterSprite = RequireNode<Sprite2D>("%CharacterSprite");
+
+        ValidateTexture(IdleDownTexture, nameof(IdleDownTexture), 5);
+        ValidateTexture(IdleUpTexture, nameof(IdleUpTexture), 5);
+        ValidateTexture(IdleLeftTexture, nameof(IdleLeftTexture), 5);
+        ValidateTexture(IdleRightTexture, nameof(IdleRightTexture), 5);
+        ValidateTexture(RunDownTexture, nameof(RunDownTexture), 5);
+        ValidateTexture(RunUpTexture, nameof(RunUpTexture), 5);
+        ValidateTexture(RunLeftTexture, nameof(RunLeftTexture), 5);
+        ValidateTexture(RunRightTexture, nameof(RunRightTexture), 5);
+
+        ApplyAnimation(false, FacingDirection.Down, true);
     }
 
     public override void _Process(double delta)
     {
+        Vector2 velocity = _player.Velocity;
+        float speed = velocity.Length();
+        bool isMoving = speed >= MinimumAnimationSpeed;
+
         Vector2 aimDirection = GetGlobalMousePosition() - _player.GlobalPosition;
-        if (Mathf.Abs(aimDirection.X) >= MinimumFacingHorizontal)
+        FacingDirection direction = aimDirection.LengthSquared() >= MinimumFacingDistanceSquared
+            ? ResolveDirection(aimDirection)
+            : isMoving ? ResolveDirection(velocity) : _facingDirection;
+
+        bool animationChanged = isMoving != _isMoving || direction != _facingDirection;
+        if (animationChanged)
         {
-            _facingSign = aimDirection.X < 0.0f ? -1.0f : 1.0f;
+            ApplyAnimation(isMoving, direction, isMoving != _isMoving);
         }
 
-        Scale = new Vector2(_facingSign, 1.0f);
-        UpdateStride((float)delta);
-        UpdatePosture();
-        UpdateWeaponLayering(aimDirection);
+        float framesPerSecond = isMoving
+            ? GetMovementFramesPerSecond(_player.CurrentMovementMode)
+            : IdleFramesPerSecond;
+
+        int frameCount = Math.Max(_characterSprite.Hframes, 1);
+        _frameCursor = Mathf.PosMod(_frameCursor + framesPerSecond * (float)delta, frameCount);
+        _characterSprite.Frame = Math.Clamp((int)Mathf.Floor(_frameCursor), 0, frameCount - 1);
     }
 
-    private void UpdateStride(float delta)
+    private void ApplyAnimation(bool isMoving, FacingDirection direction, bool restart)
     {
-        float speed = _player.Velocity.Length();
-        if (speed >= MinimumAnimationSpeed)
+        Texture2D texture = ResolveTexture(isMoving, direction);
+        int frameCount = texture.GetWidth() / SourceFrameWidth;
+
+        _isMoving = isMoving;
+        _facingDirection = direction;
+        _characterSprite.Texture = texture;
+        _characterSprite.Hframes = frameCount;
+        _characterSprite.Vframes = 1;
+
+        if (restart)
         {
-            float cadence = _player.CurrentMovementMode == MovementMode.Sprint
-                ? 13.0f
-                : 8.5f;
-            _stridePhase = Mathf.PosMod(_stridePhase + cadence * delta, Mathf.Tau);
-            return;
+            _frameCursor = 0.0f;
+        }
+        else
+        {
+            _frameCursor = Mathf.PosMod(_frameCursor, frameCount);
         }
 
-        _stridePhase = Mathf.Lerp(_stridePhase, 0.0f, Mathf.Clamp(delta * 8.0f, 0.0f, 1.0f));
+        _characterSprite.Frame = Math.Clamp((int)Mathf.Floor(_frameCursor), 0, frameCount - 1);
     }
 
-    private void UpdatePosture()
+    private Texture2D ResolveTexture(bool isMoving, FacingDirection direction)
     {
-        float speedFactor = Mathf.Clamp(_player.Velocity.Length() / 230.0f, 0.0f, 1.0f);
-        float stride = Mathf.Sin(_stridePhase);
-        float bob = Mathf.Abs(Mathf.Sin(_stridePhase * 2.0f));
-
-        Vector2 rigPosition;
-        Vector2 rigScale;
-        float rigRotation;
-        float legSwing;
-        float aimHeight;
-        Vector2 shadowScale;
-
-        switch (_player.CurrentMovementMode)
+        return (isMoving, direction) switch
         {
-            case MovementMode.Crouch:
-                rigPosition = new Vector2(0.0f, 8.0f + bob * 0.7f);
-                rigScale = new Vector2(1.0f, 0.82f);
-                rigRotation = -0.04f;
-                legSwing = stride * 0.10f * speedFactor;
-                aimHeight = -20.0f;
-                shadowScale = new Vector2(1.12f, 0.88f);
-                break;
-            case MovementMode.Crawl:
-                rigPosition = new Vector2(1.0f, 12.0f);
-                rigScale = new Vector2(0.92f, 0.78f);
-                rigRotation = 1.22f;
-                legSwing = stride * 0.07f * speedFactor;
-                aimHeight = -5.0f;
-                shadowScale = new Vector2(1.55f, 0.78f);
-                break;
-            case MovementMode.Sprint:
-                rigPosition = new Vector2(0.0f, -1.0f + bob * 1.8f);
-                rigScale = new Vector2(1.03f, 1.03f);
-                rigRotation = -0.08f;
-                legSwing = stride * 0.36f * speedFactor;
-                aimHeight = -27.0f;
-                shadowScale = new Vector2(1.15f, 0.92f);
-                break;
-            default:
-                rigPosition = new Vector2(0.0f, bob * 1.0f);
-                rigScale = Vector2.One;
-                rigRotation = -0.025f;
-                legSwing = stride * 0.24f * speedFactor;
-                aimHeight = -28.0f;
-                shadowScale = Vector2.One;
-                break;
-        }
-
-        _bodyRig.Position = rigPosition;
-        _bodyRig.Scale = rigScale;
-        _bodyRig.Rotation = rigRotation;
-        _frontLeg.Rotation = legSwing;
-        _rearLeg.Rotation = -legSwing;
-        _groundShadow.Scale = shadowScale;
-        _aimPivot.Position = new Vector2(0.0f, aimHeight + bob * 0.35f);
+            (false, FacingDirection.Down) => IdleDownTexture!,
+            (false, FacingDirection.Up) => IdleUpTexture!,
+            (false, FacingDirection.Left) => IdleLeftTexture!,
+            (false, FacingDirection.Right) => IdleRightTexture!,
+            (true, FacingDirection.Down) => RunDownTexture!,
+            (true, FacingDirection.Up) => RunUpTexture!,
+            (true, FacingDirection.Left) => RunLeftTexture!,
+            (true, FacingDirection.Right) => RunRightTexture!,
+            _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+        };
     }
 
-    private void UpdateWeaponLayering(Vector2 aimDirection)
+    private float GetMovementFramesPerSecond(MovementMode movementMode)
     {
-        if (aimDirection.LengthSquared() <= 0.0001f)
+        return movementMode switch
         {
-            return;
-        }
-
-        bool pointsLeft = aimDirection.X < 0.0f;
-        _aimPivot.Scale = new Vector2(1.0f, pointsLeft ? -1.0f : 1.0f);
-        _aimPivot.ZIndex = aimDirection.Y < -4.0f ? 3 : 12;
+            MovementMode.Sprint => SprintFramesPerSecond,
+            MovementMode.Crouch => CrouchFramesPerSecond,
+            MovementMode.Crawl => CrouchFramesPerSecond,
+            _ => WalkFramesPerSecond
+        };
     }
 
-    private TNode RequireNode<TNode>(string path)
-        where TNode : Node
+    private static FacingDirection ResolveDirection(Vector2 direction)
+    {
+        if (Mathf.Abs(direction.X) > Mathf.Abs(direction.Y))
+        {
+            return direction.X < 0.0f ? FacingDirection.Left : FacingDirection.Right;
+        }
+        return direction.Y < 0.0f ? FacingDirection.Up : FacingDirection.Down;
+    }
+
+    private static void ValidateTexture(Texture2D? texture, string propertyName, int expectedFrames)
+    {
+        if (texture is null)
+        {
+            throw new InvalidOperationException($"{nameof(PlayerMiniDayzPresentation2D)} requires {propertyName}.");
+        }
+        int expectedWidth = SourceFrameWidth * expectedFrames;
+        if (texture.GetWidth() != expectedWidth || texture.GetHeight() != SourceFrameHeight)
+        {
+            throw new InvalidOperationException(
+                $"{propertyName} must be {expectedWidth}x{SourceFrameHeight}, but is {texture.GetWidth()}x{texture.GetHeight()}.");
+        }
+    }
+
+    private TNode RequireNode<TNode>(string path) where TNode : Node
     {
         return GetNodeOrNull<TNode>(path)
-            ?? throw new InvalidOperationException(
-                $"{nameof(PlayerMiniDayzPresentation2D)} on '{Name}' requires '{path}'.");
+            ?? throw new InvalidOperationException($"{nameof(PlayerMiniDayzPresentation2D)} on '{Name}' requires '{path}'.");
     }
 }

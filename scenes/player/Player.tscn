@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=3]
+[gd_scene load_steps=36 format=3]
 
 [ext_resource type="Script" path="res://src/World2D/PlayerController2D.cs" id="1_controller"]
 [ext_resource type="Resource" path="res://data/player/DefaultPlayerMovement.tres" id="2_movement"]
@@ -17,14 +17,18 @@
 [ext_resource type="Script" path="res://src/World2D/Levels/PlayerObjectiveSensor2D.cs" id="15_objective_sensor"]
 [ext_resource type="Script" path="res://src/World2D/Presentation/PlayerMiniDayzPresentation2D.cs" id="16_presentation"]
 [ext_resource type="Script" path="res://src/World2D/Presentation/DepthSortAnchor2D.cs" id="17_depth_sort"]
-[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/idle_down.png" id="18_idle_down"]
-[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/idle_up.png" id="19_idle_up"]
-[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/idle_left.png" id="20_idle_left"]
-[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/idle_right.png" id="21_idle_right"]
-[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/run_down.png" id="22_run_down"]
-[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/run_up.png" id="23_run_up"]
-[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/run_left.png" id="24_run_left"]
-[ext_resource type="Texture2D" path="res://assets/player/survivor_animations/run_right.png" id="25_run_right"]
+[ext_resource type="Texture2D" path="res://assets/player/character/idle_down.png" id="18_idle_down"]
+[ext_resource type="Texture2D" path="res://assets/player/character/idle_up.png" id="19_idle_up"]
+[ext_resource type="Texture2D" path="res://assets/player/character/idle_left.png" id="20_idle_left"]
+[ext_resource type="Texture2D" path="res://assets/player/character/idle_right.png" id="21_idle_right"]
+[ext_resource type="Texture2D" path="res://assets/player/character/run_down.png" id="22_run_down"]
+[ext_resource type="Texture2D" path="res://assets/player/character/run_up.png" id="23_run_up"]
+[ext_resource type="Texture2D" path="res://assets/player/character/run_left.png" id="24_run_left"]
+[ext_resource type="Texture2D" path="res://assets/player/character/run_right.png" id="25_run_right"]
+[ext_resource type="Texture2D" path="res://assets/player/character/idle_down_aim.png" id="26_aim_down"]
+[ext_resource type="Texture2D" path="res://assets/player/character/idle_up_aim.png" id="27_aim_up"]
+[ext_resource type="Texture2D" path="res://assets/player/character/idle_left_aim.png" id="28_aim_left"]
+[ext_resource type="Texture2D" path="res://assets/player/character/idle_right_aim.png" id="29_aim_right"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
 radius = 14.0
@@ -151,14 +155,18 @@ RunDownTexture = ExtResource("22_run_down")
 RunUpTexture = ExtResource("23_run_up")
 RunLeftTexture = ExtResource("24_run_left")
 RunRightTexture = ExtResource("25_run_right")
+AimDownTexture = ExtResource("26_aim_down")
+AimUpTexture = ExtResource("27_aim_up")
+AimLeftTexture = ExtResource("28_aim_left")
+AimRightTexture = ExtResource("29_aim_right")
 
 [node name="CharacterSprite" type="Sprite2D" parent="CharacterVisual"]
 unique_name_in_owner = true
 texture_filter = 1
-position = Vector2(0, -34)
+position = Vector2(17, -20)
 scale = Vector2(2, 2)
 texture = ExtResource("18_idle_down")
-hframes = 5
+hframes = 9
 
 [node name="GroundShadow" type="Polygon2D" parent="CharacterVisual"]
 unique_name_in_owner = true

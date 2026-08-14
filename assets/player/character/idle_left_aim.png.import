@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d3ib2452iysd5"
-path="res://.godot/imported/run_right.png-9d7ae4012b847adc8a3b9f9c3d6de07c.ctex"
+uid="uid://beddiuyfhwjmm"
+path="res://.godot/imported/idle_left_aim.png-136cec271ca0010bf33948f69023041e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/player/survivor_animations/run_right.png"
-dest_files=["res://.godot/imported/run_right.png-9d7ae4012b847adc8a3b9f9c3d6de07c.ctex"]
+source_file="res://assets/player/character/idle_left_aim.png"
+dest_files=["res://.godot/imported/idle_left_aim.png-136cec271ca0010bf33948f69023041e.ctex"]
 
 [params]
 

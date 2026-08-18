@@ -95,13 +95,20 @@ public sealed partial class WeaponHudController : MarginContainer
         InventoryModel inventory = _inventory
             ?? throw new InvalidOperationException(
                 $"{nameof(WeaponHudController)} on '{Name}' has no inventory.");
-        string ammoItemId = state.Definition.AmmoItemDefinition?.Id
-            ?? throw new InvalidOperationException(
-                "A validated firearm definition lost its ammunition item.");
-
-        int reserveAmmo = inventory.CountByItemId(ammoItemId);
         _weaponNameLabel.Text = state.Definition.DisplayName.ToUpperInvariant();
-        _ammoLabel.Text = $"{state.CurrentMagazineAmmo} / {reserveAmmo}";
+        if (state.Definition.ReloadMechanism == FirearmReloadMechanism.DetachableMagazine)
+        {
+            _ammoLabel.Text =
+                $"{state.CurrentMagazineAmmo} / {state.UsableSpareMagazineCount} MAG";
+        }
+        else
+        {
+            string ammoItemId = state.Definition.AmmoItemDefinition?.Id
+                ?? throw new InvalidOperationException(
+                    "A validated loose-round firearm definition lost its ammunition item.");
+            int reserveAmmo = inventory.CountByItemId(ammoItemId);
+            _ammoLabel.Text = $"{state.CurrentMagazineAmmo} / {reserveAmmo}";
+        }
         if (!_isActorAlive)
         {
             _weaponStatusLabel.Text = "COMBAT DISABLED";

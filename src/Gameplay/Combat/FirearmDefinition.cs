@@ -27,6 +27,13 @@ public sealed partial class FirearmDefinition : Resource
     [Export]
     public ItemDefinition? AmmoItemDefinition { get; set; }
 
+    [Export]
+    public FirearmFireMode FireMode { get; set; } = FirearmFireMode.SemiAutomatic;
+
+    [Export]
+    public FirearmReloadMechanism ReloadMechanism { get; set; } =
+        FirearmReloadMechanism.LooseRounds;
+
     [Export(PropertyHint.Range, "1,999,1,or_greater")]
     public int MagazineCapacity { get; set; } = 8;
 
@@ -56,10 +63,14 @@ public sealed partial class FirearmDefinition : Resource
                 $"{nameof(FirearmDefinition)} '{Id}' requires a non-empty display name.");
         }
 
-        ItemDefinition ammoItem = AmmoItemDefinition
-            ?? throw new InvalidOperationException(
-                $"{nameof(FirearmDefinition)} '{Id}' requires an ammunition item definition.");
-        ammoItem.Validate();
+        if (ReloadMechanism == FirearmReloadMechanism.LooseRounds)
+        {
+            ItemDefinition ammoItem = AmmoItemDefinition
+                ?? throw new InvalidOperationException(
+                    $"{nameof(FirearmDefinition)} '{Id}' requires an ammunition item definition " +
+                    "when it reloads from loose rounds.");
+            ammoItem.Validate();
+        }
 
         if (MagazineCapacity < 1)
         {
@@ -73,10 +84,12 @@ public sealed partial class FirearmDefinition : Resource
                 $"{nameof(FirearmDefinition)} '{Id}' requires positive damage.");
         }
 
-        if (FireIntervalSeconds < 0.0)
+        if (FireIntervalSeconds < 0.0 ||
+            (FireMode == FirearmFireMode.Automatic && FireIntervalSeconds <= 0.0))
         {
             throw new InvalidOperationException(
-                $"{nameof(FirearmDefinition)} '{Id}' cannot have a negative fire interval.");
+                $"{nameof(FirearmDefinition)} '{Id}' requires a positive fire interval " +
+                "for automatic fire and a non-negative interval otherwise.");
         }
 
         if (ReloadDurationSeconds <= 0.0)

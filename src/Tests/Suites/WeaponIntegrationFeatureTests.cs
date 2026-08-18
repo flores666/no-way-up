@@ -75,6 +75,50 @@ public sealed class WeaponIntegrationFeatureTests : IFeatureTestSuite
 
             await context.DisposeNodeAsync(root);
         });
+
+        await context.RunAsync("automatic-fire-continues-while-trigger-held-and-stops-on-release", async () =>
+        {
+            Node2D root = context.AddNode(new Node2D { Name = "AutomaticFireTestRoot" });
+            NoiseSystem2D noiseSystem = new() { Name = "NoiseSystem" };
+            PlayerController2D player = LoadPlayer();
+            root.AddChild(noiseSystem);
+            root.AddChild(player);
+            player.BindNoiseSystem(noiseSystem);
+            player.SetPhysicsProcess(false);
+
+            Node2D aimPivot = player.GetNode<Node2D>("%AimPivot");
+            aimPivot.GlobalRotation = 0.0f;
+            PlayerWeaponController2D weapon = player.GetNode<PlayerWeaponController2D>(
+                "%PlayerWeaponController2D");
+            weapon.SetCombatInputEnabled(true);
+            await context.WaitProcessFramesAsync(1);
+
+            int ammoBefore = weapon.State.CurrentMagazineAmmo;
+            weapon._UnhandledInput(new InputEventAction
+            {
+                Action = "fire",
+                Pressed = true,
+                Strength = 1.0f,
+            });
+
+            await context.WaitSecondsAsync(0.24);
+            int ammoWhileHeld = weapon.State.CurrentMagazineAmmo;
+            TestAssert.True(ammoWhileHeld <= ammoBefore - 2,
+                "Holding fire on the AK did not produce repeated shots.");
+
+            weapon._UnhandledInput(new InputEventAction
+            {
+                Action = "fire",
+                Pressed = false,
+                Strength = 0.0f,
+            });
+            int ammoAtRelease = weapon.State.CurrentMagazineAmmo;
+            await context.WaitSecondsAsync(0.16);
+            TestAssert.Equal(ammoAtRelease, weapon.State.CurrentMagazineAmmo,
+                "Automatic fire continued after the trigger was released.");
+
+            await context.DisposeNodeAsync(root);
+        });
     }
 
     private static void AssertWallBlocksMuzzleSegment(

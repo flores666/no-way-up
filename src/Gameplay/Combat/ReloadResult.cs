@@ -10,6 +10,7 @@ public enum ReloadStatus
     AlreadyReloading,
     MagazineFull,
     NoReserveAmmo,
+    NoUsableMagazine,
     NotReloading,
     CombatDisabled,
     OwnerDead,

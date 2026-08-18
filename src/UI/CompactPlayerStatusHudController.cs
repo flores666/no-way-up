@@ -5,9 +5,9 @@ using LineZero.Gameplay.Flashlight;
 using LineZero.Gameplay.Health;
 using LineZero.Gameplay.Inventory;
 using LineZero.Gameplay.Items;
+using LineZero.Gameplay.Movement;
 using LineZero.World2D;
 using LineZero.World2D.Combat;
-using LineZero.Gameplay.Movement;
 
 namespace LineZero.UI;
 
@@ -135,9 +135,17 @@ public sealed partial class CompactPlayerStatusHudController : MarginContainer
 	private void RefreshAmmo()
 	{
 		FirearmState firearm = RequireBound(_firearm, "firearm");
+		if (firearm.Definition.ReloadMechanism == FirearmReloadMechanism.DetachableMagazine)
+		{
+			_ammoLabel.Text =
+				$"{firearm.CurrentMagazineAmmo}/{firearm.Definition.MagazineCapacity}  " +
+				$"{firearm.UsableSpareMagazineCount} MAG";
+			return;
+		}
+
 		InventoryModel inventory = RequireBound(_inventory, "inventory");
 		ItemDefinition ammoDefinition = firearm.Definition.AmmoItemDefinition
-			?? throw new InvalidOperationException("Bound firearm has no ammunition definition.");
+			?? throw new InvalidOperationException("Bound loose-round firearm has no ammunition definition.");
 		int reserve = inventory.CountByItemId(ammoDefinition.Id);
 		_ammoLabel.Text =
 			$"{firearm.CurrentMagazineAmmo}/{firearm.Definition.MagazineCapacity} +{reserve} AMMO";

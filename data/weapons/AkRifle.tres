@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FirearmDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Gameplay/Combat/FirearmDefinition.cs" id="1_weapon"]
+
+[resource]
+resource_name = "AK Rifle"
+script = ExtResource("1_weapon")
+Id = "ak_rifle"
+DisplayName = "AK Rifle"
+FireMode = 1
+ReloadMechanism = 1
+MagazineCapacity = 30
+Damage = 34
+FireIntervalSeconds = 0.1
+ReloadDurationSeconds = 2.2
+Range = 900.0

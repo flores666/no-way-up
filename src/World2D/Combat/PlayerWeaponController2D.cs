@@ -40,12 +40,17 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
     private double _nextFireAllowedAtSeconds;
     private double _nextEmptyMessageAllowedAtSeconds;
     private ulong _resolvedMuzzleTextureInstanceId;
+    private bool _isFireHeld;
+    private double _nextAutomaticAttemptAllowedAtSeconds;
 
     [Export]
     public FirearmDefinition? WeaponDefinition { get; set; }
 
     [Export(PropertyHint.Range, "0,999,1,or_greater")]
     public int InitialMagazineAmmo { get; set; } = 3;
+
+    [Export(PropertyHint.Range, "0,20,1")]
+    public int InitialSpareMagazineCount { get; set; }
 
     [Export(PropertyHint.Layers2DPhysics)]
     public uint ShotCollisionMask { get; set; } =
@@ -82,6 +87,21 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
             throw new InvalidOperationException(
                 $"{nameof(PlayerWeaponController2D)} on '{Name}' requires initial magazine " +
                 $"ammunition between 0 and {definition.MagazineCapacity}.");
+        }
+
+        if (InitialSpareMagazineCount < 0)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(PlayerWeaponController2D)} on '{Name}' cannot have a negative " +
+                "initial spare-magazine count.");
+        }
+
+        if (definition.ReloadMechanism != FirearmReloadMechanism.DetachableMagazine &&
+            InitialSpareMagazineCount != 0)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(PlayerWeaponController2D)} on '{Name}' can only seed spare magazines " +
+                "for a detachable-magazine firearm.");
         }
 
         uint requiredCollisionLayers =
@@ -125,7 +145,10 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
         _tracerTimer.Timeout += OnTracerTimerTimeout;
         _reloadTimer.Timeout += OnReloadTimerTimeout;
         _tracerLine.Visible = false;
-        _state = new FirearmState(definition, InitialMagazineAmmo);
+        _state = new FirearmState(
+            definition,
+            InitialMagazineAmmo,
+            InitialSpareMagazineCount);
     }
 
     public override void _ExitTree()
@@ -145,6 +168,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
             _health.Died -= OnOwnerDied;
         }
 
+        _isFireHeld = false;
         _rayExclusions.Clear();
         _noiseSystem = null;
         _isInitialized = false;
@@ -152,6 +176,13 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
 
     public override void _UnhandledInput(InputEvent @event)
     {
+        if (@event.IsActionReleased(FireAction))
+        {
+            _isFireHeld = false;
+            _nextAutomaticAttemptAllowedAtSeconds = 0.0;
+            return;
+        }
+
         if (@event.IsActionPressed(FireAction))
         {
             if (!_isCombatInputEnabled)
@@ -165,6 +196,8 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
                 return;
             }
 
+            _isFireHeld = State.Definition.FireMode == FirearmFireMode.Automatic;
+            _nextAutomaticAttemptAllowedAtSeconds = 0.0;
             TryFire();
             GetViewport().SetInputAsHandled();
             return;
@@ -177,6 +210,33 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
 
         TryBeginReload();
         GetViewport().SetInputAsHandled();
+    }
+
+    public override void _PhysicsProcess(double delta)
+    {
+        if (!_isInitialized ||
+            !_isCombatInputEnabled ||
+            !_isFireHeld ||
+            State.Definition.FireMode != FirearmFireMode.Automatic ||
+            !State.CanFire)
+        {
+            return;
+        }
+
+        double nowSeconds = Time.GetTicksMsec() / 1000.0;
+        if (nowSeconds < _nextFireAllowedAtSeconds ||
+            nowSeconds < _nextAutomaticAttemptAllowedAtSeconds)
+        {
+            return;
+        }
+
+        FirearmShotResult result = TryFire();
+        if (!result.Success)
+        {
+            // A blocked muzzle must not generate an attempted shot every physics frame.
+            _nextAutomaticAttemptAllowedAtSeconds =
+                nowSeconds + State.Definition.FireIntervalSeconds;
+        }
     }
 
     public void Initialize(
@@ -218,6 +278,8 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
         _isCombatInputEnabled = enabled && Health.IsAlive;
         if (!_isCombatInputEnabled)
         {
+            _isFireHeld = false;
+            _nextAutomaticAttemptAllowedAtSeconds = 0.0;
             CancelReload();
             return;
         }
@@ -318,14 +380,21 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
             return result;
         }
 
-        string ammoItemId = GetAmmoItemId();
-        int reserveAmmo = Inventory.CountByItemId(ammoItemId);
-        result = State.TryBeginReload(reserveAmmo);
+        result = State.Definition.ReloadMechanism switch
+        {
+            FirearmReloadMechanism.DetachableMagazine =>
+                State.TryBeginMagazineReload(),
+            FirearmReloadMechanism.LooseRounds =>
+                State.TryBeginReload(Inventory.CountByItemId(GetAmmoItemId())),
+            _ => throw new InvalidOperationException(
+                $"Unsupported reload mechanism '{State.Definition.ReloadMechanism}'."),
+        };
+
         if (result.Status == ReloadStatus.Started)
         {
             _reloadTimer.Start(State.Definition.ReloadDurationSeconds);
         }
-        else if (result.Status == ReloadStatus.NoReserveAmmo)
+        else if (result.Status is ReloadStatus.NoReserveAmmo or ReloadStatus.NoUsableMagazine)
         {
             PublishMessage(result.Message);
         }
@@ -402,10 +471,16 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
             return;
         }
 
-        ReloadResult result = _reloadService.TryCompleteReload(
-            State,
-            Inventory,
-            GetAmmoItemId());
+        ReloadResult result = State.Definition.ReloadMechanism switch
+        {
+            FirearmReloadMechanism.DetachableMagazine =>
+                State.CompleteMagazineReload(),
+            FirearmReloadMechanism.LooseRounds =>
+                _reloadService.TryCompleteReload(State, Inventory, GetAmmoItemId()),
+            _ => throw new InvalidOperationException(
+                $"Unsupported reload mechanism '{State.Definition.ReloadMechanism}'."),
+        };
+
         if (!result.Success)
         {
             if (State.IsReloading)
@@ -413,7 +488,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
                 State.CancelReload();
             }
 
-            if (result.Status == ReloadStatus.NoReserveAmmo)
+            if (result.Status is ReloadStatus.NoReserveAmmo or ReloadStatus.NoUsableMagazine)
             {
                 PublishMessage(result.Message);
             }
@@ -624,7 +699,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
             1.0f,
             validatedShotOrigin,
             Player,
-            "Service pistol gunshot");
+            $"{State.Definition.DisplayName} gunshot");
     }
 
     private void TryApplyHitDamage(GodotObject? collider)
@@ -724,9 +799,16 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
 
     private string GetAmmoItemId()
     {
-        return State.Definition.AmmoItemDefinition?.Id
+        FirearmDefinition definition = State.Definition;
+        if (definition.ReloadMechanism != FirearmReloadMechanism.LooseRounds)
+        {
+            throw new InvalidOperationException(
+                $"{definition.DisplayName} does not reload from loose ammunition.");
+        }
+
+        return definition.AmmoItemDefinition?.Id
             ?? throw new InvalidOperationException(
-                "A validated firearm definition lost its ammunition item.");
+                "A validated loose-round firearm definition lost its ammunition item.");
     }
 
     private void EnsureInitialized()

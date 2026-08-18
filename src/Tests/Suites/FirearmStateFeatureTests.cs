@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using LineZero.Gameplay.Combat;
 using LineZero.Gameplay.Inventory;
@@ -52,6 +53,46 @@ public sealed class FirearmStateFeatureTests : IFeatureTestSuite
                 "Firing while reloading returned the wrong status.");
             TestAssert.Equal(2, reloading.CurrentMagazineAmmo,
                 "Firing while reloading consumed ammunition.");
+        });
+
+        context.Run("detachable-magazine-reload-swaps-fullest-mag-and-retains-partial", () =>
+        {
+            FirearmState state = new(
+                TestDataFactory.CreateAutomaticRifleDefinition(),
+                initialMagazineAmmo: 7,
+                initialFullSpareMagazineCount: 3);
+            int totalBefore = state.TotalMagazineAmmo;
+
+            TestAssert.Equal(ReloadStatus.Started, state.TryBeginMagazineReload().Status,
+                "Detachable-magazine reload did not start.");
+            ReloadResult completed = state.CompleteMagazineReload();
+
+            TestAssert.Equal(ReloadStatus.Completed, completed.Status,
+                "Detachable-magazine reload did not complete.");
+            TestAssert.Equal(30, state.CurrentMagazineAmmo,
+                "Reload did not insert a full spare magazine.");
+            TestAssert.Equal(3, state.SpareMagazineCount,
+                "Reload changed the total spare-magazine slot count.");
+            TestAssert.Equal(3, state.UsableSpareMagazineCount,
+                "Reload did not retain the partially used removed magazine correctly.");
+            TestAssert.Equal(totalBefore, state.TotalMagazineAmmo,
+                "Magazine swap created or destroyed ammunition.");
+            TestAssert.True(state.SpareMagazineRounds.Contains(7),
+                "Removed partial magazine was not retained in the spare magazine set.");
+        });
+
+        context.Run("detachable-magazine-reload-rejects-when-no-better-mag-exists", () =>
+        {
+            FirearmState state = new(
+                TestDataFactory.CreateAutomaticRifleDefinition(),
+                initialMagazineAmmo: 30,
+                initialFullSpareMagazineCount: 2);
+
+            ReloadResult full = state.TryBeginMagazineReload();
+            TestAssert.Equal(ReloadStatus.MagazineFull, full.Status,
+                "Full inserted magazine unexpectedly started a reload.");
+            TestAssert.False(state.IsReloading,
+                "Rejected detachable-magazine reload changed reload state.");
         });
 
         context.Run("firearm-subscriber-failure-does-not-block-later-subscribers", () =>

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using LineZero.Core.Events;
 
 namespace LineZero.Gameplay.Combat;
@@ -12,7 +14,13 @@ internal readonly record struct FirearmReloadCompletionPlan(
 
 public sealed class FirearmState
 {
-    public FirearmState(FirearmDefinition definition, int initialMagazineAmmo)
+    private readonly int[] _spareMagazineRounds;
+    private readonly ReadOnlyCollection<int> _readOnlySpareMagazineRounds;
+
+    public FirearmState(
+        FirearmDefinition definition,
+        int initialMagazineAmmo,
+        int initialFullSpareMagazineCount = 0)
     {
         ArgumentNullException.ThrowIfNull(definition);
         definition.Validate();
@@ -25,8 +33,26 @@ public sealed class FirearmState
                 $"{definition.MagazineCapacity}.");
         }
 
+        if (initialFullSpareMagazineCount < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(initialFullSpareMagazineCount),
+                "Initial spare magazine count cannot be negative.");
+        }
+
+        if (definition.ReloadMechanism != FirearmReloadMechanism.DetachableMagazine &&
+            initialFullSpareMagazineCount != 0)
+        {
+            throw new ArgumentException(
+                "Only detachable-magazine firearms can own spare magazines.",
+                nameof(initialFullSpareMagazineCount));
+        }
+
         Definition = definition;
         CurrentMagazineAmmo = initialMagazineAmmo;
+        _spareMagazineRounds = new int[initialFullSpareMagazineCount];
+        Array.Fill(_spareMagazineRounds, definition.MagazineCapacity);
+        _readOnlySpareMagazineRounds = Array.AsReadOnly(_spareMagazineRounds);
     }
 
     public FirearmDefinition Definition { get; }
@@ -41,6 +67,41 @@ public sealed class FirearmState
 
     public int RoundsNeededToFillMagazine =>
         Definition.MagazineCapacity - CurrentMagazineAmmo;
+
+    public IReadOnlyList<int> SpareMagazineRounds => _readOnlySpareMagazineRounds;
+
+    public int SpareMagazineCount => _spareMagazineRounds.Length;
+
+    public int UsableSpareMagazineCount
+    {
+        get
+        {
+            int count = 0;
+            for (int index = 0; index < _spareMagazineRounds.Length; index++)
+            {
+                if (_spareMagazineRounds[index] > 0)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+    }
+
+    public int TotalMagazineAmmo
+    {
+        get
+        {
+            int total = CurrentMagazineAmmo;
+            for (int index = 0; index < _spareMagazineRounds.Length; index++)
+            {
+                total = checked(total + _spareMagazineRounds[index]);
+            }
+
+            return total;
+        }
+    }
 
     public event Action? Changed;
 
@@ -71,6 +132,12 @@ public sealed class FirearmState
 
     public ReloadResult TryBeginReload(int availableReserveAmmo)
     {
+        if (Definition.ReloadMechanism != FirearmReloadMechanism.LooseRounds)
+        {
+            throw new InvalidOperationException(
+                "Loose-round reload cannot be used by a detachable-magazine firearm.");
+        }
+
         if (availableReserveAmmo < 0)
         {
             throw new ArgumentOutOfRangeException(
@@ -78,20 +145,10 @@ public sealed class FirearmState
                 "Available reserve ammunition cannot be negative.");
         }
 
-        if (IsReloading)
+        ReloadResult? commonRejection = TryGetCommonReloadRejection();
+        if (commonRejection is not null)
         {
-            return ReloadResult.Rejected(
-                ReloadStatus.AlreadyReloading,
-                CurrentMagazineAmmo,
-                "Reload already in progress.");
-        }
-
-        if (RoundsNeededToFillMagazine == 0)
-        {
-            return ReloadResult.Rejected(
-                ReloadStatus.MagazineFull,
-                CurrentMagazineAmmo,
-                "Magazine already full.");
+            return commonRejection;
         }
 
         if (availableReserveAmmo == 0)
@@ -102,17 +159,42 @@ public sealed class FirearmState
                 "No reserve ammunition.");
         }
 
-        IsReloading = true;
-        ReloadResult result = ReloadResult.Changed(
-            ReloadStatus.Started,
-            CurrentMagazineAmmo,
-            "Reload started.");
-        PublishChanged();
-        return result;
+        return BeginReload();
+    }
+
+    public ReloadResult TryBeginMagazineReload()
+    {
+        if (Definition.ReloadMechanism != FirearmReloadMechanism.DetachableMagazine)
+        {
+            throw new InvalidOperationException(
+                "Magazine-swap reload can only be used by detachable-magazine firearms.");
+        }
+
+        ReloadResult? commonRejection = TryGetCommonReloadRejection();
+        if (commonRejection is not null)
+        {
+            return commonRejection;
+        }
+
+        if (FindBestReplacementMagazineIndex() < 0)
+        {
+            return ReloadResult.Rejected(
+                ReloadStatus.NoUsableMagazine,
+                CurrentMagazineAmmo,
+                "No spare magazine contains more ammunition than the current magazine.");
+        }
+
+        return BeginReload();
     }
 
     public ReloadResult CompleteReload(int suppliedRounds)
     {
+        if (Definition.ReloadMechanism != FirearmReloadMechanism.LooseRounds)
+        {
+            throw new InvalidOperationException(
+                "Loose-round reload cannot be completed by a detachable-magazine firearm.");
+        }
+
         if (suppliedRounds < 0)
         {
             throw new ArgumentOutOfRangeException(
@@ -129,6 +211,48 @@ public sealed class FirearmState
         }
 
         ReloadResult result = ApplyWithoutNotification(plan);
+        PublishChanged();
+        return result;
+    }
+
+    public ReloadResult CompleteMagazineReload()
+    {
+        if (Definition.ReloadMechanism != FirearmReloadMechanism.DetachableMagazine)
+        {
+            throw new InvalidOperationException(
+                "Magazine-swap reload can only be completed by detachable-magazine firearms.");
+        }
+
+        if (!IsReloading)
+        {
+            return ReloadResult.Rejected(
+                ReloadStatus.NotReloading,
+                CurrentMagazineAmmo,
+                "No reload is in progress.");
+        }
+
+        int replacementIndex = FindBestReplacementMagazineIndex();
+        if (replacementIndex < 0)
+        {
+            return ReloadResult.Rejected(
+                ReloadStatus.NoUsableMagazine,
+                CurrentMagazineAmmo,
+                "No usable spare magazine is available.");
+        }
+
+        int previousMagazineAmmo = CurrentMagazineAmmo;
+        int replacementMagazineAmmo = _spareMagazineRounds[replacementIndex];
+
+        // The removed magazine is retained in the same pouch slot. This preserves
+        // partially used and empty magazines instead of converting them to loose ammo.
+        _spareMagazineRounds[replacementIndex] = previousMagazineAmmo;
+        CurrentMagazineAmmo = replacementMagazineAmmo;
+        IsReloading = false;
+
+        ReloadResult result = ReloadResult.Changed(
+            ReloadStatus.Completed,
+            CurrentMagazineAmmo,
+            $"Magazine swapped: {replacementMagazineAmmo} rounds loaded.");
         PublishChanged();
         return result;
     }
@@ -157,6 +281,12 @@ public sealed class FirearmState
         out FirearmReloadCompletionPlan plan,
         out ReloadResult rejection)
     {
+        if (Definition.ReloadMechanism != FirearmReloadMechanism.LooseRounds)
+        {
+            throw new InvalidOperationException(
+                "Loose-round reload plans are invalid for detachable-magazine firearms.");
+        }
+
         if (availableReserveAmmo < 0)
         {
             throw new ArgumentOutOfRangeException(
@@ -207,7 +337,8 @@ public sealed class FirearmState
 
     internal bool CanApply(FirearmReloadCompletionPlan plan)
     {
-        return ReferenceEquals(plan.Firearm, this) &&
+        return Definition.ReloadMechanism == FirearmReloadMechanism.LooseRounds &&
+               ReferenceEquals(plan.Firearm, this) &&
                IsReloading &&
                CurrentMagazineAmmo == plan.MagazineAmmoBefore &&
                plan.SuppliedRounds > 0 &&
@@ -241,5 +372,57 @@ public sealed class FirearmState
         SafeEventPublisher.Publish(
             Changed,
             $"{nameof(FirearmState)}.{nameof(Changed)}");
+    }
+
+    private ReloadResult? TryGetCommonReloadRejection()
+    {
+        if (IsReloading)
+        {
+            return ReloadResult.Rejected(
+                ReloadStatus.AlreadyReloading,
+                CurrentMagazineAmmo,
+                "Reload already in progress.");
+        }
+
+        if (RoundsNeededToFillMagazine == 0)
+        {
+            return ReloadResult.Rejected(
+                ReloadStatus.MagazineFull,
+                CurrentMagazineAmmo,
+                "Magazine already full.");
+        }
+
+        return null;
+    }
+
+    private ReloadResult BeginReload()
+    {
+        IsReloading = true;
+        ReloadResult result = ReloadResult.Changed(
+            ReloadStatus.Started,
+            CurrentMagazineAmmo,
+            "Reload started.");
+        PublishChanged();
+        return result;
+    }
+
+    private int FindBestReplacementMagazineIndex()
+    {
+        int bestIndex = -1;
+        int bestRounds = CurrentMagazineAmmo;
+
+        for (int index = 0; index < _spareMagazineRounds.Length; index++)
+        {
+            int rounds = _spareMagazineRounds[index];
+            if (rounds <= bestRounds)
+            {
+                continue;
+            }
+
+            bestRounds = rounds;
+            bestIndex = index;
+        }
+
+        return bestIndex;
     }
 }

@@ -305,6 +305,14 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
                 "res://data/weapons/ServicePistol.tres");
             weapon.Validate();
 
+            FirearmDefinition ak = LoadResource<FirearmDefinition>(
+                "res://data/weapons/AkRifle.tres");
+            ak.Validate();
+            TestAssert.Equal(FirearmFireMode.Automatic, ak.FireMode,
+                "AK resource must remain automatic.");
+            TestAssert.Equal(FirearmReloadMechanism.DetachableMagazine, ak.ReloadMechanism,
+                "AK resource must use detachable magazines.");
+
             FlashlightDefinition flashlight = LoadResource<FlashlightDefinition>(
                 "res://data/flashlight/StandardFlashlight.tres");
             flashlight.Validate();

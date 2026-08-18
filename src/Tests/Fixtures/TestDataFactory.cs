@@ -63,6 +63,23 @@ public static class TestDataFactory
         };
     }
 
+
+    public static FirearmDefinition CreateAutomaticRifleDefinition()
+    {
+        return new FirearmDefinition
+        {
+            Id = "test_ak",
+            DisplayName = "Test AK",
+            FireMode = FirearmFireMode.Automatic,
+            ReloadMechanism = FirearmReloadMechanism.DetachableMagazine,
+            MagazineCapacity = 30,
+            Damage = 34,
+            FireIntervalSeconds = 0.1,
+            ReloadDurationSeconds = 2.2,
+            Range = 900.0f,
+        };
+    }
+
     public static PlayerMovementSettings CreateMovementSettings()
     {
         return new PlayerMovementSettings

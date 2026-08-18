@@ -7,7 +7,7 @@
 [ext_resource type="Script" path="res://src/Gameplay/Inventory/InventoryComponent.cs" id="5_inventory"]
 [ext_resource type="Script" path="res://src/Gameplay/Health/HealthComponent.cs" id="6_health"]
 [ext_resource type="Script" path="res://src/World2D/Combat/PlayerWeaponController2D.cs" id="7_weapon_controller"]
-[ext_resource type="Resource" path="res://data/weapons/ServicePistol.tres" id="8_service_pistol"]
+[ext_resource type="Resource" path="res://data/weapons/AkRifle.tres" id="8_ak_rifle"]
 [ext_resource type="Script" path="res://src/World2D/Noise/PlayerFootstepNoiseEmitter2D.cs" id="9_footsteps"]
 [ext_resource type="Script" path="res://src/World2D/PlayerFlashlightController2D.cs" id="10_flashlight_controller"]
 [ext_resource type="Resource" path="res://data/flashlight/StandardFlashlight.tres" id="11_flashlight_definition"]
@@ -202,8 +202,9 @@ SwitchThreshold = 0.08
 [node name="PlayerWeaponController2D" type="Node2D" parent="."]
 unique_name_in_owner = true
 script = ExtResource("7_weapon_controller")
-WeaponDefinition = ExtResource("8_service_pistol")
-InitialMagazineAmmo = 3
+WeaponDefinition = ExtResource("8_ak_rifle")
+InitialMagazineAmmo = 30
+InitialSpareMagazineCount = 3
 ShotCollisionMask = 5
 EmptyMessageIntervalSeconds = 0.5
 

@@ -84,10 +84,8 @@ public static class TestDataFactory
     {
         return new PlayerMovementSettings
         {
-            WalkSpeed = 220.0f,
-            CrouchSpeed = 121.0f,
-            CrawlSpeed = 77.0f,
-            SprintSpeed = 341.0f,
+            WalkSpeed = 198.0f,
+            SprintSpeed = 272.8f,
             Acceleration = 1250.0f,
             Deceleration = 1550.0f,
             SprintStaminaCostPerSecond = 25.0,
@@ -95,9 +93,6 @@ public static class TestDataFactory
             StaminaRecoveryDelaySeconds = 0.75,
             MinimumStaminaToStartSprint = 10.0,
             MaximumStamina = 100.0,
-            CrawlVisibilityMultiplier = 0.40f,
-            CrawlFootstepIntensityMultiplier = 0.20f,
-            CrawlStepDistanceMultiplier = 2.0f,
             MinimumActualMovementDistance = 0.05f,
         };
     }

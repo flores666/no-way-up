@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3]
+[gd_scene load_steps=26 format=3]
 
 [ext_resource type="Script" path="res://src/World2D/PlayerController2D.cs" id="1_controller"]
 [ext_resource type="Resource" path="res://data/player/DefaultPlayerMovement.tres" id="2_movement"]
@@ -24,10 +24,6 @@
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
 radius = 14.0
 height = 30.0
-
-[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player_crawl"]
-radius = 7.0
-height = 14.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_interaction"]
 radius = 125.0
@@ -55,11 +51,6 @@ SortOffsetY = 15.0
 [node name="NormalCollisionShape" type="CollisionShape2D" parent="."]
 unique_name_in_owner = true
 shape = SubResource("CapsuleShape2D_player")
-
-[node name="CrawlCollisionShape" type="CollisionShape2D" parent="."]
-unique_name_in_owner = true
-shape = SubResource("CapsuleShape2D_player_crawl")
-disabled = true
 
 [node name="InventoryComponent" type="Node" parent="."]
 unique_name_in_owner = true
@@ -260,8 +251,6 @@ unique_name_in_owner = true
 script = ExtResource("9_footsteps")
 WalkStepDistance = 110.0
 WalkFootstepIntensity = 1.0
-CrouchStepDistance = 132.0
-CrouchFootstepIntensity = 0.45
 SprintStepDistance = 90.0
 SprintFootstepIntensity = 1.8
 

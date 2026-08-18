@@ -4,10 +4,8 @@
 
 [resource]
 script = ExtResource("1_movement_settings")
-WalkSpeed = 220.0
-CrouchSpeed = 121.0
-CrawlSpeed = 77.0
-SprintSpeed = 341.0
+WalkSpeed = 198.0
+SprintSpeed = 272.8
 Acceleration = 1250.0
 Deceleration = 1550.0
 SprintStaminaCostPerSecond = 25.0
@@ -15,7 +13,4 @@ StaminaRecoveryPerSecond = 18.0
 StaminaRecoveryDelaySeconds = 0.75
 MinimumStaminaToStartSprint = 10.0
 MaximumStamina = 100.0
-CrawlVisibilityMultiplier = 0.4
-CrawlFootstepIntensityMultiplier = 0.2
-CrawlStepDistanceMultiplier = 2.0
 MinimumActualMovementDistance = 0.05

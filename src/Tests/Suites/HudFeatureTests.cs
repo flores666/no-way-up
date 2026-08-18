@@ -129,26 +129,13 @@ public sealed class HudFeatureTests : IFeatureTestSuite
                 Input.ActionRelease("move_right");
             }
 
-            player._UnhandledInput(new InputEventAction
-            {
-                Action = "crawl",
-                Pressed = true,
-                Strength = 1.0f,
-            });
-            await context.WaitProcessFramesAsync();
-            await context.WaitPhysicsFramesAsync();
-            await context.WaitProcessFramesAsync();
-            TestAssert.Equal(MovementMode.Crawl, player.CurrentMovementMode,
-                "Test fixture did not enter Crawl.");
+            player._PhysicsProcess(0.1);
+            TestAssert.Equal(MovementMode.Walk, player.CurrentMovementMode,
+                "Test fixture did not return to Walk after Sprint release.");
 
-            const float crawlCompletionProgress = 0.12f;
-            float crawlStepDistance =
-                emitter.WalkStepDistance *
-                (player.MovementSettings?.CrawlStepDistanceMultiplier
-                    ?? throw new TestAssertionException(
-                        "Player fixture lost its movement settings."));
+            const float walkCompletionProgress = 0.12f;
             player.GlobalPosition += new Vector2(
-                crawlStepDistance * crawlCompletionProgress,
+                emitter.WalkStepDistance * walkCompletionProgress,
                 0.0f);
             emitter._PhysicsProcess(0.1);
             TestAssert.True(mixedFootstepIntensity is not null,
@@ -158,7 +145,7 @@ public sealed class HudFeatureTests : IFeatureTestSuite
                 mixedFootstepIntensity <= emitter.SprintFootstepIntensity,
                 "Mixed-mode footstep did not retain its bounded Sprint contribution.");
             TestAssert.Equal("NOISE: MEDIUM", label.Text,
-                "HUD ignored Sprint contribution when the step completed in Crawl.");
+                "HUD ignored Sprint contribution when the step completed in Walk.");
 
             noiseSystem.EmitNoise(
                 player,

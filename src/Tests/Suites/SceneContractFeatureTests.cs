@@ -145,30 +145,27 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
             TestAssert.True(CountDirectChildren<WorldItemPickup2D>(interactions) >= 5,
                 "MetroLevel01 requires authored standalone pickups.");
 
-            CollisionShape2D ductTop = level.GetNode<CollisionShape2D>(
-                "WallCollisions/CrawlDuctTop");
-            CollisionShape2D ductBottom = level.GetNode<CollisionShape2D>(
-                "WallCollisions/CrawlDuctBottom");
-            RectangleShape2D topRectangle = ductTop.Shape as RectangleShape2D
-                ?? throw new TestAssertionException("Crawl duct top is not rectangular.");
-            RectangleShape2D bottomRectangle = ductBottom.Shape as RectangleShape2D
-                ?? throw new TestAssertionException("Crawl duct bottom is not rectangular.");
-            float crawlGap =
-                (ductBottom.Position.Y - bottomRectangle.Size.Y * 0.5f) -
-                (ductTop.Position.Y + topRectangle.Size.Y * 0.5f);
+            CollisionShape2D passageTop = level.GetNode<CollisionShape2D>(
+                "WallCollisions/MaintenancePassageTop");
+            CollisionShape2D passageBottom = level.GetNode<CollisionShape2D>(
+                "WallCollisions/MaintenancePassageBottom");
+            RectangleShape2D topRectangle = passageTop.Shape as RectangleShape2D
+                ?? throw new TestAssertionException("Maintenance passage top is not rectangular.");
+            RectangleShape2D bottomRectangle = passageBottom.Shape as RectangleShape2D
+                ?? throw new TestAssertionException("Maintenance passage bottom is not rectangular.");
+            float passageGap =
+                (passageBottom.Position.Y - bottomRectangle.Size.Y * 0.5f) -
+                (passageTop.Position.Y + topRectangle.Size.Y * 0.5f);
 
             PlayerController2D player = InstantiateDetached<PlayerController2D>(
                 "res://scenes/player/Player.tscn");
             CapsuleShape2D normalShape =
                 player.GetNode<CollisionShape2D>("NormalCollisionShape").Shape as CapsuleShape2D
                 ?? throw new TestAssertionException("Normal movement shape is not a capsule.");
-            CapsuleShape2D crawlShape =
-                player.GetNode<CollisionShape2D>("CrawlCollisionShape").Shape as CapsuleShape2D
-                ?? throw new TestAssertionException("Crawl movement shape is not a capsule.");
-            TestAssert.True(crawlGap < normalShape.Radius * 2.0f,
-                "Normal movement collider can fit through the crawl-only passage.");
-            TestAssert.True(crawlGap > crawlShape.Radius * 2.0f,
-                "Crawl collider cannot fit through the authored maintenance passage.");
+            TestAssert.True(passageGap > normalShape.Radius * 2.0f,
+                "Normal player collider cannot fit through the maintenance passage.");
+            TestAssert.True(player.GetNodeOrNull<CollisionShape2D>("CrawlCollisionShape") is null,
+                "Legacy crawl collider still exists in the player scene.");
             player.Free();
 
             for (int index = 0; index < level.PoweredLights.Count; index++)
@@ -208,7 +205,7 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
                 "ElectricalSignAnchor",
                 "ExitSignAnchor",
                 "TrainLineSignAnchor",
-                "CrawlMarkingAnchor",
+                "MaintenancePassageMarkingAnchor",
             };
 
             HashSet<Vector2> authoredPositions = new();
@@ -352,8 +349,6 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
                 "move_left",
                 "move_right",
                 "sprint",
-                "crouch",
-                "crawl",
                 "toggle_flashlight",
                 "replace_battery",
                 "interact",

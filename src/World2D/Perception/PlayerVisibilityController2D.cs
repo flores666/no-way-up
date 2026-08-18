@@ -15,7 +15,6 @@ public sealed partial class PlayerVisibilityController2D : Node, IVisibilityTarg
     public const string DefaultAmbientZoneName = "Normal area";
 
     private const float WalkVisibilityMultiplier = 1.0f;
-    private const float CrouchVisibilityMultiplier = 0.65f;
     private const float SprintVisibilityMultiplier = 1.15f;
     private const float HiddenThreshold = 0.55f;
     private const float DimThreshold = 0.85f;
@@ -23,7 +22,6 @@ public sealed partial class PlayerVisibilityController2D : Node, IVisibilityTarg
 
     private readonly List<LightExposureZone2D> _activeZones = new();
     private IMovementModeSource? _movementSource;
-    private PlayerMovementSettings? _movementSettings;
     private FlashlightModel? _flashlight;
     private HealthModel? _health;
     private LightExposureZone2D? _effectiveZone;
@@ -83,7 +81,6 @@ public sealed partial class PlayerVisibilityController2D : Node, IVisibilityTarg
 
         movementSettings.Validate();
         _movementSource = movementSource;
-        _movementSettings = movementSettings;
         _flashlight = flashlight;
         _health = health;
         _movementSource.MovementModeChanged += OnMovementModeChanged;
@@ -159,8 +156,6 @@ public sealed partial class PlayerVisibilityController2D : Node, IVisibilityTarg
     {
         IMovementModeSource movementSource = _movementSource
             ?? throw new InvalidOperationException("Movement source is not bound.");
-        PlayerMovementSettings movementSettings = _movementSettings
-            ?? throw new InvalidOperationException("Movement settings are not bound.");
         FlashlightModel flashlight = _flashlight
             ?? throw new InvalidOperationException("Flashlight model is not bound.");
         HealthModel health = _health
@@ -171,9 +166,7 @@ public sealed partial class PlayerVisibilityController2D : Node, IVisibilityTarg
         float postureMultiplier = movementSource.CurrentMovementMode switch
         {
             MovementMode.Walk => WalkVisibilityMultiplier,
-            MovementMode.Crouch => CrouchVisibilityMultiplier,
             MovementMode.Sprint => SprintVisibilityMultiplier,
-            MovementMode.Crawl => movementSettings.CrawlVisibilityMultiplier,
             _ => throw new InvalidOperationException("Unknown player movement mode.")
         };
         float ambientMultiplier = _effectiveZone?.VisibilityMultiplier ??
@@ -275,7 +268,6 @@ public sealed partial class PlayerVisibilityController2D : Node, IVisibilityTarg
         }
 
         _movementSource = null;
-        _movementSettings = null;
         _flashlight = null;
         _health = null;
         _isInitialized = false;

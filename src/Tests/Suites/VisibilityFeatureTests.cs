@@ -15,7 +15,7 @@ public sealed class VisibilityFeatureTests : IFeatureTestSuite
 {
     public string Id => "visibility";
 
-    public string Description => "Posture, ambient zones, flashlight, priorities, and death state";
+    public string Description => "Movement, ambient zones, flashlight, priorities, and death state";
 
     public async Task RunAsync(FeatureTestContext context)
     {
@@ -53,16 +53,16 @@ public sealed class VisibilityFeatureTests : IFeatureTestSuite
             TestAssert.Equal(VisibilityCategory.Dim, controller.State.Category,
                 "Dark Walk category was incorrect.");
 
-            movement.SetMode(MovementMode.Crouch);
-            TestAssert.NearlyEqual(0.455, controller.State.FinalMultiplier, 1e-6,
-                "Crouch and darkness did not compose.");
-            TestAssert.Equal(VisibilityCategory.Hidden, controller.State.Category,
-                "Crouch darkness was not hidden.");
+            movement.SetMode(MovementMode.Sprint);
+            TestAssert.NearlyEqual(0.805, controller.State.FinalMultiplier, 1e-6,
+                "Sprint and darkness did not compose.");
+            TestAssert.Equal(VisibilityCategory.Dim, controller.State.Category,
+                "Sprint darkness category was incorrect.");
 
             flashlight.TryTurnOn();
-            TestAssert.NearlyEqual(0.65975, controller.State.FinalMultiplier, 1e-6,
+            TestAssert.NearlyEqual(1.16725, controller.State.FinalMultiplier, 1e-6,
                 "Flashlight multiplier did not update immediately.");
-            TestAssert.Equal(VisibilityCategory.Dim, controller.State.Category,
+            TestAssert.Equal(VisibilityCategory.Visible, controller.State.Category,
                 "Flashlight visibility category was incorrect.");
 
             await context.DisposeNodeAsync(dark);

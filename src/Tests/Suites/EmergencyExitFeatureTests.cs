@@ -101,7 +101,7 @@ public sealed class EmergencyExitFeatureTests : IFeatureTestSuite
         });
 
 
-        await context.RunAsync("movement-body-and-posture-switch-cannot-complete-exit", async () =>
+        await context.RunAsync("movement-body-alone-cannot-complete-exit", async () =>
         {
             Node2D root = context.AddNode(new Node2D { Name = "SensorOnlyExitRoot" });
             NoiseSystem2D noiseSystem = new() { Name = "NoiseSystem" };
@@ -128,13 +128,6 @@ public sealed class EmergencyExitFeatureTests : IFeatureTestSuite
             await context.WaitProcessFramesAsync();
             TestAssert.Equal(ObjectiveStage.ReachExit, objectives.CurrentStage,
                 "Movement body completed a sensor-only exit.");
-
-            player._UnhandledInput(Action("crawl"));
-            await WaitForPostureTransitionAsync(context);
-            player._UnhandledInput(Action("crawl"));
-            await WaitForPostureTransitionAsync(context);
-            TestAssert.Equal(ObjectiveStage.ReachExit, objectives.CurrentStage,
-                "Stationary movement-collider switching activated the exit.");
 
             await context.DisposeNodeAsync(root);
         });
@@ -175,14 +168,6 @@ public sealed class EmergencyExitFeatureTests : IFeatureTestSuite
 
             await context.DisposeNodeAsync(root);
         });
-    }
-
-    private static async Task WaitForPostureTransitionAsync(
-        FeatureTestContext context)
-    {
-        await context.WaitProcessFramesAsync();
-        await context.WaitPhysicsFramesAsync();
-        await context.WaitProcessFramesAsync();
     }
 
     private static InputEventAction Action(string action)

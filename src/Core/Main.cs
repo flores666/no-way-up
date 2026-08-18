@@ -211,7 +211,6 @@ public sealed partial class Main : Node2D
 		playerInteractor.PromptChanged += interactionPrompt.SetPrompt;
 		playerInteractor.MessageRequested += interactionMessage.ShowMessage;
 		playerInteractor.InteractionCompleted += OnInteractionCompleted;
-		player.PostureChangeRejected += interactionMessage.ShowMessage;
 		playerWeapon.MessageRequested += interactionMessage.ShowMessage;
 		playerFlashlight.BatteryReplacementRequested += OnBatteryReplacementRequested;
 		lootTransferPanel.Closed += OnLootTransferPanelClosed;
@@ -299,11 +298,6 @@ public sealed partial class Main : Node2D
 
 		if (_player is not null)
 		{
-			if (_interactionMessage is not null)
-			{
-				_player.PostureChangeRejected -= _interactionMessage.ShowMessage;
-			}
-
 			_player.Health.Died -= OnPlayerDied;
 			_player.Inventory.Changed -= OnPlayerInventoryChanged;
 		}

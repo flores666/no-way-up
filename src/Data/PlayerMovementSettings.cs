@@ -6,20 +6,11 @@ namespace LineZero.Data;
 [GlobalClass]
 public sealed partial class PlayerMovementSettings : Resource
 {
-    private const float ExistingCrouchVisibilityMultiplier = 0.65f;
-    private const float ExistingCrouchFootstepIntensity = 0.45f;
+    [Export(PropertyHint.Range, "1.0,1000.0,1.0,or_greater")]
+    public float WalkSpeed { get; set; } = 198.0f;
 
     [Export(PropertyHint.Range, "1.0,1000.0,1.0,or_greater")]
-    public float WalkSpeed { get; set; } = 220.0f;
-
-    [Export(PropertyHint.Range, "1.0,1000.0,1.0,or_greater")]
-    public float CrouchSpeed { get; set; } = 121.0f;
-
-    [Export(PropertyHint.Range, "1.0,1000.0,1.0,or_greater")]
-    public float CrawlSpeed { get; set; } = 77.0f;
-
-    [Export(PropertyHint.Range, "1.0,1000.0,1.0,or_greater")]
-    public float SprintSpeed { get; set; } = 341.0f;
+    public float SprintSpeed { get; set; } = 272.8f;
 
     [Export(PropertyHint.Range, "1.0,5000.0,10.0,or_greater")]
     public float Acceleration { get; set; } = 1250.0f;
@@ -42,36 +33,23 @@ public sealed partial class PlayerMovementSettings : Resource
     [Export(PropertyHint.Range, "0.01,1000.0,0.1,or_greater")]
     public double MaximumStamina { get; set; } = 100.0;
 
-    [Export(PropertyHint.Range, "0.01,1.0,0.01")]
-    public float CrawlVisibilityMultiplier { get; set; } = 0.40f;
-
-    [Export(PropertyHint.Range, "0.01,1.0,0.01")]
-    public float CrawlFootstepIntensityMultiplier { get; set; } = 0.20f;
-
-    [Export(PropertyHint.Range, "1.0,5.0,0.05,or_greater")]
-    public float CrawlStepDistanceMultiplier { get; set; } = 2.0f;
-
     [Export(PropertyHint.Range, "0.001,10.0,0.001,or_greater")]
     public float MinimumActualMovementDistance { get; set; } = 0.05f;
 
     public void Validate()
     {
-        if (!float.IsFinite(CrawlSpeed) || CrawlSpeed <= 0.0f ||
-            !float.IsFinite(CrouchSpeed) || CrouchSpeed <= 0.0f ||
-            !float.IsFinite(WalkSpeed) || WalkSpeed <= 0.0f ||
+        if (!float.IsFinite(WalkSpeed) || WalkSpeed <= 0.0f ||
             !float.IsFinite(SprintSpeed) || SprintSpeed <= 0.0f)
         {
             throw new InvalidOperationException(
                 $"{nameof(PlayerMovementSettings)} at '{GetDisplayPath()}' requires positive finite speeds.");
         }
 
-        if (!(CrawlSpeed < CrouchSpeed &&
-              CrouchSpeed < WalkSpeed &&
-              WalkSpeed < SprintSpeed))
+        if (WalkSpeed >= SprintSpeed)
         {
             throw new InvalidOperationException(
                 $"{nameof(PlayerMovementSettings)} at '{GetDisplayPath()}' requires " +
-                "CrawlSpeed < CrouchSpeed < WalkSpeed < SprintSpeed.");
+                "WalkSpeed < SprintSpeed.");
         }
 
         if (!float.IsFinite(Acceleration) || Acceleration <= 0.0f ||
@@ -102,32 +80,6 @@ public sealed partial class PlayerMovementSettings : Resource
         {
             throw new InvalidOperationException(
                 $"{nameof(PlayerMovementSettings)} at '{GetDisplayPath()}' requires minimum sprint stamina within 0..MaximumStamina.");
-        }
-
-        if (!float.IsFinite(CrawlVisibilityMultiplier) ||
-            CrawlVisibilityMultiplier <= 0.0f ||
-            CrawlVisibilityMultiplier >= ExistingCrouchVisibilityMultiplier)
-        {
-            throw new InvalidOperationException(
-                $"{nameof(PlayerMovementSettings)} at '{GetDisplayPath()}' requires a positive " +
-                "crawl visibility multiplier below the crouch multiplier.");
-        }
-
-        if (!float.IsFinite(CrawlFootstepIntensityMultiplier) ||
-            CrawlFootstepIntensityMultiplier <= 0.0f ||
-            CrawlFootstepIntensityMultiplier >= ExistingCrouchFootstepIntensity)
-        {
-            throw new InvalidOperationException(
-                $"{nameof(PlayerMovementSettings)} at '{GetDisplayPath()}' requires a positive " +
-                "crawl footstep intensity multiplier below crouch intensity.");
-        }
-
-        if (!float.IsFinite(CrawlStepDistanceMultiplier) ||
-            CrawlStepDistanceMultiplier <= 1.0f)
-        {
-            throw new InvalidOperationException(
-                $"{nameof(PlayerMovementSettings)} at '{GetDisplayPath()}' requires a finite " +
-                "crawl step distance multiplier greater than one.");
         }
 
         if (!float.IsFinite(MinimumActualMovementDistance) ||

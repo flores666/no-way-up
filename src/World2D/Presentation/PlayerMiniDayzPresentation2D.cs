@@ -36,9 +36,6 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
     [Export(PropertyHint.Range, "1,24,0.5")]
     public float SprintFramesPerSecond { get; set; } = 12.0f;
 
-    [Export(PropertyHint.Range, "1,24,0.5")]
-    public float CrouchFramesPerSecond { get; set; } = 7.0f;
-
     public override void _Ready()
     {
         _player = GetParent() as PlayerController2D
@@ -52,7 +49,6 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
         ValidateTexture(_weaponSprite.Texture, "WeaponSprite.Texture", expectedFrames: 1);
         ValidateFramesPerSecond(WalkFramesPerSecond, nameof(WalkFramesPerSecond));
         ValidateFramesPerSecond(SprintFramesPerSecond, nameof(SprintFramesPerSecond));
-        ValidateFramesPerSecond(CrouchFramesPerSecond, nameof(CrouchFramesPerSecond));
 
         _characterSprite.Texture = CharacterTexture;
         _characterSprite.Hframes = RunFrameCount;
@@ -151,9 +147,8 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
         return movementMode switch
         {
             MovementMode.Sprint => SprintFramesPerSecond,
-            MovementMode.Crouch => CrouchFramesPerSecond,
-            MovementMode.Crawl => CrouchFramesPerSecond,
-            _ => WalkFramesPerSecond
+            MovementMode.Walk => WalkFramesPerSecond,
+            _ => throw new InvalidOperationException("Unknown player movement mode.")
         };
     }
 

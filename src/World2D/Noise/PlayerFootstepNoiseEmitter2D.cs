@@ -39,12 +39,6 @@ public sealed partial class PlayerFootstepNoiseEmitter2D : Node2D, INoiseEmitter
     public float WalkFootstepIntensity { get; set; } = 1.0f;
 
     [Export(PropertyHint.Range, "1.0,1000.0,1.0,or_greater")]
-    public float CrouchStepDistance { get; set; } = 132.0f;
-
-    [Export(PropertyHint.Range, "0.01,5.0,0.01,or_greater")]
-    public float CrouchFootstepIntensity { get; set; } = 0.45f;
-
-    [Export(PropertyHint.Range, "1.0,1000.0,1.0,or_greater")]
     public float SprintStepDistance { get; set; } = 90.0f;
 
     [Export(PropertyHint.Range, "0.01,5.0,0.01,or_greater")]
@@ -115,7 +109,6 @@ public sealed partial class PlayerFootstepNoiseEmitter2D : Node2D, INoiseEmitter
 
         GetFootstepTuning(
             player.CurrentMovementMode,
-            movementSettings,
             out float stepDistance,
             out float footstepIntensity);
         AccumulateSegment(
@@ -150,7 +143,6 @@ public sealed partial class PlayerFootstepNoiseEmitter2D : Node2D, INoiseEmitter
         }
 
         movementSettings.Validate();
-        ValidateCrawlTuning(movementSettings);
         _player = player;
         _health = health;
         _movementSettings = movementSettings;
@@ -334,8 +326,7 @@ public sealed partial class PlayerFootstepNoiseEmitter2D : Node2D, INoiseEmitter
 
     private void ValidateBaseTuning()
     {
-        if (!float.IsFinite(CrouchStepDistance) || CrouchStepDistance <= 0.0f ||
-            !float.IsFinite(WalkStepDistance) || WalkStepDistance <= 0.0f ||
+        if (!float.IsFinite(WalkStepDistance) || WalkStepDistance <= 0.0f ||
             !float.IsFinite(SprintStepDistance) || SprintStepDistance <= 0.0f)
         {
             throw new InvalidOperationException(
@@ -343,17 +334,14 @@ public sealed partial class PlayerFootstepNoiseEmitter2D : Node2D, INoiseEmitter
                 "finite step distances.");
         }
 
-        if (!(SprintStepDistance < WalkStepDistance &&
-              WalkStepDistance < CrouchStepDistance))
+        if (SprintStepDistance >= WalkStepDistance)
         {
             throw new InvalidOperationException(
                 $"{nameof(PlayerFootstepNoiseEmitter2D)} on '{Name}' requires " +
-                "SprintDistance < WalkDistance < CrouchDistance.");
+                "SprintStepDistance < WalkStepDistance.");
         }
 
-        if (!float.IsFinite(CrouchFootstepIntensity) ||
-            CrouchFootstepIntensity <= 0.0f ||
-            !float.IsFinite(WalkFootstepIntensity) ||
+        if (!float.IsFinite(WalkFootstepIntensity) ||
             WalkFootstepIntensity <= 0.0f ||
             !float.IsFinite(SprintFootstepIntensity) ||
             SprintFootstepIntensity <= 0.0f)
@@ -363,42 +351,16 @@ public sealed partial class PlayerFootstepNoiseEmitter2D : Node2D, INoiseEmitter
                 "finite intensities.");
         }
 
-        if (!(CrouchFootstepIntensity < WalkFootstepIntensity &&
-              WalkFootstepIntensity < SprintFootstepIntensity))
+        if (WalkFootstepIntensity >= SprintFootstepIntensity)
         {
             throw new InvalidOperationException(
                 $"{nameof(PlayerFootstepNoiseEmitter2D)} on '{Name}' requires " +
-                "CrouchIntensity < WalkIntensity < SprintIntensity.");
-        }
-    }
-
-    private void ValidateCrawlTuning(PlayerMovementSettings movementSettings)
-    {
-        float crawlStepDistance =
-            WalkStepDistance * movementSettings.CrawlStepDistanceMultiplier;
-        float crawlIntensity =
-            WalkFootstepIntensity * movementSettings.CrawlFootstepIntensityMultiplier;
-        if (!float.IsFinite(crawlStepDistance) ||
-            crawlStepDistance <= CrouchStepDistance)
-        {
-            throw new InvalidOperationException(
-                $"{nameof(PlayerFootstepNoiseEmitter2D)} on '{Name}' requires crawl steps " +
-                "to have the longest distance threshold.");
-        }
-
-        if (!float.IsFinite(crawlIntensity) ||
-            crawlIntensity <= 0.0f ||
-            crawlIntensity >= CrouchFootstepIntensity)
-        {
-            throw new InvalidOperationException(
-                $"{nameof(PlayerFootstepNoiseEmitter2D)} on '{Name}' requires crawl footsteps " +
-                "to have the lowest positive intensity.");
+                "WalkFootstepIntensity < SprintFootstepIntensity.");
         }
     }
 
     private void GetFootstepTuning(
         MovementMode movementMode,
-        PlayerMovementSettings movementSettings,
         out float stepDistance,
         out float footstepIntensity)
     {
@@ -408,20 +370,9 @@ public sealed partial class PlayerFootstepNoiseEmitter2D : Node2D, INoiseEmitter
                 stepDistance = WalkStepDistance;
                 footstepIntensity = WalkFootstepIntensity;
                 return;
-            case MovementMode.Crouch:
-                stepDistance = CrouchStepDistance;
-                footstepIntensity = CrouchFootstepIntensity;
-                return;
             case MovementMode.Sprint:
                 stepDistance = SprintStepDistance;
                 footstepIntensity = SprintFootstepIntensity;
-                return;
-            case MovementMode.Crawl:
-                stepDistance =
-                    WalkStepDistance * movementSettings.CrawlStepDistanceMultiplier;
-                footstepIntensity =
-                    WalkFootstepIntensity *
-                    movementSettings.CrawlFootstepIntensityMultiplier;
                 return;
             default:
                 throw new InvalidOperationException("Unknown player movement mode.");

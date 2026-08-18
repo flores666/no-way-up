@@ -18,18 +18,9 @@ public sealed partial class PlayerController2D : CharacterBody2D,
     IVisibilityTarget
 {
     private const float MinimumAimDistanceSquared = 0.0001f;
-    private const string BlockedPostureMessage = "Cannot stand here.";
-
-    private enum CollisionProfile
-    {
-        Normal,
-        Crawl
-    }
 
     private Node2D _aimPivot = null!;
     private PlayerFlashlightController2D _flashlightController = null!;
-    private CollisionShape2D _normalCollisionShape = null!;
-    private CollisionShape2D _crawlCollisionShape = null!;
     private PlayerMovementSettings _movementSettings = null!;
     private InventoryModel? _inventory;
     private HealthModel? _health;
@@ -38,17 +29,11 @@ public sealed partial class PlayerController2D : CharacterBody2D,
     private PlayerFootstepNoiseEmitter2D _footstepNoiseEmitter = null!;
     private PlayerVisibilityController2D _visibilityController = null!;
     private NoiseSystem2D? _noiseSystem;
-    private MovementMode _postureMode = MovementMode.Walk;
     private MovementMode _movementMode = MovementMode.Walk;
-    private CollisionProfile _activeCollisionProfile = CollisionProfile.Normal;
-    private CollisionProfile _requestedCollisionProfile = CollisionProfile.Normal;
     private double _secondsSinceLastStaminaDrain = double.PositiveInfinity;
     private bool _isGameplayInputEnabled = true;
     private bool _isSprintRequestActive;
     private bool _sprintRequiresRelease;
-    private bool _collisionProfileApplyQueued;
-    private MovementMode _requestedNormalPosture = MovementMode.Walk;
-    private bool _notifyOnDeferredNormalProfileFailure;
 
     [Export]
     public PlayerMovementSettings? MovementSettings { get; set; }
@@ -60,9 +45,6 @@ public sealed partial class PlayerController2D : CharacterBody2D,
     public PlayerVisibilityController2D VisibilityController => _visibilityController;
 
     public bool IsGameplayInputEnabled => _isGameplayInputEnabled;
-
-    public bool IsUsingCrawlCollisionProfile =>
-        _activeCollisionProfile == CollisionProfile.Crawl;
 
     public MovementMode CurrentMovementMode => _movementMode;
 
@@ -82,8 +64,6 @@ public sealed partial class PlayerController2D : CharacterBody2D,
 
     public event Action<MovementMode, MovementMode>? MovementModeChanged;
 
-    public event Action<string>? PostureChangeRejected;
-
     public override void _Ready()
     {
         _movementSettings = MovementSettings
@@ -91,14 +71,12 @@ public sealed partial class PlayerController2D : CharacterBody2D,
                 $"{nameof(PlayerController2D)} on '{Name}' requires movement settings.");
         _movementSettings.Validate();
 
-        _normalCollisionShape = RequireNode<CollisionShape2D>("%NormalCollisionShape");
-        _crawlCollisionShape = RequireNode<CollisionShape2D>("%CrawlCollisionShape");
-        ValidateCollisionProfiles();
-        _normalCollisionShape.Disabled = false;
-        _crawlCollisionShape.Disabled = true;
-        _activeCollisionProfile = CollisionProfile.Normal;
-        _requestedCollisionProfile = CollisionProfile.Normal;
-        ValidateExactlyOneActiveCollisionProfile();
+        _ = RequireNode<CollisionShape2D>("%NormalCollisionShape");
+        if (CollisionMask == 0 || (CollisionMask & CollisionLayers2D.World) == 0)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(PlayerController2D)} on '{Name}' requires the World collision mask.");
+        }
 
         _aimPivot = RequireNode<Node2D>("%AimPivot");
         _flashlightController = RequireNode<PlayerFlashlightController2D>(
@@ -161,14 +139,6 @@ public sealed partial class PlayerController2D : CharacterBody2D,
             return;
         }
 
-        if (_collisionProfileApplyQueued)
-        {
-            UpdateStamina(delta, isActivelySprinting: false);
-            Velocity = Vector2.Zero;
-            MoveAndSlide();
-            return;
-        }
-
         bool isSprintHeld = Input.IsActionPressed("sprint");
         if (!isSprintHeld)
         {
@@ -188,25 +158,16 @@ public sealed partial class PlayerController2D : CharacterBody2D,
 
         bool hasMovementIntent = !inputDirection.IsZeroApprox();
         bool isSprintRequested = CanRequestSprint(isSprintHeld, hasMovementIntent);
-        if (isSprintRequested && _postureMode == MovementMode.Crouch)
-        {
-            _postureMode = MovementMode.Walk;
-        }
-
-        MovementMode speedMode = isSprintRequested
+        MovementMode requestedMode = isSprintRequested
             ? MovementMode.Sprint
-            : _postureMode;
-        float movementSpeed = GetMovementSpeed(speedMode);
+            : MovementMode.Walk;
+        float movementSpeed = GetMovementSpeed(requestedMode);
         Vector2 targetVelocity = inputDirection * movementSpeed;
         float changeRate = !hasMovementIntent
             ? _movementSettings.Deceleration
             : _movementSettings.Acceleration;
 
         Velocity = Velocity.MoveToward(targetVelocity, changeRate * (float)delta);
-        if (speedMode == MovementMode.Crawl)
-        {
-            Velocity = Velocity.LimitLength(_movementSettings.CrawlSpeed);
-        }
 
         Vector2 previousPosition = GlobalPosition;
         MoveAndSlide();
@@ -216,17 +177,13 @@ public sealed partial class PlayerController2D : CharacterBody2D,
         bool isActivelySprinting =
             isSprintRequested && hasMeaningfulActualMovement;
 
-        MovementMode effectiveMode = isActivelySprinting
-            ? MovementMode.Sprint
-            : _postureMode;
-        SetMovementMode(effectiveMode);
+        SetMovementMode(isActivelySprinting ? MovementMode.Sprint : MovementMode.Walk);
         UpdateStamina(delta, isActivelySprinting);
 
         if (isActivelySprinting && Stamina.IsEmpty)
         {
             _isSprintRequestActive = false;
             _sprintRequiresRelease = true;
-            _postureMode = MovementMode.Walk;
             SetMovementMode(MovementMode.Walk);
         }
     }
@@ -256,12 +213,7 @@ public sealed partial class PlayerController2D : CharacterBody2D,
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (@event is InputEventKey { Echo: true })
-        {
-            return;
-        }
-
-        if (!_isGameplayInputEnabled)
+        if (@event is InputEventKey { Echo: true } || !_isGameplayInputEnabled)
         {
             return;
         }
@@ -270,28 +222,6 @@ public sealed partial class PlayerController2D : CharacterBody2D,
         {
             _isSprintRequestActive = false;
             _sprintRequiresRelease = false;
-        }
-
-        if (@event.IsActionPressed("crouch"))
-        {
-            HandleCrouchToggle();
-            GetViewport().SetInputAsHandled();
-            return;
-        }
-
-        if (@event.IsActionPressed("crawl"))
-        {
-            HandleCrawlToggle();
-            GetViewport().SetInputAsHandled();
-            return;
-        }
-
-        if (@event.IsActionPressed("sprint") &&
-            _postureMode == MovementMode.Crawl &&
-            !_sprintRequiresRelease)
-        {
-            TryExitCrawl(MovementMode.Walk, notifyOnFailure: true);
-            GetViewport().SetInputAsHandled();
         }
     }
 
@@ -306,11 +236,7 @@ public sealed partial class PlayerController2D : CharacterBody2D,
 
         _sprintRequiresRelease = true;
         _isSprintRequestActive = false;
-        if (_movementMode == MovementMode.Sprint)
-        {
-            SetMovementMode(_postureMode);
-        }
-
+        SetMovementMode(MovementMode.Walk);
         Velocity = Vector2.Zero;
     }
 
@@ -338,95 +264,11 @@ public sealed partial class PlayerController2D : CharacterBody2D,
         _noiseSystem = noiseSystem;
     }
 
-    private void HandleCrouchToggle()
-    {
-        if (_postureMode == MovementMode.Crawl)
-        {
-            return;
-        }
-
-        _sprintRequiresRelease = true;
-        _isSprintRequestActive = false;
-        MovementMode nextPosture = _postureMode == MovementMode.Crouch
-            ? MovementMode.Walk
-            : MovementMode.Crouch;
-        SetPostureMode(nextPosture);
-    }
-
-    private void HandleCrawlToggle()
-    {
-        if (_postureMode == MovementMode.Crawl)
-        {
-            TryExitCrawl(MovementMode.Crouch, notifyOnFailure: true);
-            return;
-        }
-
-        _sprintRequiresRelease = true;
-        _isSprintRequestActive = false;
-        _postureMode = MovementMode.Crawl;
-        Velocity = Velocity.LimitLength(_movementSettings.CrawlSpeed);
-        RequestCollisionProfile(CollisionProfile.Crawl);
-        SetMovementMode(MovementMode.Crawl);
-    }
-
-    private bool TryExitCrawl(MovementMode nextPosture, bool notifyOnFailure)
-    {
-        if (_postureMode != MovementMode.Crawl)
-        {
-            return true;
-        }
-
-        if (nextPosture is MovementMode.Crawl or MovementMode.Sprint)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(nextPosture),
-                nextPosture,
-                "A crawl exit must select a normal collision posture.");
-        }
-
-        if (!CanNormalCollisionFit())
-        {
-            if (notifyOnFailure)
-            {
-                PostureChangeRejected?.Invoke(BlockedPostureMessage);
-            }
-
-            return false;
-        }
-
-        _requestedNormalPosture = nextPosture;
-        _notifyOnDeferredNormalProfileFailure = notifyOnFailure;
-        RequestCollisionProfile(CollisionProfile.Normal);
-        return true;
-    }
-
-    private bool CanNormalCollisionFit()
-    {
-        Shape2D normalShape = _normalCollisionShape.Shape
-            ?? throw new InvalidOperationException(
-                $"{nameof(PlayerController2D)} on '{Name}' lost its normal collision shape.");
-
-        PhysicsShapeQueryParameters2D query = new()
-        {
-            Shape = normalShape,
-            Transform = _normalCollisionShape.GlobalTransform,
-            CollisionMask = CollisionMask,
-            CollideWithAreas = false,
-            CollideWithBodies = true,
-            Exclude = new Godot.Collections.Array<Rid> { GetRid() }
-        };
-
-        Godot.Collections.Array<Godot.Collections.Dictionary> overlaps =
-            GetWorld2D().DirectSpaceState.IntersectShape(query, maxResults: 1);
-        return overlaps.Count == 0;
-    }
-
     private bool CanRequestSprint(bool isSprintHeld, bool hasMovementIntent)
     {
         if (!isSprintHeld ||
             !hasMovementIntent ||
             _sprintRequiresRelease ||
-            _postureMode == MovementMode.Crawl ||
             Stamina.Current <= 0.0)
         {
             return false;
@@ -491,26 +333,9 @@ public sealed partial class PlayerController2D : CharacterBody2D,
         return movementMode switch
         {
             MovementMode.Walk => _movementSettings.WalkSpeed,
-            MovementMode.Crouch => _movementSettings.CrouchSpeed,
             MovementMode.Sprint => _movementSettings.SprintSpeed,
-            MovementMode.Crawl => _movementSettings.CrawlSpeed,
             _ => throw new InvalidOperationException("Unknown player movement mode.")
         };
-    }
-
-    private void SetPostureMode(MovementMode nextPosture)
-    {
-        if (nextPosture == MovementMode.Sprint)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(nextPosture),
-                nextPosture,
-                "Sprint is an effective movement mode, not a persistent posture.");
-        }
-
-        _postureMode = nextPosture;
-        Velocity = Velocity.LimitLength(GetMovementSpeed(nextPosture));
-        SetMovementMode(nextPosture);
     }
 
     private void SetMovementMode(MovementMode nextMode)
@@ -523,108 +348,6 @@ public sealed partial class PlayerController2D : CharacterBody2D,
         MovementMode previousMode = _movementMode;
         _movementMode = nextMode;
         MovementModeChanged?.Invoke(previousMode, nextMode);
-    }
-
-    private void RequestCollisionProfile(CollisionProfile collisionProfile)
-    {
-        _requestedCollisionProfile = collisionProfile;
-        if (_collisionProfileApplyQueued)
-        {
-            return;
-        }
-
-        _collisionProfileApplyQueued = true;
-        Callable.From(ApplyRequestedCollisionProfile).CallDeferred();
-    }
-
-    private void ApplyRequestedCollisionProfile()
-    {
-        _collisionProfileApplyQueued = false;
-        if (!GodotObject.IsInstanceValid(_normalCollisionShape) ||
-            !GodotObject.IsInstanceValid(_crawlCollisionShape))
-        {
-            return;
-        }
-
-        if (_requestedCollisionProfile == CollisionProfile.Crawl)
-        {
-            ActivateCrawlCollisionProfile();
-            _activeCollisionProfile = CollisionProfile.Crawl;
-            _notifyOnDeferredNormalProfileFailure = false;
-            return;
-        }
-
-        if (!CanNormalCollisionFit())
-        {
-            RestoreCrawlAfterBlockedDeferredExit();
-            return;
-        }
-
-        _normalCollisionShape.Disabled = false;
-        _crawlCollisionShape.Disabled = true;
-        _activeCollisionProfile = CollisionProfile.Normal;
-        _requestedCollisionProfile = CollisionProfile.Normal;
-        _notifyOnDeferredNormalProfileFailure = false;
-        SetPostureMode(_requestedNormalPosture);
-        ValidateExactlyOneActiveCollisionProfile();
-    }
-
-    private void ActivateCrawlCollisionProfile()
-    {
-        _crawlCollisionShape.Disabled = false;
-        _normalCollisionShape.Disabled = true;
-        ValidateExactlyOneActiveCollisionProfile();
-    }
-
-    private void RestoreCrawlAfterBlockedDeferredExit()
-    {
-        ActivateCrawlCollisionProfile();
-        _activeCollisionProfile = CollisionProfile.Crawl;
-        _requestedCollisionProfile = CollisionProfile.Crawl;
-        _postureMode = MovementMode.Crawl;
-        Velocity = Velocity.LimitLength(_movementSettings.CrawlSpeed);
-        SetMovementMode(MovementMode.Crawl);
-
-        bool shouldNotify = _notifyOnDeferredNormalProfileFailure;
-        _notifyOnDeferredNormalProfileFailure = false;
-        if (shouldNotify)
-        {
-            PostureChangeRejected?.Invoke(BlockedPostureMessage);
-        }
-    }
-
-    private void ValidateExactlyOneActiveCollisionProfile()
-    {
-        if (_normalCollisionShape.Disabled == _crawlCollisionShape.Disabled)
-        {
-            throw new InvalidOperationException(
-                $"{nameof(PlayerController2D)} on '{Name}' must have exactly one active " +
-                "movement collision profile.");
-        }
-    }
-
-    private void ValidateCollisionProfiles()
-    {
-        Shape2D normalShape = _normalCollisionShape.Shape
-            ?? throw new InvalidOperationException(
-                $"{nameof(PlayerController2D)} on '{Name}' requires a normal Shape2D.");
-        Shape2D crawlShape = _crawlCollisionShape.Shape
-            ?? throw new InvalidOperationException(
-                $"{nameof(PlayerController2D)} on '{Name}' requires a crawl Shape2D.");
-
-        if (ReferenceEquals(normalShape, crawlShape) ||
-            normalShape.GetRid() == crawlShape.GetRid())
-        {
-            throw new InvalidOperationException(
-                $"{nameof(PlayerController2D)} on '{Name}' requires distinct normal and crawl " +
-                "shape resources.");
-        }
-
-        if (CollisionMask == 0 || (CollisionMask & CollisionLayers2D.World) == 0)
-        {
-            throw new InvalidOperationException(
-                $"{nameof(PlayerController2D)} on '{Name}' requires the World collision mask.");
-        }
     }
 
     private static bool IsFinite(Vector2 value)

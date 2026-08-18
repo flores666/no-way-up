@@ -111,10 +111,10 @@ size = Vector2(20, 290)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ExitRight"]
 size = Vector2(20, 290)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_CrawlDuctTop"]
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_MaintenancePassageTop"]
 size = Vector2(140, 28)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_CrawlDuctBottom"]
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_MaintenancePassageBottom"]
 size = Vector2(140, 28)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_TrainWestBody"]
@@ -210,7 +210,7 @@ polygon = PackedVector2Array(620, -300, 720, -300, 720, -160, 620, -160)
 color = Color(0.11, 0.14, 0.14, 1)
 polygon = PackedVector2Array(-1120, -180, -960, -180, -960, 100, -1120, 100)
 
-[node name="CrawlPassageFloor" type="Polygon2D" parent="Floor"]
+[node name="ServicePassageFloor" type="Polygon2D" parent="Floor"]
 color = Color(0.075, 0.09, 0.095, 1)
 polygon = PackedVector2Array(-760, -410, -620, -410, -620, -390, -760, -390)
 
@@ -520,13 +520,13 @@ position = Vector2(-950, -45)
 color = Color(0.075, 0.09, 0.1, 1)
 polygon = PackedVector2Array(-10.0, -145.0, 10.0, -145.0, 10.0, 145.0, -10.0, 145.0)
 
-[node name="CrawlDuctTop" type="Polygon2D" parent="WallsVisual"]
-position = Vector2(-690, -424)
+[node name="MaintenancePassageTop" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-690, -434)
 color = Color(0.075, 0.09, 0.1, 1)
 polygon = PackedVector2Array(-70.0, -14.0, 70.0, -14.0, 70.0, 14.0, -70.0, 14.0)
 
-[node name="CrawlDuctBottom" type="Polygon2D" parent="WallsVisual"]
-position = Vector2(-690, -376)
+[node name="MaintenancePassageBottom" type="Polygon2D" parent="WallsVisual"]
+position = Vector2(-690, -366)
 color = Color(0.075, 0.09, 0.1, 1)
 polygon = PackedVector2Array(-70.0, -14.0, 70.0, -14.0, 70.0, 14.0, -70.0, 14.0)
 
@@ -677,13 +677,13 @@ shape = SubResource("RectangleShape2D_ExitLeft")
 position = Vector2(-950, -45)
 shape = SubResource("RectangleShape2D_ExitRight")
 
-[node name="CrawlDuctTop" type="CollisionShape2D" parent="WallCollisions"]
-position = Vector2(-690, -424)
-shape = SubResource("RectangleShape2D_CrawlDuctTop")
+[node name="MaintenancePassageTop" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-690, -434)
+shape = SubResource("RectangleShape2D_MaintenancePassageTop")
 
-[node name="CrawlDuctBottom" type="CollisionShape2D" parent="WallCollisions"]
-position = Vector2(-690, -376)
-shape = SubResource("RectangleShape2D_CrawlDuctBottom")
+[node name="MaintenancePassageBottom" type="CollisionShape2D" parent="WallCollisions"]
+position = Vector2(-690, -366)
+shape = SubResource("RectangleShape2D_MaintenancePassageBottom")
 
 [node name="TrainWestBody" type="CollisionShape2D" parent="WallCollisions"]
 position = Vector2(-260, 385)
@@ -840,10 +840,10 @@ theme_override_font_sizes/font_size = 11
 text = "M2 · TRAIN OUT OF SERVICE"
 horizontal_alignment = 1
 
-[node name="CrawlMarkingAnchor" type="Node2D" parent="Landmarks"]
+[node name="MaintenancePassageMarkingAnchor" type="Node2D" parent="Landmarks"]
 position = Vector2(-690, -448)
 
-[node name="CrawlMarking" type="Label" parent="Landmarks/CrawlMarkingAnchor"]
+[node name="MaintenancePassageMarking" type="Label" parent="Landmarks/MaintenancePassageMarkingAnchor"]
 offset_left = -105.0
 offset_top = -10.0
 offset_right = 105.0
@@ -853,7 +853,7 @@ theme_override_colors/font_color = Color(0.66, 0.58, 0.36, 1)
 theme_override_colors/font_outline_color = Color(0.015, 0.02, 0.025, 0.96)
 theme_override_constants/outline_size = 3
 theme_override_font_sizes/font_size = 10
-text = "CABLE DUCT · CRAWL ACCESS"
+text = "CABLE DUCT · SERVICE ACCESS"
 horizontal_alignment = 1
 
 [node name="EmergencyDimLight" type="PointLight2D" parent="Landmarks"]
@@ -916,7 +916,7 @@ DisplayName = "Unpowered service route"
 VisibilityMultiplier = 0.62
 ZonePriority = 12
 
-[node name="DarkCrawlPassage" parent="LightExposureZones" instance=ExtResource("21_light_zone")]
+[node name="DarkServicePassage" parent="LightExposureZones" instance=ExtResource("21_light_zone")]
 position = Vector2(-690, -400)
 scale = Vector2(0.875, 0.25)
 DisplayName = "Cable duct darkness"
@@ -1028,7 +1028,7 @@ Quantity = 14
 PickupColor = Color(0.76, 0.64, 0.28, 1)
 VisualScale = 0.95
 
-[node name="CrawlPassageBattery" parent="Interactions" instance=ExtResource("3_pickup")]
+[node name="ServicePassageBattery" parent="Interactions" instance=ExtResource("3_pickup")]
 position = Vector2(-690, -400)
 ItemDefinition = ExtResource("5_battery")
 Quantity = 1

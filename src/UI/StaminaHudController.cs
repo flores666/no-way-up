@@ -200,9 +200,7 @@ public sealed partial class StaminaHudController : MarginContainer
         _movementModeLabel.Text = movementModeSource.CurrentMovementMode switch
         {
             MovementMode.Walk => "MODE: WALK",
-            MovementMode.Crouch => "MODE: CROUCH",
             MovementMode.Sprint => "MODE: SPRINT",
-            MovementMode.Crawl => "MODE: CRAWL",
             _ => throw new InvalidOperationException("Unknown player movement mode.")
         };
     }

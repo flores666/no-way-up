@@ -282,7 +282,7 @@ public sealed partial class MetroObliquePresentation2D : Node2D
             return DefaultWallHeight * 1.2f;
         }
 
-        if (wallName.Contains("CrawlDuct", StringComparison.Ordinal))
+        if (wallName.Contains("MaintenancePassage", StringComparison.Ordinal))
         {
             return DefaultWallHeight * 0.48f;
         }

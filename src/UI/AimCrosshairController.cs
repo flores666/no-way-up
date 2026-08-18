@@ -7,17 +7,12 @@ namespace LineZero.UI;
 public sealed partial class AimCrosshairController : Control
 {
     private PlayerWeaponController2D? _weaponController;
-    private Input.MouseModeEnum _mouseModeBeforeAim;
-    private bool _ownsMouseMode;
+    private Input.MouseModeEnum _mouseModeBeforeGameplay;
+    private bool _ownsGameplayMouseMode;
+    private bool _isUiMouseInteractionActive;
 
     [Export(PropertyHint.Range, "1.0,16.0,0.5")]
     public float ArmLength { get; set; } = 6.0f;
-
-    [Export(PropertyHint.Range, "1.0,16.0,0.5")]
-    public float MinimumGap { get; set; } = 4.0f;
-
-    [Export(PropertyHint.Range, "4.0,32.0,0.5")]
-    public float MaximumGap { get; set; } = 18.0f;
 
     [Export(PropertyHint.Range, "1.0,4.0,0.5")]
     public float LineWidth { get; set; } = 2.0f;
@@ -34,6 +29,8 @@ public sealed partial class AimCrosshairController : Control
         MouseFilter = MouseFilterEnum.Ignore;
         Visible = false;
         SetProcess(false);
+        TakeGameplayMouseMode();
+        ApplyMouseMode();
     }
 
     public override void _ExitTree()
@@ -94,8 +91,6 @@ public sealed partial class AimCrosshairController : Control
     private void ValidateConfiguration()
     {
         if (!float.IsFinite(ArmLength) || ArmLength <= 0.0f ||
-            !float.IsFinite(MinimumGap) || MinimumGap < 0.0f ||
-            !float.IsFinite(MaximumGap) || MaximumGap < MinimumGap ||
             !float.IsFinite(LineWidth) || LineWidth <= 0.0f ||
             !float.IsFinite(DotRadius) || DotRadius <= 0.0f)
         {
@@ -112,10 +107,11 @@ public sealed partial class AimCrosshairController : Control
 
         Vector2 viewportCenter = Size * 0.5f;
         float aimDistance = mousePosition.DistanceTo(viewportCenter);
-        float spreadRadians = Mathf.DegToRad(
-            weaponController.State.Definition.AimedSpreadDegrees);
-        float spreadRadius = MathF.Tan(spreadRadians) * aimDistance;
-        return Math.Clamp(spreadRadius, MinimumGap, MaximumGap);
+        float spreadDegrees = weaponController.IsAiming
+            ? weaponController.State.Definition.AimedSpreadDegrees
+            : weaponController.State.Definition.HipFireSpreadDegrees;
+        float spreadRadians = Mathf.DegToRad(spreadDegrees);
+        return MathF.Tan(spreadRadians) * aimDistance;
     }
 
     public void Bind(PlayerWeaponController2D weaponController)
@@ -130,6 +126,22 @@ public sealed partial class AimCrosshairController : Control
         _weaponController = weaponController;
         _weaponController.AimingChanged += OnAimingChanged;
         ApplyAimingState(_weaponController.IsAiming);
+    }
+
+    /// <summary>
+    /// Enables the operating-system cursor while the player is interacting with UI.
+    /// Gameplay should leave this false so only the aiming crosshair is visible.
+    /// </summary>
+    public void SetUiMouseInteractionActive(bool active)
+    {
+        if (_isUiMouseInteractionActive == active)
+        {
+            return;
+        }
+
+        _isUiMouseInteractionActive = active;
+        ApplyMouseMode();
+        ApplyAimingState(_weaponController?.IsAiming ?? false);
     }
 
     private void Unbind()
@@ -150,38 +162,50 @@ public sealed partial class AimCrosshairController : Control
 
     private void ApplyAimingState(bool isAiming)
     {
-        Visible = isAiming;
-        SetProcess(isAiming);
-        if (isAiming)
-        {
-            TakeMouseMode();
-            QueueRedraw();
-            return;
-        }
+        // The gameplay crosshair is always visible. Aiming only changes the
+        // weapon spread, and ResolveSpreadGap renders that exact current cone.
+        // UI interaction temporarily owns the pointer and hides the crosshair.
+        bool showCrosshair = _weaponController is not null && !_isUiMouseInteractionActive;
+        Visible = showCrosshair;
+        SetProcess(showCrosshair);
 
-        RestoreMouseMode();
+        if (showCrosshair)
+        {
+            QueueRedraw();
+        }
     }
 
-    private void TakeMouseMode()
+    private void TakeGameplayMouseMode()
     {
-        if (_ownsMouseMode)
+        if (_ownsGameplayMouseMode)
         {
             return;
         }
 
-        _mouseModeBeforeAim = Input.MouseMode;
-        Input.MouseMode = Input.MouseModeEnum.Hidden;
-        _ownsMouseMode = true;
+        _mouseModeBeforeGameplay = Input.MouseMode;
+        _ownsGameplayMouseMode = true;
+    }
+
+    private void ApplyMouseMode()
+    {
+        if (!_ownsGameplayMouseMode)
+        {
+            return;
+        }
+
+        Input.MouseMode = _isUiMouseInteractionActive
+            ? Input.MouseModeEnum.Visible
+            : Input.MouseModeEnum.Hidden;
     }
 
     private void RestoreMouseMode()
     {
-        if (!_ownsMouseMode)
+        if (!_ownsGameplayMouseMode)
         {
             return;
         }
 
-        Input.MouseMode = _mouseModeBeforeAim;
-        _ownsMouseMode = false;
+        Input.MouseMode = _mouseModeBeforeGameplay;
+        _ownsGameplayMouseMode = false;
     }
 }

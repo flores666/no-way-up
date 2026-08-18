@@ -76,6 +76,40 @@ public sealed class WeaponIntegrationFeatureTests : IFeatureTestSuite
             await context.DisposeNodeAsync(root);
         });
 
+        await context.RunAsync("aim-input-toggles-aiming-and-combat-disable-clears-it", async () =>
+        {
+            Node2D root = context.AddNode(new Node2D { Name = "AimInputTestRoot" });
+            NoiseSystem2D noiseSystem = new() { Name = "NoiseSystem" };
+            PlayerController2D player = LoadPlayer();
+            root.AddChild(noiseSystem);
+            root.AddChild(player);
+            player.BindNoiseSystem(noiseSystem);
+
+            PlayerWeaponController2D weapon = player.GetNode<PlayerWeaponController2D>(
+                "%PlayerWeaponController2D");
+            weapon.SetCombatInputEnabled(true);
+            await context.WaitProcessFramesAsync(1);
+
+            int aimingChangedCount = 0;
+            weapon.AimingChanged += _ => aimingChangedCount++;
+            weapon._UnhandledInput(new InputEventAction
+            {
+                Action = "aim",
+                Pressed = true,
+                Strength = 1.0f,
+            });
+            TestAssert.True(weapon.IsAiming,
+                "Pressing aim did not enter aiming state.");
+
+            weapon.SetCombatInputEnabled(false);
+            TestAssert.False(weapon.IsAiming,
+                "Disabling combat input left aiming active.");
+            TestAssert.Equal(2, aimingChangedCount,
+                "Aiming state did not publish exactly one enter and one exit notification.");
+
+            await context.DisposeNodeAsync(root);
+        });
+
         await context.RunAsync("automatic-fire-continues-while-trigger-held-and-stops-on-release", async () =>
         {
             Node2D root = context.AddNode(new Node2D { Name = "AutomaticFireTestRoot" });

@@ -76,6 +76,8 @@ public static class TestDataFactory
             Damage = 34,
             FireIntervalSeconds = 0.1,
             ReloadDurationSeconds = 2.2,
+            AimedSpreadDegrees = 1.25f,
+            HipFireSpreadDegrees = 7.5f,
             Range = 900.0f,
         };
     }

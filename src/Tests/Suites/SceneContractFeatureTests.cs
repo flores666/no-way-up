@@ -309,6 +309,8 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
                 "AK resource must remain automatic.");
             TestAssert.Equal(FirearmReloadMechanism.DetachableMagazine, ak.ReloadMechanism,
                 "AK resource must use detachable magazines.");
+            TestAssert.True(ak.AimedSpreadDegrees < ak.HipFireSpreadDegrees,
+                "AK aiming must be more accurate than hip fire.");
 
             FlashlightDefinition flashlight = LoadResource<FlashlightDefinition>(
                 "res://data/flashlight/StandardFlashlight.tres");
@@ -354,6 +356,7 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
                 "interact",
                 "toggle_inventory",
                 "fire",
+                "aim",
                 "reload",
             };
 
@@ -384,6 +387,9 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
             TestAssert.True(
                 main.GetNodeOrNull<NoiseSystem2D>("%NoiseSystem2D") is not null,
                 "Main smoke scene did not contain the unique NoiseSystem2D node.");
+            TestAssert.True(
+                main.GetNodeOrNull<AimCrosshairController>("%AimCrosshair") is not null,
+                "Main smoke scene did not contain the aiming crosshair.");
 
             await context.DisposeNodeAsync(main);
         });

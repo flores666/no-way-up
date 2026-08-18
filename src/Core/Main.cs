@@ -143,6 +143,11 @@ public sealed partial class Main : Node2D
 			?? throw new InvalidOperationException(
 				$"{nameof(Main)} requires a unique CompactPlayerStatusHud node.");
 
+		AimCrosshairController aimCrosshair =
+			GetNodeOrNull<AimCrosshairController>("%AimCrosshair")
+			?? throw new InvalidOperationException(
+				$"{nameof(Main)} requires a unique AimCrosshair node.");
+
 		ObjectiveHudController objectiveHud =
 			GetNodeOrNull<ObjectiveHudController>("%ObjectiveHud")
 			?? throw new InvalidOperationException(
@@ -191,6 +196,7 @@ public sealed partial class Main : Node2D
 		flashlightHud.SetActorAlive(player.Health.IsAlive);
 		visibilityHud.Bind(player.VisibilityController);
 		compactPlayerStatusHud.Bind(player, playerWeapon);
+		aimCrosshair.Bind(playerWeapon);
 		objectiveHud.Bind(_objectiveProgress);
 
 		// Subscribe before binding stateful level components. A late bind may

@@ -16,11 +16,13 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
         Vector2 RayEnd);
 
     private const string FireAction = "fire";
+    private const string AimAction = "aim";
     private const string ReloadAction = "reload";
     private const float MinimumSegmentLengthSquared = 0.0001f;
 
     private readonly Godot.Collections.Array<Rid> _rayExclusions = new();
     private readonly FirearmReloadService _reloadService = new();
+    private readonly RandomNumberGenerator _spreadRandom = new();
 
     private PlayerController2D? _player;
     private InventoryModel? _inventory;
@@ -41,6 +43,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
     private double _nextEmptyMessageAllowedAtSeconds;
     private ulong _resolvedMuzzleTextureInstanceId;
     private bool _isFireHeld;
+    private bool _isAiming;
     private double _nextAutomaticAttemptAllowedAtSeconds;
 
     [Export]
@@ -67,6 +70,10 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
             $"{nameof(PlayerWeaponController2D)} on '{Name}' has no firearm state.");
 
     public bool IsCombatInputEnabled => _isCombatInputEnabled;
+
+    public bool IsAiming => _isAiming;
+
+    public event Action<bool>? AimingChanged;
 
     public event Action<FirearmShotResult>? ShotAttempted;
 
@@ -145,6 +152,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
         _tracerTimer.Timeout += OnTracerTimerTimeout;
         _reloadTimer.Timeout += OnReloadTimerTimeout;
         _tracerLine.Visible = false;
+        _spreadRandom.Randomize();
         _state = new FirearmState(
             definition,
             InitialMagazineAmmo,
@@ -169,6 +177,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
         }
 
         _isFireHeld = false;
+        SetAiming(false);
         _rayExclusions.Clear();
         _noiseSystem = null;
         _isInitialized = false;
@@ -176,6 +185,24 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
 
     public override void _UnhandledInput(InputEvent @event)
     {
+        if (@event.IsActionReleased(AimAction))
+        {
+            SetAiming(false);
+            return;
+        }
+
+        if (@event.IsActionPressed(AimAction))
+        {
+            if (!_isCombatInputEnabled)
+            {
+                return;
+            }
+
+            SetAiming(true);
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         if (@event.IsActionReleased(FireAction))
         {
             _isFireHeld = false;
@@ -280,6 +307,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
         {
             _isFireHeld = false;
             _nextAutomaticAttemptAllowedAtSeconds = 0.0;
+            SetAiming(false);
             CancelReload();
             return;
         }
@@ -538,7 +566,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
 
         Vector2 safeWeaponOrigin = _weaponOrigin.GlobalPosition;
         Vector2 desiredMuzzlePosition = _muzzlePoint.GlobalPosition;
-        Vector2 direction = Vector2.Right.Rotated(_aimPivot.GlobalRotation).Normalized();
+        Vector2 direction = ResolveShotDirection();
 
         if (!IsFinite(safeWeaponOrigin) ||
             !IsFinite(desiredMuzzlePosition) ||
@@ -584,6 +612,36 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
         // tracer visuals and hit detection always match the equipped weapon length.
         shotPath = new ValidatedShotPath(desiredMuzzlePosition, rayEnd);
         return true;
+    }
+
+    private Vector2 ResolveShotDirection()
+    {
+        float spreadDegrees = _isAiming
+            ? State.Definition.AimedSpreadDegrees
+            : State.Definition.HipFireSpreadDegrees;
+        float spreadRadians = Mathf.DegToRad(spreadDegrees);
+        float angularOffset = spreadRadians <= 0.0f
+            ? 0.0f
+            : _spreadRandom.RandfRange(-spreadRadians, spreadRadians);
+
+        Vector2 direction = Vector2.Right.Rotated(
+            _aimPivot.GlobalRotation + angularOffset);
+        return direction.Normalized();
+    }
+
+    private void SetAiming(bool isAiming)
+    {
+        bool next = isAiming && _isCombatInputEnabled;
+        if (_isAiming == next)
+        {
+            return;
+        }
+
+        _isAiming = next;
+        SafeEventPublisher.Publish(
+            AimingChanged,
+            _isAiming,
+            $"{nameof(PlayerWeaponController2D)}.{nameof(AimingChanged)}");
     }
 
     private void EnsureMuzzlePointMatchesWeaponTexture()

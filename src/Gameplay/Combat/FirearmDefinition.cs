@@ -46,6 +46,12 @@ public sealed partial class FirearmDefinition : Resource
     [Export(PropertyHint.Range, "0.01,60.0,0.01,or_greater")]
     public double ReloadDurationSeconds { get; set; } = 1.2;
 
+    [Export(PropertyHint.Range, "0.0,45.0,0.05")]
+    public float AimedSpreadDegrees { get; set; } = 1.0f;
+
+    [Export(PropertyHint.Range, "0.0,45.0,0.05")]
+    public float HipFireSpreadDegrees { get; set; } = 6.0f;
+
     [Export(PropertyHint.Range, "1.0,10000.0,1.0,or_greater")]
     public float Range { get; set; } = 700.0f;
 
@@ -96,6 +102,24 @@ public sealed partial class FirearmDefinition : Resource
         {
             throw new InvalidOperationException(
                 $"{nameof(FirearmDefinition)} '{Id}' requires a positive reload duration.");
+        }
+
+        if (!float.IsFinite(AimedSpreadDegrees) || AimedSpreadDegrees < 0.0f)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(FirearmDefinition)} '{Id}' requires a non-negative finite aimed spread.");
+        }
+
+        if (!float.IsFinite(HipFireSpreadDegrees) || HipFireSpreadDegrees < 0.0f)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(FirearmDefinition)} '{Id}' requires a non-negative finite hip-fire spread.");
+        }
+
+        if (AimedSpreadDegrees > HipFireSpreadDegrees)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(FirearmDefinition)} '{Id}' cannot be less accurate while aiming.");
         }
 
         if (Range <= 0.0f)

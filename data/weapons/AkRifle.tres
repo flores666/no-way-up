@@ -13,4 +13,6 @@ MagazineCapacity = 30
 Damage = 34
 FireIntervalSeconds = 0.1
 ReloadDurationSeconds = 2.2
+AimedSpreadDegrees = 1.25
+HipFireSpreadDegrees = 7.5
 Range = 900.0

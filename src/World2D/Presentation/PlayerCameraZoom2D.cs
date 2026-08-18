@@ -5,6 +5,9 @@ namespace LineZero.World2D.Presentation;
 
 public sealed partial class PlayerCameraZoom2D : Camera2D
 {
+    private Node2D _followTarget = null!;
+    private Vector2 _baseGlobalOffset;
+
     [Export(PropertyHint.Range, "0.1,4.0,0.05,or_greater")]
     public float MinimumZoom { get; set; } = 0.5f;
 
@@ -18,10 +21,23 @@ public sealed partial class PlayerCameraZoom2D : Camera2D
     {
         ValidateSettings();
 
+        _followTarget = GetParent() as Node2D
+            ?? throw new InvalidOperationException(
+                $"{nameof(PlayerCameraZoom2D)} on '{Name}' requires a Node2D parent.");
+        _baseGlobalOffset = GlobalPosition - _followTarget.GlobalPosition;
+
         float initialZoom = float.IsFinite(Zoom.X) && Zoom.X > 0.0f
             ? Zoom.X
             : 1.0f;
         ApplyZoom(Math.Clamp(initialZoom, MinimumZoom, MaximumZoom));
+        SnapCameraToPixelGrid();
+        ForceUpdateScroll();
+    }
+
+    public override void _PhysicsProcess(double delta)
+    {
+        SnapCameraToPixelGrid();
+        ForceUpdateScroll();
     }
 
     public override void _UnhandledInput(InputEvent @event)
@@ -63,6 +79,22 @@ public sealed partial class PlayerCameraZoom2D : Camera2D
     private void ApplyZoom(float value)
     {
         Zoom = new Vector2(value, value);
+    }
+
+    private void SnapCameraToPixelGrid()
+    {
+        Vector2 targetGlobalPosition = _followTarget.GlobalPosition + _baseGlobalOffset;
+        if (!IsFinite(targetGlobalPosition))
+        {
+            return;
+        }
+
+        GlobalPosition = targetGlobalPosition.Round();
+    }
+
+    private static bool IsFinite(Vector2 value)
+    {
+        return float.IsFinite(value.X) && float.IsFinite(value.Y);
     }
 
     private void ValidateSettings()

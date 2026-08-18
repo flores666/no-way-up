@@ -80,12 +80,6 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
             SetRunning(isRunning, restart: true);
         }
 
-        FacingSide facingSide = ResolveAimSide();
-        if (facingSide != _facingSide)
-        {
-            ApplyFacingSide(facingSide);
-        }
-
         if (!_isRunning)
         {
             _characterSprite.Frame = IdleFrame;
@@ -100,6 +94,15 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
             (int)Mathf.Floor(_frameCursor),
             0,
             RunFrameCount - 1);
+    }
+
+    public override void _PhysicsProcess(double delta)
+    {
+        FacingSide facingSide = ResolveAimSide();
+        if (facingSide != _facingSide)
+        {
+            ApplyFacingSide(facingSide);
+        }
     }
 
     private void SetRunning(bool isRunning, bool restart)
@@ -142,9 +145,8 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
 
     private FacingSide ResolveAimSide()
     {
-        float mouseX = GetGlobalMousePosition().X;
-        float characterX = _player.GlobalPosition.X;
-        return mouseX < characterX ? FacingSide.Left : FacingSide.Right;
+        float aimDirectionX = Mathf.Cos(_aimPivot.GlobalRotation);
+        return aimDirectionX < 0.0f ? FacingSide.Left : FacingSide.Right;
     }
 
     private float GetMovementFramesPerSecond(MovementMode movementMode)

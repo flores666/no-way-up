@@ -144,22 +144,10 @@ public sealed partial class PlayerController2D : CharacterBody2D,
         _noiseSystem = null;
     }
 
-    public override void _Process(double delta)
-    {
-        if (!_isGameplayInputEnabled)
-        {
-            return;
-        }
-
-        Vector2 aimDirection = GetGlobalMousePosition() - _aimPivot.GlobalPosition;
-        if (aimDirection.LengthSquared() > MinimumAimDistanceSquared)
-        {
-            _aimPivot.GlobalRotation = aimDirection.Angle();
-        }
-    }
-
     public override void _PhysicsProcess(double delta)
     {
+        UpdateAimTransform();
+
         bool isAlive = _health is not null && _health.IsAlive;
         if (!_isGameplayInputEnabled || !isAlive)
         {
@@ -241,6 +229,23 @@ public sealed partial class PlayerController2D : CharacterBody2D,
             _postureMode = MovementMode.Walk;
             SetMovementMode(MovementMode.Walk);
         }
+    }
+
+    private void UpdateAimTransform()
+    {
+        if (!_isGameplayInputEnabled)
+        {
+            return;
+        }
+
+        Vector2 renderedAimOrigin = _aimPivot.GlobalPosition.Round();
+        Vector2 aimDirection = GetGlobalMousePosition() - renderedAimOrigin;
+        if (aimDirection.LengthSquared() <= MinimumAimDistanceSquared)
+        {
+            return;
+        }
+
+        _aimPivot.GlobalRotation = aimDirection.Angle();
     }
 
     public override void _UnhandledInput(InputEvent @event)

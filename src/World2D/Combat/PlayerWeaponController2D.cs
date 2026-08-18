@@ -30,6 +30,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
     private Node2D _aimPivot = null!;
     private Marker2D _weaponOrigin = null!;
     private Marker2D _muzzlePoint = null!;
+    private Sprite2D _weaponSprite = null!;
     private Line2D _tracerLine = null!;
     private Timer _tracerTimer = null!;
     private Timer _reloadTimer = null!;
@@ -38,6 +39,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
     private ulong _blockFireThroughProcessFrame;
     private double _nextFireAllowedAtSeconds;
     private double _nextEmptyMessageAllowedAtSeconds;
+    private ulong _resolvedMuzzleTextureInstanceId;
 
     [Export]
     public FirearmDefinition? WeaponDefinition { get; set; }
@@ -108,7 +110,9 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
         _aimPivot = RequireNode<Node2D>("%AimPivot");
         _weaponOrigin = RequireNode<Marker2D>("%WeaponOrigin");
         _muzzlePoint = RequireNode<Marker2D>("%MuzzlePoint");
+        _weaponSprite = RequireNode<Sprite2D>("%WeaponSprite");
         _tracerLine = RequireNode<Line2D>("%TracerLine");
+        EnsureMuzzlePointMatchesWeaponTexture();
         _tracerTimer = RequireNode<Timer>("%TracerTimer");
         _reloadTimer = RequireNode<Timer>("%ReloadTimer");
 
@@ -455,6 +459,8 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
 
     private bool TryResolveValidatedShotPath(out ValidatedShotPath shotPath)
     {
+        EnsureMuzzlePointMatchesWeaponTexture();
+
         Vector2 safeWeaponOrigin = _weaponOrigin.GlobalPosition;
         Vector2 desiredMuzzlePosition = _muzzlePoint.GlobalPosition;
         Vector2 direction = Vector2.Right.Rotated(_aimPivot.GlobalRotation).Normalized();
@@ -499,10 +505,107 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
             return false;
         }
 
-        // The actual physics ray starts inside the player's stable body footprint.
-        // MuzzlePoint is presentation-only after its path has been proven unobstructed.
-        shotPath = new ValidatedShotPath(safeWeaponOrigin, rayEnd);
+        // The physical shot now begins at the currently resolved muzzle tip so
+        // tracer visuals and hit detection always match the equipped weapon length.
+        shotPath = new ValidatedShotPath(desiredMuzzlePosition, rayEnd);
         return true;
+    }
+
+    private void EnsureMuzzlePointMatchesWeaponTexture()
+    {
+        Texture2D texture = _weaponSprite.Texture
+            ?? throw new InvalidOperationException(
+                $"{nameof(PlayerWeaponController2D)} on '{Name}' requires a weapon texture.");
+
+        ulong textureInstanceId = texture.GetInstanceId();
+        if (_resolvedMuzzleTextureInstanceId == textureInstanceId)
+        {
+            return;
+        }
+
+        _muzzlePoint.Position = ResolveWeaponLocalMuzzlePoint(texture);
+        _resolvedMuzzleTextureInstanceId = textureInstanceId;
+    }
+
+    private Vector2 ResolveWeaponLocalMuzzlePoint(Texture2D texture)
+    {
+        Vector2 textureSize = texture.GetSize();
+        if (textureSize.X <= 0.0f || textureSize.Y <= 0.0f)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(PlayerWeaponController2D)} on '{Name}' requires a non-empty weapon texture.");
+        }
+
+        int width = Math.Max(1, (int)textureSize.X);
+        int height = Math.Max(1, (int)textureSize.Y);
+        if (!TryResolveOpaqueMuzzlePixel(
+                texture,
+                width,
+                height,
+                out int frontMostX,
+                out float muzzleY))
+        {
+            throw new InvalidOperationException(
+                $"{nameof(PlayerWeaponController2D)} on '{Name}' cannot resolve a muzzle from a fully transparent weapon texture.");
+        }
+
+        float localX = _weaponSprite.Centered
+            ? (frontMostX + 0.5f) - textureSize.X * 0.5f
+            : frontMostX + 0.5f;
+        float localY = _weaponSprite.Centered
+            ? muzzleY - textureSize.Y * 0.5f
+            : muzzleY;
+
+        // Offset is part of Sprite2D's draw transform. MuzzlePoint is now a child of
+        // WeaponSprite, so scale, rotation and left-side mirroring are inherited
+        // automatically and must not be applied manually here.
+        return new Vector2(localX, localY) + _weaponSprite.Offset;
+    }
+
+    private static bool TryResolveOpaqueMuzzlePixel(
+        Texture2D texture,
+        int width,
+        int height,
+        out int frontMostX,
+        out float muzzleY)
+    {
+        frontMostX = default;
+        muzzleY = default;
+
+        Image image = texture.GetImage();
+        if (image is null || image.IsEmpty())
+        {
+            return false;
+        }
+
+        for (int x = width - 1; x >= 0; x--)
+        {
+            int opaqueCount = 0;
+            float ySum = 0.0f;
+
+            for (int y = 0; y < height; y++)
+            {
+                Color pixel = image.GetPixel(x, y);
+                if (pixel.A <= 0.01f)
+                {
+                    continue;
+                }
+
+                opaqueCount++;
+                ySum += y + 0.5f;
+            }
+
+            if (opaqueCount == 0)
+            {
+                continue;
+            }
+
+            frontMostX = x;
+            muzzleY = ySum / opaqueCount;
+            return true;
+        }
+
+        return false;
     }
 
     private static bool IsFinite(Vector2 value)

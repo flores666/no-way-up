@@ -1,57 +1,34 @@
 using System;
 using Godot;
-using LineZero.Gameplay.Combat;
 using LineZero.Gameplay.Movement;
-using LineZero.World2D.Combat;
 
 namespace LineZero.World2D.Presentation;
 
 public sealed partial class PlayerMiniDayzPresentation2D : Node2D
 {
     private const int SourceFrameWidth = 64;
-    private const int SourceFrameHeight = 64;
+    private const int SourceFrameHeight = 32;
+    private const int RunFrameCount = 6;
+    private const int IdleFrame = 0;
     private const float MinimumAnimationSpeed = 4.0f;
-    private const float MinimumFacingDistanceSquared = 36.0f;
-    private const string AimAction = "aim";
 
-    private enum FacingDirection
+    private enum FacingSide
     {
-        Down,
-        Up,
         Left,
         Right
     }
 
-    private enum AnimationState
-    {
-        Idle,
-        Run,
-        Aim
-    }
-
     private PlayerController2D _player = null!;
-    private PlayerWeaponController2D _weaponController = null!;
+    private Node2D _aimPivot = null!;
     private Sprite2D _characterSprite = null!;
-    private FacingDirection _facingDirection = FacingDirection.Down;
-    private AnimationState _animationState = AnimationState.Idle;
+    private Sprite2D _weaponSprite = null!;
+    private bool _isRunning;
+    private FacingSide _facingSide = FacingSide.Right;
     private float _frameCursor;
-    private float _aimPoseRemainingSeconds;
+    private Vector2 _weaponBaseScale;
 
-    [Export] public Texture2D? IdleDownTexture { get; set; }
-    [Export] public Texture2D? IdleUpTexture { get; set; }
-    [Export] public Texture2D? IdleLeftTexture { get; set; }
-    [Export] public Texture2D? IdleRightTexture { get; set; }
-    [Export] public Texture2D? RunDownTexture { get; set; }
-    [Export] public Texture2D? RunUpTexture { get; set; }
-    [Export] public Texture2D? RunLeftTexture { get; set; }
-    [Export] public Texture2D? RunRightTexture { get; set; }
-    [Export] public Texture2D? AimDownTexture { get; set; }
-    [Export] public Texture2D? AimUpTexture { get; set; }
-    [Export] public Texture2D? AimLeftTexture { get; set; }
-    [Export] public Texture2D? AimRightTexture { get; set; }
-
-    [Export(PropertyHint.Range, "1,16,0.5")]
-    public float IdleFramesPerSecond { get; set; } = 10.0f;
+    [Export]
+    public Texture2D? CharacterTexture { get; set; }
 
     [Export(PropertyHint.Range, "1,24,0.5")]
     public float WalkFramesPerSecond { get; set; } = 10.0f;
@@ -62,49 +39,33 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
     [Export(PropertyHint.Range, "1,24,0.5")]
     public float CrouchFramesPerSecond { get; set; } = 7.0f;
 
-    [Export(PropertyHint.Range, "1,24,0.5")]
-    public float AimFramesPerSecond { get; set; } = 10.0f;
-
-    [Export(PropertyHint.Range, "0.05,0.5,0.01")]
-    public float AimPoseHoldSeconds { get; set; } = 0.18f;
-
     public override void _Ready()
     {
         _player = GetParent() as PlayerController2D
             ?? throw new InvalidOperationException(
                 $"{nameof(PlayerMiniDayzPresentation2D)} on '{Name}' requires a {nameof(PlayerController2D)} parent.");
+        _aimPivot = RequireNode<Node2D>("%AimPivot");
         _characterSprite = RequireNode<Sprite2D>("%CharacterSprite");
-        _weaponController = RequireNode<PlayerWeaponController2D>("%PlayerWeaponController2D");
+        _weaponSprite = RequireNode<Sprite2D>("%WeaponSprite");
 
-        ValidateTexture(IdleDownTexture, nameof(IdleDownTexture), 9);
-        ValidateTexture(IdleUpTexture, nameof(IdleUpTexture), 9);
-        ValidateTexture(IdleLeftTexture, nameof(IdleLeftTexture), 9);
-        ValidateTexture(IdleRightTexture, nameof(IdleRightTexture), 9);
-        ValidateTexture(RunDownTexture, nameof(RunDownTexture), 6);
-        ValidateTexture(RunUpTexture, nameof(RunUpTexture), 6);
-        ValidateTexture(RunLeftTexture, nameof(RunLeftTexture), 6);
-        ValidateTexture(RunRightTexture, nameof(RunRightTexture), 6);
-        ValidateTexture(AimDownTexture, nameof(AimDownTexture), 1);
-        ValidateTexture(AimUpTexture, nameof(AimUpTexture), 1);
-        ValidateTexture(AimLeftTexture, nameof(AimLeftTexture), 1);
-        ValidateTexture(AimRightTexture, nameof(AimRightTexture), 1);
+        ValidateTexture(CharacterTexture, nameof(CharacterTexture), RunFrameCount);
+        ValidateTexture(_weaponSprite.Texture, "WeaponSprite.Texture", expectedFrames: 1);
+        ValidateFramesPerSecond(WalkFramesPerSecond, nameof(WalkFramesPerSecond));
+        ValidateFramesPerSecond(SprintFramesPerSecond, nameof(SprintFramesPerSecond));
+        ValidateFramesPerSecond(CrouchFramesPerSecond, nameof(CrouchFramesPerSecond));
 
-        if (!float.IsFinite(AimPoseHoldSeconds) || AimPoseHoldSeconds <= 0.0f)
-        {
-            throw new InvalidOperationException(
-                $"{nameof(PlayerMiniDayzPresentation2D)} requires a positive finite aim-pose duration.");
-        }
+        _characterSprite.Texture = CharacterTexture;
+        _characterSprite.Hframes = RunFrameCount;
+        _characterSprite.Vframes = 1;
+        _weaponBaseScale = new Vector2(
+            Mathf.Abs(_weaponSprite.Scale.X),
+            Mathf.Abs(_weaponSprite.Scale.Y));
+        _weaponSprite.ZAsRelative = true;
+        _weaponSprite.FlipH = false;
+        _weaponSprite.FlipV = false;
 
-        _weaponController.ShotAttempted += OnShotAttempted;
-        ApplyAnimation(AnimationState.Idle, FacingDirection.Down, restart: true);
-    }
-
-    public override void _ExitTree()
-    {
-        if (GodotObject.IsInstanceValid(_weaponController))
-        {
-            _weaponController.ShotAttempted -= OnShotAttempted;
-        }
+        SetRunning(isRunning: false, restart: true);
+        ApplyFacingSide(ResolveAimSide());
     }
 
     public override void _Process(double delta)
@@ -113,101 +74,77 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
             ? (float)delta
             : 0.0f;
 
-        if (_aimPoseRemainingSeconds > 0.0f)
+        bool isRunning = _player.Velocity.Length() >= MinimumAnimationSpeed;
+        if (isRunning != _isRunning)
         {
-            _aimPoseRemainingSeconds = Math.Max(0.0f, _aimPoseRemainingSeconds - deltaSeconds);
+            SetRunning(isRunning, restart: true);
         }
 
-        Vector2 velocity = _player.Velocity;
-        bool isMoving = velocity.Length() >= MinimumAnimationSpeed;
-
-        Vector2 aimDirection = GetGlobalMousePosition() - _player.GlobalPosition;
-        FacingDirection direction = isMoving
-            ? ResolveDirection(velocity)
-            : aimDirection.LengthSquared() >= MinimumFacingDistanceSquared
-                ? ResolveDirection(aimDirection)
-                : _facingDirection;
-
-        bool isAiming = _weaponController.IsCombatInputEnabled && Input.IsActionPressed(AimAction);
-        AnimationState state = isAiming || _aimPoseRemainingSeconds > 0.0f
-            ? AnimationState.Aim
-            : isMoving ? AnimationState.Run : AnimationState.Idle;
-
-        bool animationChanged = state != _animationState || direction != _facingDirection;
-        if (animationChanged)
+        FacingSide facingSide = ResolveAimSide();
+        if (facingSide != _facingSide)
         {
-            bool restart = state != _animationState;
-            ApplyAnimation(state, direction, restart);
+            ApplyFacingSide(facingSide);
         }
 
-        float framesPerSecond = state switch
+        if (!_isRunning)
         {
-            AnimationState.Aim => AimFramesPerSecond,
-            AnimationState.Run => GetMovementFramesPerSecond(_player.CurrentMovementMode),
-            _ => IdleFramesPerSecond
-        };
-
-        int frameCount = Math.Max(_characterSprite.Hframes, 1);
-        _frameCursor = Mathf.PosMod(_frameCursor + framesPerSecond * deltaSeconds, frameCount);
-        _characterSprite.Frame = Math.Clamp((int)Mathf.Floor(_frameCursor), 0, frameCount - 1);
-    }
-
-    private void OnShotAttempted(FirearmShotResult result)
-    {
-        ArgumentNullException.ThrowIfNull(result);
-
-        if (result.Status is FirearmShotStatus.CombatDisabled or FirearmShotStatus.OwnerDead)
-        {
+            _characterSprite.Frame = IdleFrame;
             return;
         }
 
-        _aimPoseRemainingSeconds = AimPoseHoldSeconds;
+        float framesPerSecond = GetMovementFramesPerSecond(_player.CurrentMovementMode);
+        _frameCursor = Mathf.PosMod(
+            _frameCursor + framesPerSecond * deltaSeconds,
+            RunFrameCount);
+        _characterSprite.Frame = Math.Clamp(
+            (int)Mathf.Floor(_frameCursor),
+            0,
+            RunFrameCount - 1);
     }
 
-    private void ApplyAnimation(
-        AnimationState state,
-        FacingDirection direction,
-        bool restart)
+    private void SetRunning(bool isRunning, bool restart)
     {
-        Texture2D texture = ResolveTexture(state, direction);
-        int frameCount = texture.GetWidth() / SourceFrameWidth;
-
-        _animationState = state;
-        _facingDirection = direction;
-        _characterSprite.Texture = texture;
-        _characterSprite.Hframes = frameCount;
-        _characterSprite.Vframes = 1;
-
+        _isRunning = isRunning;
         if (restart)
         {
             _frameCursor = 0.0f;
         }
-        else
-        {
-            _frameCursor = Mathf.PosMod(_frameCursor, frameCount);
-        }
 
-        _characterSprite.Frame = Math.Clamp((int)Mathf.Floor(_frameCursor), 0, frameCount - 1);
+        _characterSprite.Frame = isRunning ? 0 : IdleFrame;
     }
 
-    private Texture2D ResolveTexture(AnimationState state, FacingDirection direction)
+    private void ApplyFacingSide(FacingSide side)
     {
-        return (state, direction) switch
-        {
-            (AnimationState.Idle, FacingDirection.Down) => IdleDownTexture!,
-            (AnimationState.Idle, FacingDirection.Up) => IdleUpTexture!,
-            (AnimationState.Idle, FacingDirection.Left) => IdleLeftTexture!,
-            (AnimationState.Idle, FacingDirection.Right) => IdleRightTexture!,
-            (AnimationState.Run, FacingDirection.Down) => RunDownTexture!,
-            (AnimationState.Run, FacingDirection.Up) => RunUpTexture!,
-            (AnimationState.Run, FacingDirection.Left) => RunLeftTexture!,
-            (AnimationState.Run, FacingDirection.Right) => RunRightTexture!,
-            (AnimationState.Aim, FacingDirection.Down) => AimDownTexture!,
-            (AnimationState.Aim, FacingDirection.Up) => AimUpTexture!,
-            (AnimationState.Aim, FacingDirection.Left) => AimLeftTexture!,
-            (AnimationState.Aim, FacingDirection.Right) => AimRightTexture!,
-            _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
-        };
+        _facingSide = side;
+
+        bool isLeftSide = side == FacingSide.Left;
+
+        // The authored body faces right. Crossing the character on the X axis flips
+        // the same animation immediately; vertical aim does not delay the side change.
+        _characterSprite.FlipH = isLeftSide;
+
+        // AimPivot owns rotation. A negative local Y scale on the left side combines
+        // with the pivot's ~180-degree rotation into the required horizontal mirror.
+        // Unlike Sprite2D.FlipV, the transform is also inherited by MuzzlePoint.
+        _weaponSprite.FlipH = false;
+        _weaponSprite.FlipV = false;
+        _weaponSprite.Scale = new Vector2(
+            _weaponBaseScale.X,
+            isLeftSide ? -_weaponBaseScale.Y : _weaponBaseScale.Y);
+
+        // Player depth is changed continuously by DepthSortAnchor2D. Therefore the
+        // weapon must stay relative to Player as well. CharacterVisual and AimPivot
+        // are siblings, so convert the character's local Z into AimPivot-local Z and
+        // place the weapon exactly one layer behind/on top of the body.
+        int characterZRelativeToAimPivot = ZIndex - _aimPivot.ZIndex;
+        _weaponSprite.ZIndex = characterZRelativeToAimPivot + (isLeftSide ? -1 : 1);
+    }
+
+    private FacingSide ResolveAimSide()
+    {
+        float mouseX = GetGlobalMousePosition().X;
+        float characterX = _player.GlobalPosition.X;
+        return mouseX < characterX ? FacingSide.Left : FacingSide.Right;
     }
 
     private float GetMovementFramesPerSecond(MovementMode movementMode)
@@ -219,16 +156,6 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
             MovementMode.Crawl => CrouchFramesPerSecond,
             _ => WalkFramesPerSecond
         };
-    }
-
-    private static FacingDirection ResolveDirection(Vector2 direction)
-    {
-        if (Mathf.Abs(direction.X) > Mathf.Abs(direction.Y))
-        {
-            return direction.X < 0.0f ? FacingDirection.Left : FacingDirection.Right;
-        }
-
-        return direction.Y < 0.0f ? FacingDirection.Up : FacingDirection.Down;
     }
 
     private static void ValidateTexture(
@@ -248,6 +175,15 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
             throw new InvalidOperationException(
                 $"{propertyName} must be {expectedWidth}x{SourceFrameHeight}, " +
                 $"but is {texture.GetWidth()}x{texture.GetHeight()}.");
+        }
+    }
+
+    private static void ValidateFramesPerSecond(float value, string propertyName)
+    {
+        if (!float.IsFinite(value) || value <= 0.0f)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(PlayerMiniDayzPresentation2D)} requires positive finite {propertyName}.");
         }
     }
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=3]
+[gd_scene load_steps=26 format=3]
 
 [ext_resource type="Script" path="res://src/World2D/PlayerController2D.cs" id="1_controller"]
 [ext_resource type="Resource" path="res://data/player/DefaultPlayerMovement.tres" id="2_movement"]
@@ -17,18 +17,8 @@
 [ext_resource type="Script" path="res://src/World2D/Levels/PlayerObjectiveSensor2D.cs" id="15_objective_sensor"]
 [ext_resource type="Script" path="res://src/World2D/Presentation/PlayerMiniDayzPresentation2D.cs" id="16_presentation"]
 [ext_resource type="Script" path="res://src/World2D/Presentation/DepthSortAnchor2D.cs" id="17_depth_sort"]
-[ext_resource type="Texture2D" path="res://assets/player/character/idle_down.png" id="18_idle_down"]
-[ext_resource type="Texture2D" path="res://assets/player/character/idle_up.png" id="19_idle_up"]
-[ext_resource type="Texture2D" path="res://assets/player/character/idle_left.png" id="20_idle_left"]
-[ext_resource type="Texture2D" path="res://assets/player/character/idle_right.png" id="21_idle_right"]
-[ext_resource type="Texture2D" path="res://assets/player/character/run_down.png" id="22_run_down"]
-[ext_resource type="Texture2D" path="res://assets/player/character/run_up.png" id="23_run_up"]
-[ext_resource type="Texture2D" path="res://assets/player/character/run_left.png" id="24_run_left"]
-[ext_resource type="Texture2D" path="res://assets/player/character/run_right.png" id="25_run_right"]
-[ext_resource type="Texture2D" path="res://assets/player/character/idle_down_aim.png" id="26_aim_down"]
-[ext_resource type="Texture2D" path="res://assets/player/character/idle_up_aim.png" id="27_aim_up"]
-[ext_resource type="Texture2D" path="res://assets/player/character/idle_left_aim.png" id="28_aim_left"]
-[ext_resource type="Texture2D" path="res://assets/player/character/idle_right_aim.png" id="29_aim_right"]
+[ext_resource type="Texture2D" path="res://assets/player/character/character.png" id="18_character"]
+[ext_resource type="Texture2D" path="res://assets/player/character/weapon_ak.png" id="19_weapon_ak"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
 radius = 14.0
@@ -82,50 +72,22 @@ MaxHealth = 100
 [node name="AimPivot" type="Node2D" parent="."]
 unique_name_in_owner = true
 z_index = 12
-position = Vector2(0, -28)
+position = Vector2(0, -10)
 
-[node name="RearArm" type="Polygon2D" parent="AimPivot"]
-visible = false
-z_index = 1
-position = Vector2(2, 0)
-color = Color(0.47, 0.34, 0.25, 1)
-polygon = PackedVector2Array(-4, -4, 17, -3, 24, 0, 17, 4, -4, 5)
+[node name="WeaponSprite" type="Sprite2D" parent="AimPivot"]
+unique_name_in_owner = true
+z_index = -5
+texture_filter = 1
+scale = Vector2(2, 2)
+texture = ExtResource("19_weapon_ak")
 
-[node name="Sleeve" type="Polygon2D" parent="AimPivot"]
-visible = false
-z_index = 2
-position = Vector2(-2, 0)
-color = Color(0.17, 0.24, 0.22, 1)
-polygon = PackedVector2Array(-8, -7, 8, -6, 12, 0, 8, 6, -8, 7)
-
-[node name="FrontArm" type="Polygon2D" parent="AimPivot"]
-visible = false
-z_index = 4
-position = Vector2(5, 5)
-color = Color(0.58, 0.42, 0.3, 1)
-polygon = PackedVector2Array(-4, -3, 19, -2, 25, 0, 19, 3, -4, 4)
-
-[node name="ServicePistolVisual" type="Polygon2D" parent="AimPivot"]
-visible = false
-z_index = 3
-position = Vector2(21, 0)
-color = Color(0.2, 0.22, 0.22, 1)
-polygon = PackedVector2Array(-8, -4, 15, -4, 20, -2, 20, 2, 5, 2, 3, 10, -4, 10, -4, 2, -8, 2)
-
-[node name="PistolHighlight" type="Line2D" parent="AimPivot"]
-visible = false
-z_index = 5
-points = PackedVector2Array(15, -2, 36, -2)
-width = 1.5
-default_color = Color(0.55, 0.57, 0.55, 0.9)
+[node name="MuzzlePoint" type="Marker2D" parent="AimPivot/WeaponSprite"]
+unique_name_in_owner = true
+position = Vector2(18.5, 5)
 
 [node name="WeaponOrigin" type="Marker2D" parent="AimPivot"]
 unique_name_in_owner = true
-position = Vector2(2, 0)
-
-[node name="MuzzlePoint" type="Marker2D" parent="AimPivot"]
-unique_name_in_owner = true
-position = Vector2(44, 0)
+position = Vector2(0, 9)
 
 [node name="PlayerFlashlightController2D" type="Node2D" parent="AimPivot"]
 unique_name_in_owner = true
@@ -147,30 +109,20 @@ texture_scale = 1.15
 [node name="CharacterVisual" type="Node2D" parent="."]
 z_index = 6
 script = ExtResource("16_presentation")
-IdleDownTexture = ExtResource("18_idle_down")
-IdleUpTexture = ExtResource("19_idle_up")
-IdleLeftTexture = ExtResource("20_idle_left")
-IdleRightTexture = ExtResource("21_idle_right")
-RunDownTexture = ExtResource("22_run_down")
-RunUpTexture = ExtResource("23_run_up")
-RunLeftTexture = ExtResource("24_run_left")
-RunRightTexture = ExtResource("25_run_right")
-AimDownTexture = ExtResource("26_aim_down")
-AimUpTexture = ExtResource("27_aim_up")
-AimLeftTexture = ExtResource("28_aim_left")
-AimRightTexture = ExtResource("29_aim_right")
+CharacterTexture = ExtResource("18_character")
 
 [node name="CharacterSprite" type="Sprite2D" parent="CharacterVisual"]
 unique_name_in_owner = true
 texture_filter = 1
-position = Vector2(17, -20)
+position = Vector2(0, -10)
 scale = Vector2(2, 2)
-texture = ExtResource("18_idle_down")
-hframes = 9
+texture = ExtResource("18_character")
+hframes = 6
+frame = 0
 
 [node name="GroundShadow" type="Polygon2D" parent="CharacterVisual"]
 unique_name_in_owner = true
-z_index = -1
+z_index = -2
 position = Vector2(2, 12)
 color = Color(0.008, 0.012, 0.014, 0.62)
 polygon = PackedVector2Array(-18, 0, -14, -5, -5, -8, 7, -8, 17, -4, 20, 0, 16, 5, 6, 8, -7, 8, -16, 5)

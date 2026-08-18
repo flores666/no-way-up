@@ -1,17 +1,23 @@
 # Character sprites
 
-Imported from `character(1).zip`.
+Source: `source/rotations.aseprite`.
 
 Runtime contract:
-- frame canvas: 64x64 px;
-- idle: 4 directions, 9 frames each;
-- run: 4 directions, 6 frames each;
-- aim: 4 directions (`down`, `left`, `right` = 1 frame, `up` = 2 frames);
-- original `.aseprite` files are preserved in `source/`;
-- PNG sheets are exported 1:1 from the Aseprite RGBA canvas;
-- no scaling, cropping, centering, recoloring, interpolation or redrawing is applied to source pixels;
-- Godot renders the sheets with Nearest filtering and integer scale.
+- source canvas: 64x32 px;
+- `character` layer contains the body;
+- `ak` layer contains the weapon/arms visual;
+- all 6 source frames form the right-facing run cycle;
+- `character.png` is one 6-frame 384x32 body-only sheet used for every direction;
+- frame 1 is also used as the static idle pose when the player is not moving;
+- `weapon_ak.png` is one unchanged 64x32 weapon visual extracted from the first source frame;
+- Godot renders the textures with Nearest filtering at integer scale.
 
 Presentation behavior:
-- the normal idle/run animation follows the mouse-facing direction;
-- holding RMB (`aim`) keeps the directional aim sprite active, so the rifle remains raised; a short aim pose is also shown after a weapon shot attempt.
+- movement in every direction uses the same run sheet;
+- the body switches side immediately when the cursor crosses the character on the X axis; the left side mirrors the same animation;
+- the weapon rotates only through `AimPivot`; on the left side it is mirrored to preserve the authored right-handed orientation;
+- the common Aseprite canvas center is used as the body/weapon rotation origin;
+- rotating the weapon up places it on the observer-right side of the body;
+- rotating the weapon down places it on the observer-left side of the body;
+- while the cursor is left of the character, the weapon is rendered one Z level behind the body;
+- while the cursor is on or right of the character, the weapon is rendered one Z level in front of the body.

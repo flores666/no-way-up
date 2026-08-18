@@ -1,6 +1,6 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene format=3 uid="uid://u4dt25t6oj8i"]
 
-[ext_resource type="Script" path="res://src/Core/Main.cs" id="1_main"]
+[ext_resource type="Script" uid="uid://pnkoo2prm8th" path="res://src/Core/Main.cs" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/levels/MetroLevel01.tscn" id="2_level"]
 [ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="3_player"]
 [ext_resource type="PackedScene" path="res://scenes/ui/DebugHud.tscn" id="4_hud"]
@@ -10,77 +10,85 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/LootTransferPanel.tscn" id="8_loot_transfer"]
 [ext_resource type="PackedScene" path="res://scenes/ui/HealthHud.tscn" id="9_health_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/WeaponHud.tscn" id="10_weapon_hud"]
-[ext_resource type="Script" path="res://src/World2D/Noise/NoiseSystem2D.cs" id="11_noise_system"]
+[ext_resource type="Script" uid="uid://3mn1a3xqbwaa" path="res://src/World2D/Noise/NoiseSystem2D.cs" id="11_noise_system"]
 [ext_resource type="PackedScene" path="res://scenes/ui/NoiseHud.tscn" id="12_noise_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/StaminaHud.tscn" id="13_stamina_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/FlashlightHud.tscn" id="14_flashlight_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/VisibilityHud.tscn" id="15_visibility_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/ObjectiveHud.tscn" id="16_objective_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/EscapeCompletePanel.tscn" id="17_escape_panel"]
+[ext_resource type="PackedScene" path="res://scenes/ui/CompactPlayerStatusHud.tscn" id="18_compact_status_hud"]
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node2D" unique_id=1787039565]
 script = ExtResource("1_main")
 
-[node name="World2D" type="Node2D" parent="."]
+[node name="World2D" type="Node2D" parent="." unique_id=72129592]
 
-[node name="AmbientDarkness" type="CanvasModulate" parent="World2D"]
+[node name="AmbientDarkness" type="CanvasModulate" parent="World2D" unique_id=1471201872]
 color = Color(0.265, 0.29, 0.315, 1)
 
-[node name="NoiseSystem2D" type="Node2D" parent="World2D"]
+[node name="NoiseSystem2D" type="Node2D" parent="World2D" unique_id=2022194120]
 unique_name_in_owner = true
 script = ExtResource("11_noise_system")
-FootstepBaseRadius = 130.0
-InteractionBaseRadius = 180.0
-GunshotBaseRadius = 650.0
-WallAttenuation = 0.5
-OcclusionCollisionMask = 1
 
-[node name="PlayableLevel" parent="World2D" instance=ExtResource("2_level")]
+[node name="PlayableLevel" parent="World2D" unique_id=315461905 instance=ExtResource("2_level")]
 unique_name_in_owner = true
 
-[node name="Player" parent="World2D" instance=ExtResource("3_player")]
+[node name="Player" parent="World2D" unique_id=299778467 instance=ExtResource("3_player")]
 unique_name_in_owner = true
 position = Vector2(-1080, 390)
 
-[node name="UI" type="CanvasLayer" parent="."]
+[node name="UI" type="CanvasLayer" parent="." unique_id=574286504]
 layer = 10
 
-[node name="DebugHud" parent="UI" instance=ExtResource("4_hud")]
+[node name="DebugHud" parent="UI" unique_id=1945141274 instance=ExtResource("4_hud")]
 unique_name_in_owner = true
 visible = false
 
-[node name="HealthHud" parent="UI" instance=ExtResource("9_health_hud")]
+[node name="HealthHud" parent="UI" unique_id=64509141 instance=ExtResource("9_health_hud")]
+unique_name_in_owner = true
+visible = false
+
+[node name="WeaponHud" parent="UI" unique_id=962589292 instance=ExtResource("10_weapon_hud")]
+unique_name_in_owner = true
+visible = false
+
+[node name="NoiseHud" parent="UI" unique_id=1135978299 instance=ExtResource("12_noise_hud")]
+unique_name_in_owner = true
+visible = false
+
+[node name="StaminaHud" parent="UI" unique_id=1210751007 instance=ExtResource("13_stamina_hud")]
+unique_name_in_owner = true
+visible = false
+
+[node name="FlashlightHud" parent="UI" unique_id=1223850212 instance=ExtResource("14_flashlight_hud")]
+unique_name_in_owner = true
+visible = false
+
+[node name="VisibilityHud" parent="UI" unique_id=1426822686 instance=ExtResource("15_visibility_hud")]
+unique_name_in_owner = true
+visible = false
+
+[node name="CompactPlayerStatusHud" parent="UI" unique_id=2117984524 instance=ExtResource("18_compact_status_hud")]
 unique_name_in_owner = true
 
-[node name="WeaponHud" parent="UI" instance=ExtResource("10_weapon_hud")]
+[node name="ObjectiveHud" parent="UI" unique_id=1791133407 instance=ExtResource("16_objective_hud")]
+unique_name_in_owner = true
+anchors_preset = 1
+
+[node name="InventoryPanel" parent="UI" unique_id=14520931 instance=ExtResource("7_inventory")]
 unique_name_in_owner = true
 
-[node name="NoiseHud" parent="UI" instance=ExtResource("12_noise_hud")]
+[node name="LootTransferPanel" parent="UI" unique_id=600047294 instance=ExtResource("8_loot_transfer")]
 unique_name_in_owner = true
 
-[node name="StaminaHud" parent="UI" instance=ExtResource("13_stamina_hud")]
+[node name="InteractionMessage" parent="UI" unique_id=127152674 instance=ExtResource("6_message")]
 unique_name_in_owner = true
+anchors_preset = 7
 
-[node name="FlashlightHud" parent="UI" instance=ExtResource("14_flashlight_hud")]
+[node name="InteractionPrompt" parent="UI" unique_id=805044282 instance=ExtResource("5_prompt")]
 unique_name_in_owner = true
+anchors_preset = 7
 
-[node name="VisibilityHud" parent="UI" instance=ExtResource("15_visibility_hud")]
-unique_name_in_owner = true
-
-[node name="ObjectiveHud" parent="UI" instance=ExtResource("16_objective_hud")]
-unique_name_in_owner = true
-
-[node name="InventoryPanel" parent="UI" instance=ExtResource("7_inventory")]
-unique_name_in_owner = true
-
-[node name="LootTransferPanel" parent="UI" instance=ExtResource("8_loot_transfer")]
-unique_name_in_owner = true
-
-[node name="InteractionMessage" parent="UI" instance=ExtResource("6_message")]
-unique_name_in_owner = true
-
-[node name="InteractionPrompt" parent="UI" instance=ExtResource("5_prompt")]
-unique_name_in_owner = true
-
-[node name="EscapeCompletePanel" parent="UI" instance=ExtResource("17_escape_panel")]
+[node name="EscapeCompletePanel" parent="UI" unique_id=740536942 instance=ExtResource("17_escape_panel")]
 unique_name_in_owner = true

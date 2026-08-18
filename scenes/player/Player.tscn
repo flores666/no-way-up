@@ -42,6 +42,7 @@ radius = 10.0
 radius = 10.0
 
 [node name="Player" type="CharacterBody2D"]
+motion_mode = 1
 collision_layer = 1
 collision_mask = 1
 script = ExtResource("1_controller")
@@ -291,10 +292,14 @@ unique_name_in_owner = true
 shape = SubResource("CircleShape2D_interaction")
 
 [node name="Camera2D" type="Camera2D" parent="."]
-process_callback = 0
+process_physics_priority = 100
+physics_interpolation_mode = 2
+top_level = true
+process_callback = 1
 zoom = Vector2(1, 1)
 enabled = true
 script = ExtResource("20_camera_zoom")
 MinimumZoom = 0.5
 MaximumZoom = 2.0
 ZoomStep = 0.25
+TeleportSnapDistance = 128.0

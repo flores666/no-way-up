@@ -238,13 +238,19 @@ public sealed partial class PlayerController2D : CharacterBody2D,
             return;
         }
 
-        Vector2 renderedAimOrigin = _aimPivot.GlobalPosition.Round();
-        Vector2 aimDirection = GetGlobalMousePosition() - renderedAimOrigin;
-        if (aimDirection.LengthSquared() <= MinimumAimDistanceSquared)
+        Viewport viewport = GetViewport();
+        Rect2 visibleRect = viewport.GetVisibleRect();
+        Vector2 viewportCenter = visibleRect.Position + visibleRect.Size * 0.5f;
+        Vector2 aimDirection = viewport.GetMousePosition() - viewportCenter;
+        if (!IsFinite(aimDirection) ||
+            aimDirection.LengthSquared() <= MinimumAimDistanceSquared)
         {
             return;
         }
 
+        // Camera2D is centered on the player. Resolve aim in screen space so camera
+        // interpolation cannot introduce a frame-dependent world-space offset between
+        // the mouse position and AimPivot while the player is moving.
         _aimPivot.GlobalRotation = aimDirection.Angle();
     }
 
@@ -619,6 +625,11 @@ public sealed partial class PlayerController2D : CharacterBody2D,
             throw new InvalidOperationException(
                 $"{nameof(PlayerController2D)} on '{Name}' requires the World collision mask.");
         }
+    }
+
+    private static bool IsFinite(Vector2 value)
+    {
+        return float.IsFinite(value.X) && float.IsFinite(value.Y);
     }
 
     private TNode RequireNode<TNode>(string path)

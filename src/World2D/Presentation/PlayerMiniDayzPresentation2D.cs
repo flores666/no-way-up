@@ -68,8 +68,14 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
         ApplyFacingSide(ResolveAimSide());
     }
 
-    public override void _Process(double delta)
+    public override void _PhysicsProcess(double delta)
     {
+        FacingSide facingSide = ResolveAimSide();
+        if (facingSide != _facingSide)
+        {
+            ApplyFacingSide(facingSide);
+        }
+
         float deltaSeconds = double.IsFinite(delta) && delta > 0.0
             ? (float)delta
             : 0.0f;
@@ -94,15 +100,6 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
             (int)Mathf.Floor(_frameCursor),
             0,
             RunFrameCount - 1);
-    }
-
-    public override void _PhysicsProcess(double delta)
-    {
-        FacingSide facingSide = ResolveAimSide();
-        if (facingSide != _facingSide)
-        {
-            ApplyFacingSide(facingSide);
-        }
     }
 
     private void SetRunning(bool isRunning, bool restart)

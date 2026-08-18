@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3]
+[gd_scene load_steps=27 format=3]
 
 [ext_resource type="Script" path="res://src/World2D/PlayerController2D.cs" id="1_controller"]
 [ext_resource type="Resource" path="res://data/player/DefaultPlayerMovement.tres" id="2_movement"]
@@ -19,6 +19,7 @@
 [ext_resource type="Script" path="res://src/World2D/Presentation/DepthSortAnchor2D.cs" id="17_depth_sort"]
 [ext_resource type="Texture2D" path="res://assets/player/character/character.png" id="18_character"]
 [ext_resource type="Texture2D" path="res://assets/player/character/weapon_ak.png" id="19_weapon_ak"]
+[ext_resource type="Script" path="res://src/World2D/Presentation/PlayerCameraZoom2D.cs" id="20_camera_zoom"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
 radius = 14.0
@@ -293,3 +294,7 @@ shape = SubResource("CircleShape2D_interaction")
 process_callback = 0
 zoom = Vector2(1, 1)
 enabled = true
+script = ExtResource("20_camera_zoom")
+MinimumZoom = 0.5
+MaximumZoom = 2.0
+ZoomStep = 0.25

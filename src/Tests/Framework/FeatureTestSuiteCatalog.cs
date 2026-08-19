@@ -26,7 +26,7 @@ public static class FeatureTestSuiteCatalog
             new InteractionFeatureTests(),
             new EmergencyExitFeatureTests(),
             new PrototypeFlowFeatureTests(),
-            new MovementCrawlFeatureTests(),
+            new MovementFeatureTests(),
             new HudFeatureTests(),
             new SceneContractFeatureTests(),
         };

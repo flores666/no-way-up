@@ -8,7 +8,7 @@ Runtime contract:
 - `ak` layer contains the weapon/arms visual;
 - all 6 source frames form the right-facing run cycle;
 - `character.png` is one 6-frame 384x32 body-only sheet used for every direction;
-- frame 1 is also used as the static idle pose when the player is not moving;
+- the first frame (index 0) is also used as the static idle pose when the player is not moving;
 - `weapon_ak.png` is one unchanged 64x32 weapon visual extracted from the first source frame;
 - Godot renders the textures with Nearest filtering at integer scale.
 

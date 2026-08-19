@@ -18,8 +18,6 @@ public sealed partial class CompactPlayerStatusHudController : MarginContainer
 	private Label _ammoLabel = null!;
 	private Label _flashlightLabel = null!;
 
-	private PlayerController2D? _player;
-	private PlayerWeaponController2D? _weaponController;
 	private HealthModel? _health;
 	private StaminaModel? _stamina;
 	private InventoryModel? _inventory;
@@ -32,7 +30,6 @@ public sealed partial class CompactPlayerStatusHudController : MarginContainer
 		_staminaLabel = RequireNode<Label>("%CompactStaminaLabel");
 		_ammoLabel = RequireNode<Label>("%CompactAmmoLabel");
 		_flashlightLabel = RequireNode<Label>("%CompactFlashlightLabel");
-
 		SetUnboundDisplay();
 	}
 
@@ -48,14 +45,12 @@ public sealed partial class CompactPlayerStatusHudController : MarginContainer
 		ArgumentNullException.ThrowIfNull(player);
 		ArgumentNullException.ThrowIfNull(weaponController);
 
-		if (_player is not null)
+		if (_health is not null)
 		{
 			throw new InvalidOperationException(
 				$"{nameof(CompactPlayerStatusHudController)} on '{Name}' is already bound.");
 		}
 
-		_player = player;
-		_weaponController = weaponController;
 		_health = player.Health;
 		_stamina = player.Stamina;
 		_inventory = player.Inventory;
@@ -98,8 +93,6 @@ public sealed partial class CompactPlayerStatusHudController : MarginContainer
 			_flashlight.Changed -= OnFlashlightChanged;
 		}
 
-		_player = null;
-		_weaponController = null;
 		_health = null;
 		_stamina = null;
 		_inventory = null;
@@ -135,20 +128,22 @@ public sealed partial class CompactPlayerStatusHudController : MarginContainer
 	private void RefreshAmmo()
 	{
 		FirearmState firearm = RequireBound(_firearm, "firearm");
-		if (firearm.Definition.ReloadMechanism == FirearmReloadMechanism.DetachableMagazine)
+		FirearmDefinition definition = firearm.Definition;
+		if (definition.ReloadMechanism == FirearmReloadMechanism.DetachableMagazine)
 		{
 			_ammoLabel.Text =
-				$"{firearm.CurrentMagazineAmmo}/{firearm.Definition.MagazineCapacity}  " +
+				$"{firearm.CurrentMagazineAmmo}/{definition.MagazineCapacity}  " +
 				$"{firearm.UsableSpareMagazineCount} MAG";
 			return;
 		}
 
 		InventoryModel inventory = RequireBound(_inventory, "inventory");
-		ItemDefinition ammoDefinition = firearm.Definition.AmmoItemDefinition
-			?? throw new InvalidOperationException("Bound loose-round firearm has no ammunition definition.");
+		ItemDefinition ammoDefinition = definition.AmmoItemDefinition
+			?? throw new InvalidOperationException(
+				"Bound loose-round firearm has no ammunition definition.");
 		int reserve = inventory.CountByItemId(ammoDefinition.Id);
 		_ammoLabel.Text =
-			$"{firearm.CurrentMagazineAmmo}/{firearm.Definition.MagazineCapacity} +{reserve} AMMO";
+			$"{firearm.CurrentMagazineAmmo}/{definition.MagazineCapacity} +{reserve} AMMO";
 	}
 
 	private void RefreshFlashlight()

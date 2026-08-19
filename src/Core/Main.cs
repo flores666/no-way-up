@@ -1,6 +1,5 @@
 using System;
 using Godot;
-using LineZero.Data;
 using LineZero.Gameplay.Flashlight;
 using LineZero.Gameplay.Health;
 using LineZero.Gameplay.Interaction;
@@ -35,8 +34,7 @@ public sealed partial class Main : Node2D
 	private InteractionMessageController? _interactionMessage;
 	private InventoryPanelController? _inventoryPanel;
 	private LootTransferPanelController? _lootTransferPanel;
-	private WeaponHudController? _weaponHud;
-	private FlashlightHudController? _flashlightHud;
+	private AimCrosshairController? _aimCrosshair;
 	private EscapeCompletePanelController? _escapeCompletePanel;
 	private PowerCircuitModel? _powerCircuit;
 	private SlidingDoor2D? _emergencyExitDoor;
@@ -51,112 +49,35 @@ public sealed partial class Main : Node2D
 
 	public override void _Ready()
 	{
-		PlayerController2D player = GetNodeOrNull<PlayerController2D>("%Player")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique Player node.");
-
+		PlayerController2D player = RequireUnique<PlayerController2D>(this, "Player");
 		PlayableLevelController2D activeLevel =
-			GetNodeOrNull<PlayableLevelController2D>("%PlayableLevel")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique PlayableLevel node.");
+			RequireUnique<PlayableLevelController2D>(this, "PlayableLevel");
+		NoiseSystem2D noiseSystem = RequireUnique<NoiseSystem2D>(this, "NoiseSystem2D");
+		DebugHud debugHud = RequireUnique<DebugHud>(this, "DebugHud");
 
-		NoiseSystem2D noiseSystem = GetNodeOrNull<NoiseSystem2D>("%NoiseSystem2D")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique NoiseSystem2D node.");
-
-		DebugHud debugHud = GetNodeOrNull<DebugHud>("%DebugHud")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique DebugHud node.");
-
-		PlayerInteractor2D playerInteractor = player.GetNodeOrNull<PlayerInteractor2D>(
-			"%PlayerInteractor2D")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique PlayerInteractor2D node.");
-
+		PlayerInteractor2D playerInteractor =
+			RequireUnique<PlayerInteractor2D>(player, "PlayerInteractor2D");
 		PlayerWeaponController2D playerWeapon =
-			player.GetNodeOrNull<PlayerWeaponController2D>(
-				"%PlayerWeaponController2D")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique PlayerWeaponController2D node.");
-
+			RequireUnique<PlayerWeaponController2D>(player, "PlayerWeaponController2D");
 		PlayerFlashlightController2D playerFlashlight =
-			player.GetNodeOrNull<PlayerFlashlightController2D>(
-				"%PlayerFlashlightController2D")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique PlayerFlashlightController2D node.");
+			RequireUnique<PlayerFlashlightController2D>(player, "PlayerFlashlightController2D");
 
 		InteractionPromptController interactionPrompt =
-			GetNodeOrNull<InteractionPromptController>(
-			"%InteractionPrompt")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique InteractionPrompt node.");
-
+			RequireUnique<InteractionPromptController>(this, "InteractionPrompt");
 		InteractionMessageController interactionMessage =
-			GetNodeOrNull<InteractionMessageController>(
-			"%InteractionMessage")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique InteractionMessage node.");
-
+			RequireUnique<InteractionMessageController>(this, "InteractionMessage");
 		InventoryPanelController inventoryPanel =
-			GetNodeOrNull<InventoryPanelController>(
-			"%InventoryPanel")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique InventoryPanel node.");
-
+			RequireUnique<InventoryPanelController>(this, "InventoryPanel");
 		LootTransferPanelController lootTransferPanel =
-			GetNodeOrNull<LootTransferPanelController>(
-			"%LootTransferPanel")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique LootTransferPanel node.");
-
-		HealthHudController healthHud = GetNodeOrNull<HealthHudController>(
-			"%HealthHud")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique HealthHud node.");
-
-		WeaponHudController weaponHud = GetNodeOrNull<WeaponHudController>(
-			"%WeaponHud")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique WeaponHud node.");
-
-		NoiseHudController noiseHud = GetNodeOrNull<NoiseHudController>("%NoiseHud")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique NoiseHud node.");
-
-		StaminaHudController staminaHud = GetNodeOrNull<StaminaHudController>(
-			"%StaminaHud")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique StaminaHud node.");
-
-		FlashlightHudController flashlightHud =
-			GetNodeOrNull<FlashlightHudController>("%FlashlightHud")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique FlashlightHud node.");
-
-		VisibilityHudController visibilityHud =
-			GetNodeOrNull<VisibilityHudController>("%VisibilityHud")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique VisibilityHud node.");
-
+			RequireUnique<LootTransferPanelController>(this, "LootTransferPanel");
 		CompactPlayerStatusHudController compactPlayerStatusHud =
-			GetNodeOrNull<CompactPlayerStatusHudController>("%CompactPlayerStatusHud")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique CompactPlayerStatusHud node.");
-
+			RequireUnique<CompactPlayerStatusHudController>(this, "CompactPlayerStatusHud");
 		AimCrosshairController aimCrosshair =
-			GetNodeOrNull<AimCrosshairController>("%AimCrosshair")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique AimCrosshair node.");
-
+			RequireUnique<AimCrosshairController>(this, "AimCrosshair");
 		ObjectiveHudController objectiveHud =
-			GetNodeOrNull<ObjectiveHudController>("%ObjectiveHud")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique ObjectiveHud node.");
-
+			RequireUnique<ObjectiveHudController>(this, "ObjectiveHud");
 		EscapeCompletePanelController escapeCompletePanel =
-			GetNodeOrNull<EscapeCompletePanelController>("%EscapeCompletePanel")
-			?? throw new InvalidOperationException(
-				$"{nameof(Main)} requires a unique EscapeCompletePanel node.");
+			RequireUnique<EscapeCompletePanelController>(this, "EscapeCompletePanel");
 
 		_player = player;
 		_activeLevel = activeLevel;
@@ -167,13 +88,12 @@ public sealed partial class Main : Node2D
 		_interactionMessage = interactionMessage;
 		_inventoryPanel = inventoryPanel;
 		_lootTransferPanel = lootTransferPanel;
-		_weaponHud = weaponHud;
-		_flashlightHud = flashlightHud;
+		_aimCrosshair = aimCrosshair;
+		_escapeCompletePanel = escapeCompletePanel;
+
 		PowerCircuitModel powerCircuit = activeLevel.PowerCircuit.Model;
 		SlidingDoor2D emergencyExitDoor = activeLevel.EmergencyExitDoor;
 		ObjectiveExitZone2D objectiveExitZone = activeLevel.ExitZone;
-
-		_escapeCompletePanel = escapeCompletePanel;
 		_powerCircuit = powerCircuit;
 		_emergencyExitDoor = emergencyExitDoor;
 		_objectiveExitZone = objectiveExitZone;
@@ -183,18 +103,6 @@ public sealed partial class Main : Node2D
 		player.BindNoiseSystem(noiseSystem);
 		activeLevel.BindNoiseSystem(noiseSystem);
 		activeLevel.BindMutantTargets(player, player, player);
-		noiseHud.Bind(noiseSystem, player);
-		PlayerMovementSettings movementSettings = player.MovementSettings
-			?? throw new InvalidOperationException(
-				$"{nameof(PlayerController2D)} requires movement settings before HUD binding.");
-		staminaHud.Bind(
-			player.Stamina,
-			player,
-			player.Health,
-			movementSettings.MinimumStaminaToStartSprint);
-		flashlightHud.Bind(playerFlashlight.Model, player.Inventory);
-		flashlightHud.SetActorAlive(player.Health.IsAlive);
-		visibilityHud.Bind(player.VisibilityController);
 		compactPlayerStatusHud.Bind(player, playerWeapon);
 		aimCrosshair.Bind(playerWeapon);
 		objectiveHud.Bind(_objectiveProgress);
@@ -231,16 +139,10 @@ public sealed partial class Main : Node2D
 		{
 			debugHud.Initialize(player);
 		}
+
 		interactionPrompt.SetPrompt(playerInteractor.CurrentPrompt);
-
-		IInventoryOwner inventoryOwner = player;
-		inventoryPanel.Bind(inventoryOwner.Inventory);
+		inventoryPanel.Bind(player.Inventory);
 		inventoryPanel.SetActorAlive(player.Health.IsAlive);
-
-		IHealthOwner healthOwner = player;
-		healthHud.Bind(healthOwner.Health);
-		weaponHud.Bind(playerWeapon.State, inventoryOwner.Inventory);
-		weaponHud.SetActorAlive(player.Health.IsAlive);
 		SynchronizeFuseObjective();
 		RefreshGameplayInputState();
 		IsInitialized = true;
@@ -488,8 +390,6 @@ public sealed partial class Main : Node2D
 		}
 
 		_isPlayerDead = true;
-		_weaponHud?.SetActorAlive(false);
-		_flashlightHud?.SetActorAlive(false);
 		_playerFlashlight?.SetActorAlive(false);
 		_inventoryPanel?.SetActorAlive(false);
 		_inventoryPanel?.Close();
@@ -521,12 +421,26 @@ public sealed partial class Main : Node2D
 		bool progressionAllowsGameplay = !_isPlayerDead && !_isPrototypeCompleted;
 		bool inventoryToggleEnabled = progressionAllowsGameplay && !_isLootTransferOpen;
 		bool worldGameplayEnabled = inventoryToggleEnabled && !_isInventoryOpen;
-		bool combatInputEnabled = worldGameplayEnabled;
+		bool uiMouseInteractionActive = _isInventoryOpen || _isLootTransferOpen;
+
 		_player?.SetGameplayInputEnabled(worldGameplayEnabled);
 		_playerInteractor?.SetGameplayInputEnabled(worldGameplayEnabled);
-		_playerWeapon?.SetCombatInputEnabled(combatInputEnabled);
+		_playerWeapon?.SetCombatInputEnabled(worldGameplayEnabled);
 		_playerFlashlight?.SetFlashlightInputEnabled(worldGameplayEnabled);
 		_inventoryPanel?.SetActorAlive(progressionAllowsGameplay);
 		_inventoryPanel?.SetToggleEnabled(inventoryToggleEnabled);
+		_aimCrosshair?.SetInteractionState(worldGameplayEnabled, uiMouseInteractionActive);
+	}
+
+	private static TNode RequireUnique<TNode>(Node owner, string uniqueName)
+		where TNode : Node
+	{
+		ArgumentNullException.ThrowIfNull(owner);
+		ArgumentException.ThrowIfNullOrWhiteSpace(uniqueName);
+
+		return owner.GetNodeOrNull<TNode>($"%{uniqueName}")
+			?? throw new InvalidOperationException(
+				$"{owner.GetType().Name} on '{owner.Name}' requires a unique " +
+				$"{uniqueName} node.");
 	}
 }

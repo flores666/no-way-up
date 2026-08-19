@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://src/Core/Main.cs" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/levels/TestLevel.tscn" id="2_level"]
@@ -8,13 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/InteractionMessage.tscn" id="6_message"]
 [ext_resource type="PackedScene" path="res://scenes/ui/InventoryPanel.tscn" id="7_inventory"]
 [ext_resource type="PackedScene" path="res://scenes/ui/LootTransferPanel.tscn" id="8_loot_transfer"]
-[ext_resource type="PackedScene" path="res://scenes/ui/HealthHud.tscn" id="9_health_hud"]
-[ext_resource type="PackedScene" path="res://scenes/ui/WeaponHud.tscn" id="10_weapon_hud"]
 [ext_resource type="Script" path="res://src/World2D/Noise/NoiseSystem2D.cs" id="11_noise_system"]
-[ext_resource type="PackedScene" path="res://scenes/ui/NoiseHud.tscn" id="12_noise_hud"]
-[ext_resource type="PackedScene" path="res://scenes/ui/StaminaHud.tscn" id="13_stamina_hud"]
-[ext_resource type="PackedScene" path="res://scenes/ui/FlashlightHud.tscn" id="14_flashlight_hud"]
-[ext_resource type="PackedScene" path="res://scenes/ui/VisibilityHud.tscn" id="15_visibility_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/ObjectiveHud.tscn" id="16_objective_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/EscapeCompletePanel.tscn" id="17_escape_panel"]
 [ext_resource type="PackedScene" path="res://scenes/ui/CompactPlayerStatusHud.tscn" id="18_compact_status_hud"]
@@ -50,30 +44,6 @@ layer = 10
 
 [node name="DebugHud" parent="UI" instance=ExtResource("4_hud")]
 unique_name_in_owner = true
-
-[node name="HealthHud" parent="UI" instance=ExtResource("9_health_hud")]
-unique_name_in_owner = true
-visible = false
-
-[node name="WeaponHud" parent="UI" instance=ExtResource("10_weapon_hud")]
-unique_name_in_owner = true
-visible = false
-
-[node name="NoiseHud" parent="UI" instance=ExtResource("12_noise_hud")]
-unique_name_in_owner = true
-visible = false
-
-[node name="StaminaHud" parent="UI" instance=ExtResource("13_stamina_hud")]
-unique_name_in_owner = true
-visible = false
-
-[node name="FlashlightHud" parent="UI" instance=ExtResource("14_flashlight_hud")]
-unique_name_in_owner = true
-visible = false
-
-[node name="VisibilityHud" parent="UI" instance=ExtResource("15_visibility_hud")]
-unique_name_in_owner = true
-visible = false
 
 [node name="CompactPlayerStatusHud" parent="UI" instance=ExtResource("18_compact_status_hud")]
 unique_name_in_owner = true

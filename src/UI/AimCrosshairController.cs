@@ -9,6 +9,7 @@ public sealed partial class AimCrosshairController : Control
     private PlayerWeaponController2D? _weaponController;
     private Input.MouseModeEnum _mouseModeBeforeGameplay;
     private bool _ownsGameplayMouseMode;
+    private bool _isGameplayActive = true;
     private bool _isUiMouseInteractionActive;
 
     [Export(PropertyHint.Range, "1.0,16.0,0.5")]
@@ -35,7 +36,8 @@ public sealed partial class AimCrosshairController : Control
 
     public override void _ExitTree()
     {
-        Unbind();
+        _weaponController = null;
+        RefreshPresentation();
         RestoreMouseMode();
     }
 
@@ -88,15 +90,31 @@ public sealed partial class AimCrosshairController : Control
             antialiased: false);
     }
 
-    private void ValidateConfiguration()
+    public void Bind(PlayerWeaponController2D weaponController)
     {
-        if (!float.IsFinite(ArmLength) || ArmLength <= 0.0f ||
-            !float.IsFinite(LineWidth) || LineWidth <= 0.0f ||
-            !float.IsFinite(DotRadius) || DotRadius <= 0.0f)
+        ArgumentNullException.ThrowIfNull(weaponController);
+        if (_weaponController is not null)
         {
             throw new InvalidOperationException(
-                $"{nameof(AimCrosshairController)} on '{Name}' has invalid crosshair geometry.");
+                $"{nameof(AimCrosshairController)} on '{Name}' is already bound.");
         }
+
+        _weaponController = weaponController;
+        RefreshPresentation();
+    }
+
+    public void SetInteractionState(bool gameplayActive, bool uiMouseInteractionActive)
+    {
+        if (_isGameplayActive == gameplayActive &&
+            _isUiMouseInteractionActive == uiMouseInteractionActive)
+        {
+            return;
+        }
+
+        _isGameplayActive = gameplayActive;
+        _isUiMouseInteractionActive = uiMouseInteractionActive;
+        ApplyMouseMode();
+        RefreshPresentation();
     }
 
     private float ResolveSpreadGap(Vector2 mousePosition)
@@ -110,68 +128,32 @@ public sealed partial class AimCrosshairController : Control
         float spreadDegrees = weaponController.IsAiming
             ? weaponController.State.Definition.AimedSpreadDegrees
             : weaponController.State.Definition.HipFireSpreadDegrees;
-        float spreadRadians = Mathf.DegToRad(spreadDegrees);
-        return MathF.Tan(spreadRadians) * aimDistance;
+        return MathF.Tan(Mathf.DegToRad(spreadDegrees)) * aimDistance;
     }
 
-    public void Bind(PlayerWeaponController2D weaponController)
+    private void RefreshPresentation()
     {
-        ArgumentNullException.ThrowIfNull(weaponController);
-        if (_weaponController is not null)
-        {
-            throw new InvalidOperationException(
-                $"{nameof(AimCrosshairController)} on '{Name}' is already bound.");
-        }
+        bool showCrosshair =
+            _weaponController is not null &&
+            _isGameplayActive &&
+            !_isUiMouseInteractionActive;
 
-        _weaponController = weaponController;
-        _weaponController.AimingChanged += OnAimingChanged;
-        ApplyAimingState(_weaponController.IsAiming);
-    }
-
-    /// <summary>
-    /// Enables the operating-system cursor while the player is interacting with UI.
-    /// Gameplay should leave this false so only the aiming crosshair is visible.
-    /// </summary>
-    public void SetUiMouseInteractionActive(bool active)
-    {
-        if (_isUiMouseInteractionActive == active)
-        {
-            return;
-        }
-
-        _isUiMouseInteractionActive = active;
-        ApplyMouseMode();
-        ApplyAimingState(_weaponController?.IsAiming ?? false);
-    }
-
-    private void Unbind()
-    {
-        if (_weaponController is not null)
-        {
-            _weaponController.AimingChanged -= OnAimingChanged;
-            _weaponController = null;
-        }
-
-        ApplyAimingState(false);
-    }
-
-    private void OnAimingChanged(bool isAiming)
-    {
-        ApplyAimingState(isAiming);
-    }
-
-    private void ApplyAimingState(bool isAiming)
-    {
-        // The gameplay crosshair is always visible. Aiming only changes the
-        // weapon spread, and ResolveSpreadGap renders that exact current cone.
-        // UI interaction temporarily owns the pointer and hides the crosshair.
-        bool showCrosshair = _weaponController is not null && !_isUiMouseInteractionActive;
         Visible = showCrosshair;
         SetProcess(showCrosshair);
-
         if (showCrosshair)
         {
             QueueRedraw();
+        }
+    }
+
+    private void ValidateConfiguration()
+    {
+        if (!float.IsFinite(ArmLength) || ArmLength <= 0.0f ||
+            !float.IsFinite(LineWidth) || LineWidth <= 0.0f ||
+            !float.IsFinite(DotRadius) || DotRadius <= 0.0f)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(AimCrosshairController)} on '{Name}' has invalid crosshair geometry.");
         }
     }
 

@@ -112,7 +112,7 @@ non-zero exit code is preserved for local scripts and CI.
 | `firearm-state` | Magazine accounting, rejection, reload, and cancellation |
 | `flashlight` | Charge, thresholds, depletion, near-full handling, and battery transaction |
 | `objectives-power` | Ordered objectives, fuse transaction, circuit, and subscriber failures |
-| `visibility` | Posture, ambient zones, flashlight multiplier, priorities, and death |
+| `visibility` | Movement mode, ambient zones, flashlight multiplier, priorities, and death |
 | `mutant-perception` | Stimulus priority, Chase/grace memory, damage response, deterministic same-frame noise, FOV timing, and dead targets |
 | `noise-hearing` | Distance, sensitivity, multi-wall attenuation, and deduplication |
 | `hazards` | Stable sensor overlap, entry damage, periodic catch-up, exit, and completion |
@@ -121,9 +121,9 @@ non-zero exit code is preserved for local scripts and CI.
 | `interactions` | Container first-open noise and failed interaction behavior |
 | `emergency-exit` | Power gating, completed door opening, one-shot event, and early exit overlap |
 | `prototype-flow` | Full fuse, power, emergency-door, exit, and terminal-input loop through `Main` |
-| `movement-crawl` | Collision-profile invariants, blocked exit, and constant sensors |
-| `hud` | Honest stamina/flashlight values and event-driven objective status |
-| `scene-contracts` | Exported paths, TestLevel preservation, MetroLevel01 content/crawl/power contracts, inputs, and both main-scene smoke loads |
+| `movement` | Walk/Sprint controls, single-collider invariant, removed posture inputs, and speed tuning |
+| `hud` | Event-driven status displays and objective state |
+| `scene-contracts` | Exported paths, level content/power contracts, inputs, production HUD composition, and both main-scene smoke loads |
 
 ## Structure
 
@@ -161,8 +161,8 @@ fits the compact layout bounds without panel overlap.
 
 Integration suites explicitly control mutable presentation state instead of relying on
 headless-engine defaults. Weapon tests freeze the player's aim pivot before placing
-wall geometry, Crawl tests use the actual `crawl` toggle and wait for both deferred
-and physics updates, and HUD expectations use the process culture's decimal separator.
+wall geometry, movement tests use the authored player scene and validate current
+controls and tuning, and HUD expectations use the process culture's decimal separator.
 This keeps the tests portable across headless display backends and operating-system
 locales without weakening gameplay assertions.
 

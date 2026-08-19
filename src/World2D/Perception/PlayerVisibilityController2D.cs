@@ -163,7 +163,7 @@ public sealed partial class PlayerVisibilityController2D : Node, IVisibilityTarg
 
         RemoveInvalidZones();
         _effectiveZone = SelectEffectiveZone();
-        float postureMultiplier = movementSource.CurrentMovementMode switch
+        float movementMultiplier = movementSource.CurrentMovementMode switch
         {
             MovementMode.Walk => WalkVisibilityMultiplier,
             MovementMode.Sprint => SprintVisibilityMultiplier,
@@ -174,7 +174,7 @@ public sealed partial class PlayerVisibilityController2D : Node, IVisibilityTarg
         float flashlightMultiplier = flashlight.IsOn
             ? FlashlightOnMultiplier
             : 1.0f;
-        float finalMultiplier = postureMultiplier * ambientMultiplier * flashlightMultiplier;
+        float finalMultiplier = movementMultiplier * ambientMultiplier * flashlightMultiplier;
         if (!float.IsFinite(finalMultiplier) || finalMultiplier <= 0.0f)
         {
             throw new InvalidOperationException(
@@ -190,7 +190,7 @@ public sealed partial class PlayerVisibilityController2D : Node, IVisibilityTarg
         };
         string zoneName = _effectiveZone?.DisplayName ?? DefaultAmbientZoneName;
         return new VisibilityState(
-            postureMultiplier,
+            movementMultiplier,
             ambientMultiplier,
             flashlightMultiplier,
             finalMultiplier,

@@ -5,7 +5,7 @@ namespace LineZero.Gameplay.Perception;
 public readonly struct VisibilityState
 {
     public VisibilityState(
-        float postureMultiplier,
+        float movementMultiplier,
         float ambientLightMultiplier,
         float flashlightMultiplier,
         float finalMultiplier,
@@ -13,7 +13,7 @@ public readonly struct VisibilityState
         bool isActorAlive,
         string ambientZoneName)
     {
-        ValidateMultiplier(postureMultiplier, nameof(postureMultiplier));
+        ValidateMultiplier(movementMultiplier, nameof(movementMultiplier));
         ValidateMultiplier(ambientLightMultiplier, nameof(ambientLightMultiplier));
         ValidateMultiplier(flashlightMultiplier, nameof(flashlightMultiplier));
         ValidateMultiplier(finalMultiplier, nameof(finalMultiplier));
@@ -24,7 +24,7 @@ public readonly struct VisibilityState
                 nameof(ambientZoneName));
         }
 
-        PostureMultiplier = postureMultiplier;
+        MovementMultiplier = movementMultiplier;
         AmbientLightMultiplier = ambientLightMultiplier;
         FlashlightMultiplier = flashlightMultiplier;
         FinalMultiplier = finalMultiplier;
@@ -33,7 +33,7 @@ public readonly struct VisibilityState
         AmbientZoneName = ambientZoneName;
     }
 
-    public float PostureMultiplier { get; }
+    public float MovementMultiplier { get; }
 
     public float AmbientLightMultiplier { get; }
 

@@ -262,32 +262,57 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
             TestAssert.False(debugHud.IsProcessing(),
                 "Hidden technical HUD still performs per-frame work.");
 
-            Control[] leftStack =
-            {
-                main.GetNode<Control>("%HealthHud"),
-                main.GetNode<Control>("%WeaponHud"),
-                main.GetNode<Control>("%NoiseHud"),
-                main.GetNode<Control>("%StaminaHud"),
-                main.GetNode<Control>("%FlashlightHud"),
-            };
+            Control compactStatus = main.GetNode<Control>("%CompactPlayerStatusHud");
+            TestAssert.True(compactStatus.Visible,
+                "Compact player status HUD is hidden in gameplay.");
+            TestAssert.True(compactStatus.Size.X <= 330.0f + 0.01f,
+                "Compact player status HUD is wider than its production layout contract.");
+            TestAssert.True(compactStatus.Size.Y <= 150.0f + 0.01f,
+                "Compact player status HUD is taller than its production layout contract.");
 
-            float previousBottom = 0.0f;
-            for (int index = 0; index < leftStack.Length; index++)
+            string[] legacyHudNames =
             {
-                Control panel = leftStack[index];
-                TestAssert.True(panel.Size.X <= 224.0f + 0.01f,
-                    $"HUD panel '{panel.Name}' is wider than the compact layout contract.");
-                TestAssert.True(panel.Position.Y >= previousBottom,
-                    $"HUD panel '{panel.Name}' overlaps the previous panel.");
-                previousBottom = panel.Position.Y + panel.Size.Y;
+                "HealthHud",
+                "WeaponHud",
+                "NoiseHud",
+                "StaminaHud",
+                "FlashlightHud",
+                "VisibilityHud",
+            };
+            for (int index = 0; index < legacyHudNames.Length; index++)
+            {
+                TestAssert.True(
+                    main.GetNodeOrNull<Control>($"%{legacyHudNames[index]}") is null,
+                    $"Legacy HUD '{legacyHudNames[index]}' is still instantiated in gameplay.");
             }
 
-            TestAssert.True(previousBottom <= 350.0f + 0.01f,
-                "Left HUD stack occupies too much vertical gameplay space.");
-            TestAssert.True(main.GetNode<Control>("%VisibilityHud").Size.X <= 242.0f + 0.01f,
-                "Visibility HUD is wider than the compact layout contract.");
             TestAssert.True(main.GetNode<Control>("%ObjectiveHud").Size.X <= 340.0f + 0.01f,
                 "Objective HUD is wider than the compact layout contract.");
+
+            AimCrosshairController crosshair =
+                main.GetNode<AimCrosshairController>("%AimCrosshair");
+            InventoryPanelController inventoryPanel =
+                main.GetNode<InventoryPanelController>("%InventoryPanel");
+            TestAssert.True(crosshair.Visible,
+                "Gameplay crosshair is not visible during active world input.");
+
+            InputEventAction toggleInventory = new()
+            {
+                Action = "toggle_inventory",
+                Pressed = true,
+                Strength = 1.0f,
+            };
+            inventoryPanel._Input(toggleInventory);
+            TestAssert.True(inventoryPanel.Visible,
+                "Inventory fixture did not open from the production toggle path.");
+            TestAssert.False(crosshair.Visible,
+                "Gameplay crosshair remains visible while inventory owns mouse input.");
+
+            inventoryPanel._Input(toggleInventory);
+            TestAssert.False(inventoryPanel.Visible,
+                "Inventory fixture did not close from the production toggle path.");
+            TestAssert.True(crosshair.Visible,
+                "Gameplay crosshair did not return after closing inventory.");
 
             await context.DisposeNodeAsync(main);
         });

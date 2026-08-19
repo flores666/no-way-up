@@ -7,9 +7,9 @@ using LineZero.World2D.Noise;
 
 namespace LineZero.Tests.Suites;
 
-public sealed class MovementCrawlFeatureTests : IFeatureTestSuite
+public sealed class MovementFeatureTests : IFeatureTestSuite
 {
-    public string Id => "movement-crawl";
+    public string Id => "movement";
 
     public string Description => "Walk/Sprint-only movement controls and tuning";
 

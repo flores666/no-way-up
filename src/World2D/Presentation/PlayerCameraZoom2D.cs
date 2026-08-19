@@ -1,5 +1,6 @@
 using System;
 using Godot;
+using LineZero.World2D.Combat;
 
 namespace LineZero.World2D.Presentation;
 
@@ -8,9 +9,12 @@ public sealed partial class PlayerCameraZoom2D : Camera2D
     private const float MinimumTeleportSnapDistance = 1.0f;
 
     private Node2D _followTarget = null!;
+    private PlayerWeaponController2D _weaponController = null!;
     private Vector2 _previousPhysicsPosition;
     private Vector2 _currentPhysicsPosition;
     private bool _hasPhysicsSample;
+    private readonly RandomNumberGenerator _shakeRandom = new();
+    private Vector2 _shotShakeOffset;
 
     [Export(PropertyHint.Range, "0.1,4.0,0.05,or_greater")]
     public float MinimumZoom { get; set; } = 0.5f;
@@ -24,6 +28,17 @@ public sealed partial class PlayerCameraZoom2D : Camera2D
     [Export(PropertyHint.Range, "1.0,4096.0,1.0,or_greater")]
     public float TeleportSnapDistance { get; set; } = 128.0f;
 
+    [Export(PropertyHint.Range, "0.1,4.0,0.05")]
+    public float ShotShakeImpulsePixels { get; set; } = 1.05f;
+
+    [Export(PropertyHint.Range, "0.1,6.0,0.05")]
+    public float MaximumShotShakePixels { get; set; } = 1.8f;
+
+    [Export(PropertyHint.Range, "1.0,40.0,0.5")]
+    public float ShotShakeRecoveryPixelsPerSecond { get; set; } = 18.0f;
+
+    public bool HasActiveShotShake => !_shotShakeOffset.IsZeroApprox();
+
     public override void _Ready()
     {
         ValidateSettings();
@@ -31,6 +46,9 @@ public sealed partial class PlayerCameraZoom2D : Camera2D
         _followTarget = GetParent() as Node2D
             ?? throw new InvalidOperationException(
                 $"{nameof(PlayerCameraZoom2D)} on '{Name}' requires a Node2D parent.");
+        _weaponController = RequireNode<PlayerWeaponController2D>("%PlayerWeaponController2D");
+        _weaponController.ShotFired += OnWeaponShotFired;
+        _shakeRandom.Randomize();
 
         Vector2 initialTargetPosition = _followTarget.GlobalPosition;
         if (!IsFinite(initialTargetPosition))
@@ -49,6 +67,16 @@ public sealed partial class PlayerCameraZoom2D : Camera2D
             : 1.0f;
         ApplyZoom(Math.Clamp(initialZoom, MinimumZoom, MaximumZoom));
         ForceUpdateScroll();
+    }
+
+    public override void _ExitTree()
+    {
+        if (GodotObject.IsInstanceValid(_weaponController))
+        {
+            _weaponController.ShotFired -= OnWeaponShotFired;
+        }
+
+        _shotShakeOffset = Vector2.Zero;
     }
 
     public override void _PhysicsProcess(double delta)
@@ -106,15 +134,49 @@ public sealed partial class PlayerCameraZoom2D : Camera2D
             return;
         }
 
-        // The camera must use exactly the same interpolated position as the player.
-        // Rounding the camera independently creates a fractional player-to-camera
-        // offset on the moving axis, which makes nearest-filtered pixel art look blurry.
-        // Pixel snapping is handled by the renderer; do not quantize the camera here.
-        GlobalPosition = renderedTargetPosition;
+        UpdateShotShake(delta);
+        Vector2 renderedShakeOffset = new(
+            Mathf.Round(_shotShakeOffset.X),
+            Mathf.Round(_shotShakeOffset.Y));
+
+        // Keep the player-follow position interpolation exact. Only the transient
+        // weapon-shake component is pixel-rounded so recoil feedback cannot introduce
+        // fractional camera offsets that blur nearest-filtered pixel art.
+        GlobalPosition = renderedTargetPosition + renderedShakeOffset;
 
         // Camera2D performs its own internal canvas update. Force it after assigning
         // the render-frame position so the camera never trails the player by one frame.
         ForceUpdateScroll();
+    }
+
+    private void OnWeaponShotFired()
+    {
+        float angle = _shakeRandom.RandfRange(0.0f, Mathf.Tau);
+        Vector2 impulse = new(Mathf.Cos(angle), Mathf.Sin(angle));
+        _shotShakeOffset += impulse * ShotShakeImpulsePixels;
+        float length = _shotShakeOffset.Length();
+        if (length > MaximumShotShakePixels)
+        {
+            _shotShakeOffset = _shotShakeOffset / length * MaximumShotShakePixels;
+        }
+    }
+
+    private void UpdateShotShake(double delta)
+    {
+        if (_shotShakeOffset.IsZeroApprox())
+        {
+            _shotShakeOffset = Vector2.Zero;
+            return;
+        }
+
+        if (!double.IsFinite(delta) || delta <= 0.0)
+        {
+            return;
+        }
+
+        _shotShakeOffset = _shotShakeOffset.MoveToward(
+            Vector2.Zero,
+            ShotShakeRecoveryPixelsPerSecond * (float)delta);
     }
 
     public override void _UnhandledInput(InputEvent @event)
@@ -189,6 +251,23 @@ public sealed partial class PlayerCameraZoom2D : Camera2D
                 $"{nameof(PlayerCameraZoom2D)} on '{Name}' requires {nameof(TeleportSnapDistance)} " +
                 $"to be finite and at least {MinimumTeleportSnapDistance}.");
         }
+
+        if (!float.IsFinite(ShotShakeImpulsePixels) || ShotShakeImpulsePixels <= 0.0f ||
+            !float.IsFinite(MaximumShotShakePixels) || MaximumShotShakePixels <= 0.0f ||
+            ShotShakeImpulsePixels > MaximumShotShakePixels ||
+            !float.IsFinite(ShotShakeRecoveryPixelsPerSecond) ||
+            ShotShakeRecoveryPixelsPerSecond <= 0.0f)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(PlayerCameraZoom2D)} on '{Name}' has invalid shot-shake settings.");
+        }
+    }
+
+    private TNode RequireNode<TNode>(string path) where TNode : Node
+    {
+        return GetNodeOrNull<TNode>(path)
+            ?? throw new InvalidOperationException(
+                $"{nameof(PlayerCameraZoom2D)} on '{Name}' requires '{path}'.");
     }
 
     private static bool IsFinite(Vector2 value)

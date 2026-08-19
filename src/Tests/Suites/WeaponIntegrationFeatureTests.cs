@@ -5,6 +5,7 @@ using LineZero.Tests.Framework;
 using LineZero.World2D;
 using LineZero.World2D.Combat;
 using LineZero.World2D.Noise;
+using LineZero.World2D.Presentation;
 
 namespace LineZero.Tests.Suites;
 
@@ -59,15 +60,28 @@ public sealed class WeaponIntegrationFeatureTests : IFeatureTestSuite
             TestAssert.Equal(0, noiseCount, "Blocked shot emitted gunshot noise.");
             WeaponFxController2D weaponFx = player.GetNode<WeaponFxController2D>("%WeaponFxController2D");
             PointLight2D muzzleLight = player.GetNode<PointLight2D>("%MuzzleFlashLight");
+            Sprite2D weaponSprite = player.GetNode<Sprite2D>("%WeaponSprite");
+            PlayerCameraZoom2D camera = player.GetNode<PlayerCameraZoom2D>("%Camera2D");
+            Vector2 authoredWeaponOffset = weaponSprite.Offset;
             TestAssert.False(weaponFx.HasActiveShotVisuals,
                 "Blocked shot displayed weapon FX.");
             TestAssert.False(muzzleLight.Enabled,
                 "Blocked shot enabled the muzzle-flash light.");
             TestAssert.Equal(0.0f, weaponFx.Heat01,
                 "Blocked shot heated the visual FX state.");
+            TestAssert.False(player.IsFiringMovementPenaltyActive,
+                "Blocked shot activated the firing movement penalty.");
+            TestAssert.False(camera.HasActiveShotShake,
+                "Blocked shot activated camera shake.");
+            TestAssert.NearlyEqual(authoredWeaponOffset.X, weaponSprite.Offset.X, 1e-6,
+                "Blocked shot moved the weapon sprite recoil offset.");
+            TestAssert.NearlyEqual(authoredWeaponOffset.Y, weaponSprite.Offset.Y, 1e-6,
+                "Blocked shot changed the weapon sprite vertical offset.");
 
             wall.QueueFree();
             await context.WaitPhysicsFramesAsync(2);
+            Marker2D muzzlePoint = player.GetNode<Marker2D>("%MuzzlePoint");
+            Vector2 physicalMuzzleBeforeShot = muzzlePoint.GlobalPosition;
             FirearmShotResult clear = weapon.TryFire();
             TestAssert.Equal(FirearmShotStatus.Fired, clear.Status,
                 "Clear shot was rejected after wall removal.");
@@ -84,6 +98,26 @@ public sealed class WeaponIntegrationFeatureTests : IFeatureTestSuite
                 "Valid shot did not trigger the muzzle-flash light.");
             TestAssert.True(weaponFx.Heat01 > 0.0f,
                 "Valid shot did not update the sustained-fire FX heat state.");
+            TestAssert.True(player.IsFiringMovementPenaltyActive,
+                "Valid shot did not activate the firing movement penalty.");
+            TestAssert.True(camera.HasActiveShotShake,
+                "Valid shot did not activate camera shake.");
+            TestAssert.True(weaponSprite.Offset.X < authoredWeaponOffset.X,
+                "Valid shot did not move the weapon sprite backward.");
+            TestAssert.NearlyEqual(physicalMuzzleBeforeShot.X, muzzlePoint.GlobalPosition.X, 1e-6,
+                "Visual recoil changed the physical muzzle X position.");
+            TestAssert.NearlyEqual(physicalMuzzleBeforeShot.Y, muzzlePoint.GlobalPosition.Y, 1e-6,
+                "Visual recoil changed the physical muzzle Y position.");
+
+            await context.WaitSecondsAsync(0.4);
+            TestAssert.False(player.IsFiringMovementPenaltyActive,
+                "Firing movement penalty did not expire after the shot.");
+            TestAssert.False(camera.HasActiveShotShake,
+                "Camera shake did not settle after the shot.");
+            TestAssert.NearlyEqual(authoredWeaponOffset.X, weaponSprite.Offset.X, 1e-4,
+                "Weapon recoil did not recover to its authored offset.");
+            TestAssert.NearlyEqual(authoredWeaponOffset.Y, weaponSprite.Offset.Y, 1e-6,
+                "Weapon recoil introduced a vertical offset.");
 
             await context.DisposeNodeAsync(root);
         });

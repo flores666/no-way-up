@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 using LineZero.Gameplay.Movement;
+using LineZero.World2D.Combat;
 
 namespace LineZero.World2D.Presentation;
 
@@ -25,11 +26,14 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
     private Node2D _aimPivot = null!;
     private Sprite2D _characterSprite = null!;
     private Sprite2D _weaponSprite = null!;
+    private PlayerWeaponController2D _weaponController = null!;
     private LightOccluder2D _muzzleSelfShadowOccluder = null!;
     private bool _isRunning;
     private FacingSide _facingSide = FacingSide.Right;
     private float _frameCursor;
     private Vector2 _weaponBaseScale;
+    private Vector2 _weaponBaseOffset;
+    private float _weaponRecoilPixels;
     private Vector2[][] _shadowPolygons = Array.Empty<Vector2[]>();
     private int _lastShadowFrame = -1;
     private FacingSide? _lastShadowFacingSide;
@@ -43,6 +47,15 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
     [Export(PropertyHint.Range, "1,24,0.5")]
     public float SprintFramesPerSecond { get; set; } = 12.0f;
 
+    [Export(PropertyHint.Range, "0.1,4.0,0.05")]
+    public float WeaponRecoilPerShotPixels { get; set; } = 0.85f;
+
+    [Export(PropertyHint.Range, "0.1,6.0,0.05")]
+    public float MaximumWeaponRecoilPixels { get; set; } = 1.8f;
+
+    [Export(PropertyHint.Range, "1.0,30.0,0.5")]
+    public float WeaponRecoilRecoveryPixelsPerSecond { get; set; } = 6.0f;
+
     public override void _Ready()
     {
         _player = GetParent() as PlayerController2D
@@ -51,12 +64,14 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
         _aimPivot = RequireNode<Node2D>("%AimPivot");
         _characterSprite = RequireNode<Sprite2D>("%CharacterSprite");
         _weaponSprite = RequireNode<Sprite2D>("%WeaponSprite");
+        _weaponController = RequireNode<PlayerWeaponController2D>("%PlayerWeaponController2D");
         _muzzleSelfShadowOccluder = RequireNode<LightOccluder2D>("%MuzzleSelfShadowOccluder");
 
         ValidateTexture(CharacterTexture, nameof(CharacterTexture), RunFrameCount);
         ValidateTexture(_weaponSprite.Texture, "WeaponSprite.Texture", expectedFrames: 1);
         ValidateFramesPerSecond(WalkFramesPerSecond, nameof(WalkFramesPerSecond));
         ValidateFramesPerSecond(SprintFramesPerSecond, nameof(SprintFramesPerSecond));
+        ValidateWeaponRecoilSettings();
 
         _characterSprite.Texture = CharacterTexture;
         _characterSprite.Hframes = RunFrameCount;
@@ -64,9 +79,11 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
         _weaponBaseScale = new Vector2(
             Mathf.Abs(_weaponSprite.Scale.X),
             Mathf.Abs(_weaponSprite.Scale.Y));
+        _weaponBaseOffset = _weaponSprite.Offset;
         _weaponSprite.ZAsRelative = true;
         _weaponSprite.FlipH = false;
         _weaponSprite.FlipV = false;
+        _weaponController.ShotFired += OnWeaponShotFired;
 
         BuildDynamicShadowPolygons();
         ConfigureMuzzleSelfShadowOccluder();
@@ -74,6 +91,21 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
         SetRunning(isRunning: false, restart: true);
         ApplyFacingSide(ResolveAimSide());
         UpdateDynamicShadowOccluder(force: true);
+    }
+
+    public override void _ExitTree()
+    {
+        if (GodotObject.IsInstanceValid(_weaponController))
+        {
+            _weaponController.ShotFired -= OnWeaponShotFired;
+        }
+
+        if (GodotObject.IsInstanceValid(_weaponSprite))
+        {
+            _weaponSprite.Offset = _weaponBaseOffset;
+        }
+
+        _weaponRecoilPixels = 0.0f;
     }
 
     public override void _PhysicsProcess(double delta)
@@ -87,6 +119,7 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
         float deltaSeconds = double.IsFinite(delta) && delta > 0.0
             ? (float)delta
             : 0.0f;
+        UpdateWeaponRecoil(deltaSeconds);
 
         bool isRunning = _player.Velocity.Length() >= MinimumAnimationSpeed;
         if (isRunning != _isRunning)
@@ -110,6 +143,53 @@ public sealed partial class PlayerMiniDayzPresentation2D : Node2D
             0,
             RunFrameCount - 1);
         UpdateDynamicShadowOccluder();
+    }
+
+    private void OnWeaponShotFired()
+    {
+        _weaponRecoilPixels = Math.Min(
+            MaximumWeaponRecoilPixels,
+            _weaponRecoilPixels + WeaponRecoilPerShotPixels);
+        ApplyWeaponRecoilOffset();
+    }
+
+    private void UpdateWeaponRecoil(float deltaSeconds)
+    {
+        if (_weaponRecoilPixels <= 0.0f)
+        {
+            _weaponRecoilPixels = 0.0f;
+            ApplyWeaponRecoilOffset();
+            return;
+        }
+
+        if (deltaSeconds <= 0.0f)
+        {
+            return;
+        }
+
+        _weaponRecoilPixels = Mathf.MoveToward(
+            _weaponRecoilPixels,
+            0.0f,
+            WeaponRecoilRecoveryPixelsPerSecond * deltaSeconds);
+        ApplyWeaponRecoilOffset();
+    }
+
+    private void ApplyWeaponRecoilOffset()
+    {
+        _weaponSprite.Offset = _weaponBaseOffset + Vector2.Left * _weaponRecoilPixels;
+    }
+
+    private void ValidateWeaponRecoilSettings()
+    {
+        if (!float.IsFinite(WeaponRecoilPerShotPixels) || WeaponRecoilPerShotPixels <= 0.0f ||
+            !float.IsFinite(MaximumWeaponRecoilPixels) || MaximumWeaponRecoilPixels <= 0.0f ||
+            WeaponRecoilPerShotPixels > MaximumWeaponRecoilPixels ||
+            !float.IsFinite(WeaponRecoilRecoveryPixelsPerSecond) ||
+            WeaponRecoilRecoveryPixelsPerSecond <= 0.0f)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(PlayerMiniDayzPresentation2D)} on '{Name}' has invalid weapon recoil settings.");
+        }
     }
 
     private void SetRunning(bool isRunning, bool restart)

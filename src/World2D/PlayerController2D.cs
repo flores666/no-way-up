@@ -34,9 +34,16 @@ public sealed partial class PlayerController2D : CharacterBody2D,
     private bool _isGameplayInputEnabled = true;
     private bool _isSprintRequestActive;
     private bool _sprintRequiresRelease;
+    private float _firingMovementPenaltyRemainingSeconds;
 
     [Export]
     public PlayerMovementSettings? MovementSettings { get; set; }
+
+    [Export(PropertyHint.Range, "0.5,1.0,0.01")]
+    public float FiringMovementSpeedMultiplier { get; set; } = 0.82f;
+
+    [Export(PropertyHint.Range, "0.05,0.5,0.01,or_greater")]
+    public float FiringMovementPenaltyDurationSeconds { get; set; } = 0.12f;
 
     public bool IsFlashlightEnabled => _flashlightController.Model.IsOn;
 
@@ -47,6 +54,9 @@ public sealed partial class PlayerController2D : CharacterBody2D,
     public bool IsGameplayInputEnabled => _isGameplayInputEnabled;
 
     public MovementMode CurrentMovementMode => _movementMode;
+
+    public bool IsFiringMovementPenaltyActive =>
+        _firingMovementPenaltyRemainingSeconds > 0.0f;
 
     public StaminaModel Stamina => _stamina
         ?? throw new InvalidOperationException(
@@ -70,6 +80,7 @@ public sealed partial class PlayerController2D : CharacterBody2D,
             ?? throw new InvalidOperationException(
                 $"{nameof(PlayerController2D)} on '{Name}' requires movement settings.");
         _movementSettings.Validate();
+        ValidateFiringMovementSettings();
 
         _ = RequireNode<CollisionShape2D>("%NormalCollisionShape");
         if (CollisionMask == 0 || (CollisionMask & CollisionLayers2D.World) == 0)
@@ -98,6 +109,7 @@ public sealed partial class PlayerController2D : CharacterBody2D,
         _visibilityController = RequireNode<PlayerVisibilityController2D>(
             "%PlayerVisibilityController2D");
         _weaponController.Initialize(this, _inventory, _health);
+        _weaponController.ShotFired += OnWeaponShotFired;
         _footstepNoiseEmitter.Initialize(this, _health, _movementSettings);
         _visibilityController.Initialize(
             this,
@@ -108,6 +120,11 @@ public sealed partial class PlayerController2D : CharacterBody2D,
 
     public override void _ExitTree()
     {
+        if (GodotObject.IsInstanceValid(_weaponController))
+        {
+            _weaponController.ShotFired -= OnWeaponShotFired;
+        }
+
         if (_health is not null)
         {
             _health.Died -= OnDied;
@@ -124,6 +141,7 @@ public sealed partial class PlayerController2D : CharacterBody2D,
 
     public override void _PhysicsProcess(double delta)
     {
+        UpdateFiringMovementPenalty(delta);
         UpdateAimTransform();
 
         bool isAlive = _health is not null && _health.IsAlive;
@@ -162,6 +180,11 @@ public sealed partial class PlayerController2D : CharacterBody2D,
             ? MovementMode.Sprint
             : MovementMode.Walk;
         float movementSpeed = GetMovementSpeed(requestedMode);
+        if (IsFiringMovementPenaltyActive)
+        {
+            movementSpeed *= FiringMovementSpeedMultiplier;
+        }
+
         Vector2 targetVelocity = inputDirection * movementSpeed;
         float changeRate = !hasMovementIntent
             ? _movementSettings.Deceleration
@@ -238,6 +261,7 @@ public sealed partial class PlayerController2D : CharacterBody2D,
         _isSprintRequestActive = false;
         SetMovementMode(MovementMode.Walk);
         Velocity = Vector2.Zero;
+        _firingMovementPenaltyRemainingSeconds = 0.0f;
     }
 
     public void SetPlayerNoiseEnabled(bool enabled)
@@ -262,6 +286,51 @@ public sealed partial class PlayerController2D : CharacterBody2D,
         _weaponController.BindNoiseSystem(noiseSystem);
         _footstepNoiseEmitter.BindNoiseSystem(noiseSystem);
         _noiseSystem = noiseSystem;
+    }
+
+    private void OnWeaponShotFired()
+    {
+        _firingMovementPenaltyRemainingSeconds = Math.Max(
+            _firingMovementPenaltyRemainingSeconds,
+            FiringMovementPenaltyDurationSeconds);
+    }
+
+    private void UpdateFiringMovementPenalty(double delta)
+    {
+        if (_firingMovementPenaltyRemainingSeconds <= 0.0f)
+        {
+            _firingMovementPenaltyRemainingSeconds = 0.0f;
+            return;
+        }
+
+        if (!double.IsFinite(delta) || delta <= 0.0)
+        {
+            return;
+        }
+
+        _firingMovementPenaltyRemainingSeconds = Math.Max(
+            0.0f,
+            _firingMovementPenaltyRemainingSeconds - (float)delta);
+    }
+
+    private void ValidateFiringMovementSettings()
+    {
+        if (!float.IsFinite(FiringMovementSpeedMultiplier) ||
+            FiringMovementSpeedMultiplier <= 0.0f ||
+            FiringMovementSpeedMultiplier > 1.0f)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(PlayerController2D)} on '{Name}' requires {nameof(FiringMovementSpeedMultiplier)} " +
+                "to be finite, positive, and no greater than 1.");
+        }
+
+        if (!float.IsFinite(FiringMovementPenaltyDurationSeconds) ||
+            FiringMovementPenaltyDurationSeconds <= 0.0f)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(PlayerController2D)} on '{Name}' requires a positive finite " +
+                $"{nameof(FiringMovementPenaltyDurationSeconds)}.");
+        }
     }
 
     private bool CanRequestSprint(bool isSprintHeld, bool hasMovementIntent)

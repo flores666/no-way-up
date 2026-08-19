@@ -33,6 +33,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
 	private Marker2D _weaponOrigin = null!;
 	private Marker2D _muzzlePoint = null!;
 	private Sprite2D _weaponSprite = null!;
+	private Vector2 _weaponAuthoredSpriteOffset;
 	private WeaponFxController2D _weaponFx = null!;
 	private Timer _reloadTimer = null!;
 	private bool _isInitialized;
@@ -74,6 +75,8 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
 	public bool IsAiming => _isAiming;
 
 	public event Action<bool>? AimingChanged;
+
+	public event Action? ShotFired;
 
 	public event Action<FirearmShotResult>? ShotAttempted;
 
@@ -138,6 +141,13 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
 		_weaponOrigin = RequireNode<Marker2D>("%WeaponOrigin");
 		_muzzlePoint = RequireNode<Marker2D>("%MuzzlePoint");
 		_weaponSprite = RequireNode<Sprite2D>("%WeaponSprite");
+		_weaponAuthoredSpriteOffset = _weaponSprite.Offset;
+		if (!IsFinite(_weaponAuthoredSpriteOffset))
+		{
+			throw new InvalidOperationException(
+				$"{nameof(PlayerWeaponController2D)} on '{Name}' requires a finite authored weapon sprite offset.");
+		}
+
 		_weaponFx = RequireNode<WeaponFxController2D>("%WeaponFxController2D");
 		EnsureMuzzlePointMatchesWeaponTexture();
 		_reloadTimer = RequireNode<Timer>("%ReloadTimer");
@@ -400,6 +410,7 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
 			nowSeconds + State.Definition.FireIntervalSeconds;
 		PerformHitscan(shotPath);
 		EmitGunshotNoise(shotPath.RayStart);
+		PublishShotFired();
 		PublishShotAttempted(result);
 		return result;
 	}
@@ -708,10 +719,12 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
 			? muzzleY - textureSize.Y * 0.5f
 			: muzzleY;
 
-		// Offset is part of Sprite2D's draw transform. MuzzlePoint is now a child of
-		// WeaponSprite, so scale, rotation and left-side mirroring are inherited
-		// automatically and must not be applied manually here.
-		return new Vector2(localX, localY) + _weaponSprite.Offset;
+		// The authored draw offset belongs to the weapon geometry and therefore affects
+		// the resolved muzzle. Runtime presentation recoil also uses Sprite2D.Offset,
+		// but is deliberately excluded here so visual kick can never move hit-scan origin
+		// or muzzle-clearance checks. Scale, rotation and side mirroring are inherited
+		// automatically from WeaponSprite and must not be applied manually here.
+		return new Vector2(localX, localY) + _weaponAuthoredSpriteOffset;
 	}
 
 	private static bool TryResolveOpaqueMuzzlePixel(
@@ -840,6 +853,13 @@ public sealed partial class PlayerWeaponController2D : Node2D, INoiseEmitter2D
 		_nextEmptyMessageAllowedAtSeconds =
 			nowSeconds + EmptyMessageIntervalSeconds;
 		PublishMessage(result.Message);
+	}
+
+	private void PublishShotFired()
+	{
+		SafeEventPublisher.Publish(
+			ShotFired,
+			$"{nameof(PlayerWeaponController2D)}.{nameof(ShotFired)}");
 	}
 
 	private void PublishShotAttempted(FirearmShotResult result)

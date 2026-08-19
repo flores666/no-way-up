@@ -7,6 +7,9 @@ namespace LineZero.World2D;
 public sealed partial class PlayerFlashlightController2D : Node2D
 {
     private FlashlightModel? _model;
+    private Sprite2D _weaponSprite = null!;
+    private Marker2D _flashlightMount = null!;
+    private PointLight2D _pointLight = null!;
     private bool _isFlashlightInputEnabled = true;
     private bool _isActorAlive = true;
     private bool _requiresInputRelease;
@@ -33,14 +36,32 @@ public sealed partial class PlayerFlashlightController2D : Node2D
                 $"{nameof(PlayerFlashlightController2D)} on '{Name}' requires a definition.");
         definition.Validate();
 
-        PointLight2D pointLight = GetNodeOrNull<PointLight2D>("%FlashlightPointLight")
-            ?? throw new InvalidOperationException(
-                $"{nameof(PlayerFlashlightController2D)} on '{Name}' requires " +
-                "a unique FlashlightPointLight node.");
-        if (!GodotObject.IsInstanceValid(pointLight))
+        _weaponSprite = RequireNode<Sprite2D>("%WeaponSprite");
+        _flashlightMount = RequireNode<Marker2D>("%FlashlightMount");
+        _pointLight = RequireNode<PointLight2D>("%FlashlightPointLight");
+
+        if (!ReferenceEquals(GetParent(), _flashlightMount))
         {
-            throw new InvalidOperationException("The flashlight light node is invalid.");
+            throw new InvalidOperationException(
+                $"{nameof(PlayerFlashlightController2D)} on '{Name}' must be mounted under " +
+                "FlashlightMount so the light starts at the weapon-mounted flashlight.");
         }
+
+        float weaponScaleX = Mathf.Abs(_weaponSprite.Scale.X);
+        float weaponScaleY = Mathf.Abs(_weaponSprite.Scale.Y);
+        if (!float.IsFinite(weaponScaleX) || !float.IsFinite(weaponScaleY) ||
+            weaponScaleX <= 0.0f || weaponScaleY <= 0.0f)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(PlayerFlashlightController2D)} on '{Name}' requires a finite, " +
+                "non-zero WeaponSprite scale.");
+        }
+
+        // FlashlightMount inherits the pixel-art weapon scale. Cancel only its magnitude so
+        // the flashlight keeps a stable world-space size; the sign is intentionally
+        // inherited because the cone is vertically symmetric and must follow mirroring.
+        Scale = new Vector2(1.0f / weaponScaleX, 1.0f / weaponScaleY);
+        _pointLight.ShadowEnabled = true;
 
         _model = new FlashlightModel(definition, StartOn);
         _model.Changed += OnModelChanged;
@@ -158,5 +179,12 @@ public sealed partial class PlayerFlashlightController2D : Node2D
     private void ApplyPresentation()
     {
         Visible = Model.IsOn && _isActorAlive;
+    }
+
+    private TNode RequireNode<TNode>(string path) where TNode : Node
+    {
+        return GetNodeOrNull<TNode>(path)
+            ?? throw new InvalidOperationException(
+                $"{nameof(PlayerFlashlightController2D)} on '{Name}' requires '{path}'.");
     }
 }

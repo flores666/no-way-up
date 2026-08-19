@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/World2D/Interaction/SlidingDoor2D.cs" id="1_door"]
 [ext_resource type="Script" path="res://src/World2D/Presentation/DepthSortAnchor2D.cs" id="2_depth_sort"]
+[ext_resource type="Script" path="res://src/World2D/Lighting/CollisionLightOccluderGenerator2D.cs" id="3_light_occluders"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_interaction"]
 size = Vector2(120, 190)
@@ -33,6 +34,9 @@ shape = SubResource("RectangleShape2D_interaction")
 unique_name_in_owner = true
 collision_layer = 1
 collision_mask = 1
+
+[node name="LightOccluders" type="Node2D" parent="DoorPanel"]
+script = ExtResource("3_light_occluders")
 
 [node name="Shadow" type="Polygon2D" parent="DoorPanel"]
 z_index = 1

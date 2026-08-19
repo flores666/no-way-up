@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://src/World2D/PlayerController2D.cs" id="1_controller"]
 [ext_resource type="Resource" path="res://data/player/DefaultPlayerMovement.tres" id="2_movement"]
-[ext_resource type="Texture2D" path="res://assets/generated/flashlight_cone.svg" id="3_flashlight"]
+[ext_resource type="Texture2D" path="res://assets/generated/flashlight_natural.png" id="3_flashlight"]
 [ext_resource type="Script" path="res://src/World2D/Interaction/PlayerInteractor2D.cs" id="4_interactor"]
 [ext_resource type="Script" path="res://src/Gameplay/Inventory/InventoryComponent.cs" id="5_inventory"]
 [ext_resource type="Script" path="res://src/Gameplay/Health/HealthComponent.cs" id="6_health"]
@@ -78,26 +78,34 @@ texture = ExtResource("19_weapon_ak")
 unique_name_in_owner = true
 position = Vector2(18.5, 5)
 
+[node name="FlashlightMount" type="Marker2D" parent="AimPivot/WeaponSprite"]
+unique_name_in_owner = true
+position = Vector2(11.5, 7.0)
+
 [node name="WeaponOrigin" type="Marker2D" parent="AimPivot"]
 unique_name_in_owner = true
 position = Vector2(0, 9)
 
-[node name="PlayerFlashlightController2D" type="Node2D" parent="AimPivot"]
+[node name="PlayerFlashlightController2D" type="Node2D" parent="AimPivot/WeaponSprite/FlashlightMount"]
 unique_name_in_owner = true
 z_index = -4
 script = ExtResource("10_flashlight_controller")
 FlashlightDefinition = ExtResource("11_flashlight_definition")
 StartOn = true
 
-[node name="BeamGuide" type="Polygon2D" parent="AimPivot/PlayerFlashlightController2D"]
-color = Color(1, 0.866, 0.529, 0.06)
-polygon = PackedVector2Array(18, -5, 280, -90, 280, 90, 18, 5)
-
-[node name="FlashlightPointLight" type="PointLight2D" parent="AimPivot/PlayerFlashlightController2D"]
+[node name="FlashlightPointLight" type="PointLight2D" parent="AimPivot/WeaponSprite/FlashlightMount/PlayerFlashlightController2D" groups=["player_flashlight_shadow_source"]]
 unique_name_in_owner = true
+texture_filter = 2
 texture = ExtResource("3_flashlight")
-energy = 1.35
-texture_scale = 1.15
+color = Color(1, 0.965, 0.89, 1)
+energy = 1.05
+texture_scale = 1.32
+shadow_enabled = true
+shadow_color = Color(0, 0, 0, 0.44)
+shadow_filter = 2
+shadow_filter_smooth = 2.0
+blend_mode = 0
+range_item_cull_mask = 1
 
 [node name="CharacterVisual" type="Node2D" parent="."]
 z_index = 6

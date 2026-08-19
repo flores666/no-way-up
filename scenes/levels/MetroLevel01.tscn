@@ -1,4 +1,4 @@
-[gd_scene load_steps=73 format=3]
+[gd_scene load_steps=74 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/interactables/SlidingDoor2D.tscn" id="1_door"]
 [ext_resource type="PackedScene" path="res://scenes/interactables/InspectableObject2D.tscn" id="2_inspectable"]
@@ -29,6 +29,8 @@
 [ext_resource type="Script" path="res://src/World2D/Levels/MetroLevelController2D.cs" id="27_controller"]
 [ext_resource type="Texture2D" path="res://assets/generated/emergency_light.svg" id="28_light_texture"]
 [ext_resource type="Script" path="res://src/World2D/Presentation/MetroObliquePresentation2D.cs" id="29_oblique_presentation"]
+
+[ext_resource type="Script" path="res://src/World2D/Lighting/CollisionLightOccluderGenerator2D.cs" id="30_light_occluders"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_TicketTop"]
 size = Vector2(490, 20)
@@ -568,6 +570,9 @@ polygon = PackedVector2Array(-60.0, -15.0, 60.0, -15.0, 60.0, 15.0, -60.0, 15.0)
 [node name="WallCollisions" type="StaticBody2D" parent="."]
 collision_layer = 1
 collision_mask = 1
+
+[node name="LightOccluders" type="Node2D" parent="WallCollisions"]
+script = ExtResource("30_light_occluders")
 
 [node name="TicketTop" type="CollisionShape2D" parent="WallCollisions"]
 position = Vector2(-1005, -530)

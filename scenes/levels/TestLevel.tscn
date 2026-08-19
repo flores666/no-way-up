@@ -1,4 +1,4 @@
-[gd_scene load_steps=45 format=3]
+[gd_scene load_steps=46 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/interactables/SlidingDoor2D.tscn" id="1_door"]
 [ext_resource type="PackedScene" path="res://scenes/interactables/InspectableObject2D.tscn" id="2_inspectable"]
@@ -29,6 +29,8 @@
 [ext_resource type="PackedScene" path="res://scenes/levels/ObjectiveExitZone2D.tscn" id="27_exit_zone"]
 [ext_resource type="Resource" path="res://data/inventory/MaintenanceFuseCrateReplacementFuse.tres" id="28_fuse_seed"]
 [ext_resource type="Script" path="res://src/World2D/Perception/LightExposureZoneOverlay2D.cs" id="29_dark_overlay"]
+
+[ext_resource type="Script" path="res://src/World2D/Lighting/CollisionLightOccluderGenerator2D.cs" id="30_light_occluders"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_start_horizontal"]
 size = Vector2(616, 36)
@@ -305,6 +307,9 @@ default_color = Color(0.31, 0.345, 0.355, 0.58)
 [node name="WallCollisions" type="StaticBody2D" parent="."]
 collision_layer = 1
 collision_mask = 1
+
+[node name="LightOccluders" type="Node2D" parent="WallCollisions"]
+script = ExtResource("30_light_occluders")
 
 [node name="StartTop" type="CollisionShape2D" parent="WallCollisions"]
 position = Vector2(-190, -298)

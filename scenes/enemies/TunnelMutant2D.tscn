@@ -1,10 +1,12 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://src/World2D/Enemies/MutantController2D.cs" id="1_controller"]
 [ext_resource type="Resource" path="res://data/enemies/TunnelMutant.tres" id="2_definition"]
 [ext_resource type="Script" path="res://src/Gameplay/Health/HealthComponent.cs" id="3_health"]
 [ext_resource type="Script" path="res://src/World2D/Presentation/MutantMiniDayzPresentation2D.cs" id="4_presentation"]
 [ext_resource type="Script" path="res://src/World2D/Presentation/DepthSortAnchor2D.cs" id="5_depth_sort"]
+
+[ext_resource type="Script" path="res://src/World2D/Lighting/CollisionLightOccluderGenerator2D.cs" id="6_light_occluders"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_mutant"]
 radius = 13.0
@@ -166,3 +168,9 @@ one_shot = true
 [node name="AttackWindupTimer" type="Timer" parent="."]
 unique_name_in_owner = true
 one_shot = true
+
+[node name="LightOccluderGenerator2D" type="Node2D" parent="."]
+script = ExtResource("6_light_occluders")
+ShadowCastingMode = 1
+ObjectHeightMeters = 1.80
+OccluderLightMask = 1

@@ -1,7 +1,9 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/World2D/Interaction/FuseBox2D.cs" id="1_fuse_box"]
 [ext_resource type="Script" path="res://src/World2D/Presentation/DepthSortAnchor2D.cs" id="2_depth_sort"]
+
+[ext_resource type="Script" path="res://src/World2D/Lighting/CollisionLightOccluderGenerator2D.cs" id="3_light_occluders"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_interaction"]
 size = Vector2(118, 96)
@@ -84,3 +86,9 @@ theme_override_constants/outline_size = 3
 theme_override_font_sizes/font_size = 12
 text = "MAINTENANCE POWER"
 horizontal_alignment = 1
+
+[node name="LightOccluderGenerator2D" type="Node2D" parent="SolidBody"]
+script = ExtResource("3_light_occluders")
+ShadowCastingMode = 1
+ObjectHeightMeters = 0.45
+OccluderLightMask = 1

@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://src/Gameplay/Inventory/InventoryComponent.cs" id="2_inventory"]
 [ext_resource type="Script" path="res://src/World2D/Presentation/DepthSortAnchor2D.cs" id="3_depth_sort"]
 
+
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_interaction"]
 size = Vector2(132, 104)
 
@@ -42,12 +43,6 @@ collision_mask = 1
 shape = SubResource("RectangleShape2D_solid")
 
 [node name="VisualRoot" type="Node2D" parent="."]
-
-[node name="Shadow" type="Polygon2D" parent="VisualRoot"]
-z_index = -1
-position = Vector2(7, 8)
-color = Color(0.008, 0.012, 0.015, 0.62)
-polygon = PackedVector2Array(-46, -15, 40, -15, 49, 8, 35, 24, -45, 24, -53, 8)
 
 [node name="FrontFace" type="Polygon2D" parent="VisualRoot"]
 z_index = 1

@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://src/World2D/Items/WorldItemPickup2D.cs" id="1_pickup"]
 [ext_resource type="Script" path="res://src/World2D/Presentation/DepthSortAnchor2D.cs" id="2_depth_sort"]
 
+
 [sub_resource type="CircleShape2D" id="CircleShape2D_interaction"]
 radius = 27.0
 
@@ -28,12 +29,6 @@ shape = SubResource("CircleShape2D_interaction")
 
 [node name="VisualRoot" type="Node2D" parent="."]
 unique_name_in_owner = true
-
-[node name="Shadow" type="Polygon2D" parent="VisualRoot"]
-z_index = -1
-position = Vector2(3, 5)
-color = Color(0.012, 0.018, 0.022, 0.66)
-polygon = PackedVector2Array(-18, -3, 14, -3, 21, 6, 14, 13, -17, 13, -22, 6)
 
 [node name="BodyVisual" type="Polygon2D" parent="VisualRoot"]
 unique_name_in_owner = true

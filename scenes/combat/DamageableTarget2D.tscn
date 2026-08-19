@@ -1,7 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://src/World2D/Combat/DamageableTarget2D.cs" id="1_target"]
 [ext_resource type="Script" path="res://src/Gameplay/Health/HealthComponent.cs" id="2_health"]
+
+[ext_resource type="Script" path="res://src/World2D/Lighting/CollisionLightOccluderGenerator2D.cs" id="3_light_occluders"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_target"]
 size = Vector2(34, 48)
@@ -75,3 +77,9 @@ horizontal_alignment = 1
 unique_name_in_owner = true
 wait_time = 0.09
 one_shot = true
+
+[node name="LightOccluderGenerator2D" type="Node2D" parent="."]
+script = ExtResource("3_light_occluders")
+ShadowCastingMode = 1
+ObjectHeightMeters = 1.00
+OccluderLightMask = 1

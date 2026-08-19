@@ -98,14 +98,17 @@ unique_name_in_owner = true
 texture_filter = 2
 texture = ExtResource("3_flashlight")
 color = Color(1, 0.965, 0.89, 1)
-energy = 1.05
+energy = 1.55
 texture_scale = 1.32
 shadow_enabled = true
 shadow_color = Color(0, 0, 0, 0.44)
 shadow_filter = 2
-shadow_filter_smooth = 2.0
+shadow_filter_smooth = 0.7
 blend_mode = 0
-range_item_cull_mask = 1
+range_item_cull_mask = 2147483647
+range_z_min = -4096
+range_z_max = 4096
+shadow_item_cull_mask = 1
 
 [node name="CharacterVisual" type="Node2D" parent="."]
 z_index = 6

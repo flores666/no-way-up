@@ -19,7 +19,17 @@ public sealed partial class MetroObliquePresentation2D : Node2D
     public float FloorDetailSpacing { get; set; } = 36.0f;
 
     [Export]
-    public int DepthBaseZIndex { get; set; } = 1000;
+    public int DepthBaseZIndex { get; set; } = DepthSortAnchor2D.DefaultBaseZIndex;
+
+    [Export(PropertyHint.Range, "1,32,0.5,or_greater")]
+    public float DepthWorldPixelsPerZLayer { get; set; } =
+        DepthSortAnchor2D.DefaultWorldPixelsPerZLayer;
+
+    [Export]
+    public int DepthMinimumZIndex { get; set; } = DepthSortAnchor2D.DefaultMinimumZIndex;
+
+    [Export]
+    public int DepthMaximumZIndex { get; set; } = DepthSortAnchor2D.DefaultMaximumZIndex;
 
     [Export]
     public Vector2 ShadowOffset { get; set; } = new(10.0f, 12.0f);
@@ -218,10 +228,12 @@ public sealed partial class MetroObliquePresentation2D : Node2D
 
         Rect2 bounds = CalculateBounds(footprint);
         float height = ResolveHeight(source.Name.ToString());
-        int depth = Math.Clamp(
-            DepthBaseZIndex + Mathf.RoundToInt(source.Position.Y + bounds.End.Y),
-            -4096,
-            4096 - 4);
+        int depth = DepthSortAnchor2D.CalculateDepth(
+            source.Position.Y + bounds.End.Y,
+            DepthBaseZIndex,
+            DepthWorldPixelsPerZLayer,
+            DepthMinimumZIndex,
+            DepthMaximumZIndex);
 
         Node2D generated = new()
         {

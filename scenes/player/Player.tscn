@@ -99,9 +99,9 @@ enabled = false
 texture_filter = 2
 energy = 0.0
 shadow_enabled = true
-shadow_color = Color(0, 0, 0, 0.48)
-shadow_filter = 1
-shadow_filter_smooth = 0.35
+shadow_color = Color(0, 0, 0, 0.62)
+shadow_filter = 2
+shadow_filter_smooth = 0.55
 range_item_cull_mask = 2147483647
 range_z_min = -4096
 range_z_max = 4096
@@ -154,12 +154,11 @@ texture = ExtResource("18_character")
 hframes = 6
 frame = 0
 
-[node name="GroundShadow" type="Polygon2D" parent="CharacterVisual"]
+[node name="MuzzleSelfShadowOccluder" type="LightOccluder2D" parent="CharacterVisual"]
 unique_name_in_owner = true
-z_index = -2
-position = Vector2(2, 12)
-color = Color(0.008, 0.012, 0.014, 0.62)
-polygon = PackedVector2Array(-18, 0, -14, -5, -5, -8, 7, -8, 17, -4, 20, 0, 16, 5, 6, 8, -7, 8, -16, 5)
+position = Vector2(0, -10)
+scale = Vector2(2, 2)
+occluder_light_mask = 1
 
 [node name="BodyRig" type="Node2D" parent="CharacterVisual"]
 unique_name_in_owner = true

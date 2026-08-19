@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="WeaponFxProfile2D" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/World2D/Combat/WeaponFxProfile2D.cs" id="1_profile"]
+[ext_resource type="Texture2D" path="res://assets/weapons/fx/bullet_tracer.png" id="3_bullet"]
+
+[resource]
+resource_name = "AK Weapon FX"
+script = ExtResource("1_profile")
+BulletTexture = ExtResource("3_bullet")
+UseProceduralMuzzleFlash = true
+MuzzleFlashFrameCount = 4
+MuzzleFlashDurationSeconds = 0.08
+MuzzleFlashScale = 0.68
+MuzzleFlashLocalOffset = Vector2(0.5, 0)
+MuzzleFlashRotationDegrees = 0.0
+MuzzleLightEnabled = true
+MuzzleLightDurationSeconds = 0.045
+MuzzleLightEnergyMin = 1.35
+MuzzleLightEnergyMax = 1.75
+MuzzleLightTextureScale = 1.25
+MuzzleLightColor = Color(1, 0.72, 0.3, 1)
+BulletPoolSize = 12
+BulletVisualSpeed = 6500.0
+MinimumBulletLifetimeSeconds = 0.035
+MaximumBulletLifetimeSeconds = 0.15
+BulletVisualScale = 3.0
+BulletColor = Color(1, 0.98, 0.72, 1)
+SmokeEnabled = true
+SmokePoolSize = 64
+SmokeParticlesPerShot = 2
+SmokeExtraParticlesAtMaxHeat = 3
+SmokeLifetimeMinSeconds = 0.42
+SmokeLifetimeMaxSeconds = 0.82
+SmokeSpeedMin = 8.0
+SmokeSpeedMax = 22.0
+SmokeSpreadDegrees = 40.0
+SmokeUpwardDrift = 9.0
+SmokeDragPerSecond = 2.4
+SmokeStartScaleMin = 1.875
+SmokeStartScaleMax = 3.0
+SmokeExpansionMultiplier = 3.225
+SmokeAlphaMin = 0.30
+SmokeAlphaMax = 0.50
+SmokeColor = Color(0.76, 0.78, 0.74, 1)
+HeatPerShot = 0.14
+HeatDecayPerSecond = 0.32
+ImpactPixelPoolSize = 40
+ImpactPixelsPerHit = 5
+ImpactPixelLifetimeSeconds = 0.075
+ImpactPixelScatterRadius = 1.75
+ImpactPixelScale = 2

@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3]
+[gd_scene load_steps=29 format=3]
 
 [ext_resource type="Script" path="res://src/World2D/PlayerController2D.cs" id="1_controller"]
 [ext_resource type="Resource" path="res://data/player/DefaultPlayerMovement.tres" id="2_movement"]
@@ -20,6 +20,8 @@
 [ext_resource type="Texture2D" path="res://assets/player/character/character.png" id="18_character"]
 [ext_resource type="Texture2D" path="res://assets/player/character/weapon_ak.png" id="19_weapon_ak"]
 [ext_resource type="Script" path="res://src/World2D/Presentation/PlayerCameraZoom2D.cs" id="20_camera_zoom"]
+[ext_resource type="Script" path="res://src/World2D/Combat/WeaponFxController2D.cs" id="21_weapon_fx"]
+[ext_resource type="Resource" path="res://data/weapons/fx/AkWeaponFx.tres" id="22_weapon_fx"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
 radius = 14.0
@@ -36,6 +38,9 @@ radius = 10.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_objective_sensor"]
 radius = 10.0
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_muzzle_flash"]
+light_mode = 1
 
 [node name="Player" type="CharacterBody2D"]
 motion_mode = 1
@@ -77,6 +82,31 @@ texture = ExtResource("19_weapon_ak")
 [node name="MuzzlePoint" type="Marker2D" parent="AimPivot/WeaponSprite"]
 unique_name_in_owner = true
 position = Vector2(18.5, 5)
+
+[node name="MuzzleFlashSprite" type="Sprite2D" parent="AimPivot/WeaponSprite/MuzzlePoint"]
+unique_name_in_owner = true
+top_level = true
+physics_interpolation_mode = 2
+visible = false
+z_index = 2
+material = SubResource("CanvasItemMaterial_muzzle_flash")
+texture_filter = 1
+frame = 0
+
+[node name="MuzzleFlashLight" type="PointLight2D" parent="AimPivot/WeaponSprite/MuzzlePoint"]
+unique_name_in_owner = true
+enabled = false
+texture_filter = 2
+energy = 0.0
+shadow_enabled = true
+shadow_color = Color(0, 0, 0, 0.48)
+shadow_filter = 1
+shadow_filter_smooth = 0.35
+range_item_cull_mask = 2147483647
+range_z_min = -4096
+range_z_max = 4096
+shadow_item_cull_mask = 1
+
 
 [node name="FlashlightMount" type="Marker2D" parent="AimPivot/WeaponSprite"]
 unique_name_in_owner = true
@@ -203,6 +233,7 @@ SwitchThreshold = 0.08
 
 [node name="PlayerWeaponController2D" type="Node2D" parent="."]
 unique_name_in_owner = true
+process_physics_priority = 10
 script = ExtResource("7_weapon_controller")
 WeaponDefinition = ExtResource("8_ak_rifle")
 InitialMagazineAmmo = 30
@@ -265,18 +296,12 @@ WalkFootstepIntensity = 1.0
 SprintStepDistance = 90.0
 SprintFootstepIntensity = 1.8
 
-[node name="TracerLine" type="Line2D" parent="PlayerWeaponController2D"]
+[node name="WeaponFxController2D" type="Node2D" parent="PlayerWeaponController2D"]
 unique_name_in_owner = true
 top_level = true
-z_index = 3000
-visible = false
-width = 2.5
-default_color = Color(1, 0.78, 0.31, 0.92)
-
-[node name="TracerTimer" type="Timer" parent="PlayerWeaponController2D"]
-unique_name_in_owner = true
-wait_time = 0.08
-one_shot = true
+physics_interpolation_mode = 2
+script = ExtResource("21_weapon_fx")
+Profile = ExtResource("22_weapon_fx")
 
 [node name="ReloadTimer" type="Timer" parent="PlayerWeaponController2D"]
 unique_name_in_owner = true

@@ -11,6 +11,7 @@ using LineZero.Gameplay.Items;
 using LineZero.Tests.Framework;
 using LineZero.UI;
 using LineZero.World2D;
+using LineZero.World2D.Combat;
 using LineZero.World2D.Enemies;
 using LineZero.World2D.Hazards;
 using LineZero.World2D.Interaction;
@@ -336,6 +337,16 @@ public sealed class SceneContractFeatureTests : IFeatureTestSuite
                 "AK resource must use detachable magazines.");
             TestAssert.True(ak.AimedSpreadDegrees < ak.HipFireSpreadDegrees,
                 "AK aiming must be more accurate than hip fire.");
+
+            WeaponFxProfile2D akFx = LoadResource<WeaponFxProfile2D>(
+                "res://data/weapons/fx/AkWeaponFx.tres");
+            akFx.Validate();
+            TestAssert.True(akFx.MuzzleLightEnabled,
+                "AK muzzle-flash light must remain enabled in the production FX profile.");
+            TestAssert.True(akFx.SmokeEnabled,
+                "AK muzzle smoke must remain enabled in the production FX profile.");
+            TestAssert.True(akFx.UseProceduralMuzzleFlash,
+                "AK muzzle flash must use procedural production variants.");
 
             FlashlightDefinition flashlight = LoadResource<FlashlightDefinition>(
                 "res://data/flashlight/StandardFlashlight.tres");

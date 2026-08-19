@@ -12,7 +12,7 @@ public sealed class WeaponIntegrationFeatureTests : IFeatureTestSuite
 {
     public string Id => "weapon-integration";
 
-    public string Description => "Muzzle obstruction, first-hit damage, tracer, ammo, and gunshot noise";
+    public string Description => "Muzzle obstruction, first-hit damage, weapon FX, ammo, and gunshot noise";
 
     public async Task RunAsync(FeatureTestContext context)
     {
@@ -57,8 +57,14 @@ public sealed class WeaponIntegrationFeatureTests : IFeatureTestSuite
             TestAssert.Equal(targetHealthBefore, target.Health.CurrentHealth,
                 "Blocked shot damaged a target behind the wall.");
             TestAssert.Equal(0, noiseCount, "Blocked shot emitted gunshot noise.");
-            Line2D tracer = weapon.GetNode<Line2D>("%TracerLine");
-            TestAssert.False(tracer.Visible, "Blocked shot displayed a tracer.");
+            WeaponFxController2D weaponFx = player.GetNode<WeaponFxController2D>("%WeaponFxController2D");
+            PointLight2D muzzleLight = player.GetNode<PointLight2D>("%MuzzleFlashLight");
+            TestAssert.False(weaponFx.HasActiveShotVisuals,
+                "Blocked shot displayed weapon FX.");
+            TestAssert.False(muzzleLight.Enabled,
+                "Blocked shot enabled the muzzle-flash light.");
+            TestAssert.Equal(0.0f, weaponFx.Heat01,
+                "Blocked shot heated the visual FX state.");
 
             wall.QueueFree();
             await context.WaitPhysicsFramesAsync(2);
@@ -72,6 +78,12 @@ public sealed class WeaponIntegrationFeatureTests : IFeatureTestSuite
                 "Clear hitscan did not damage the first target correctly.");
             TestAssert.Equal(1, noiseCount,
                 "One valid shot did not emit exactly one gunshot noise.");
+            TestAssert.True(weaponFx.HasActiveShotVisuals,
+                "Valid shot did not display weapon FX.");
+            TestAssert.True(muzzleLight.Enabled,
+                "Valid shot did not trigger the muzzle-flash light.");
+            TestAssert.True(weaponFx.Heat01 > 0.0f,
+                "Valid shot did not update the sustained-fire FX heat state.");
 
             await context.DisposeNodeAsync(root);
         });
@@ -134,6 +146,12 @@ public sealed class WeaponIntegrationFeatureTests : IFeatureTestSuite
                 Pressed = true,
                 Strength = 1.0f,
             });
+
+            TestAssert.Equal(ammoBefore, weapon.State.CurrentMagazineAmmo,
+                "Initial trigger press fired outside the physics tick.");
+            await context.WaitPhysicsFramesAsync(1);
+            TestAssert.Equal(ammoBefore - 1, weapon.State.CurrentMagazineAmmo,
+                "Initial trigger press was not consumed on the next physics tick.");
 
             await context.WaitSecondsAsync(0.24);
             int ammoWhileHeld = weapon.State.CurrentMagazineAmmo;

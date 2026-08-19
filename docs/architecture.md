@@ -106,7 +106,7 @@ lives in `FirearmState`. `FirearmReloadService` performs reload transactions.
 - aimed versus hip-fire spread;
 - muzzle-clearance validation;
 - hitscan physics;
-- tracer presentation;
+- delegation to the weapon FX presentation layer;
 - damage application;
 - gunshot noise emission.
 
@@ -114,8 +114,25 @@ The current AK resource uses automatic fire and detachable magazines. Each spare
 magazine preserves its own remaining round count. Magazine objects are not yet
 represented as separate general-inventory slots.
 
-A shot computes its final spread direction once. Hitscan and tracer use the same
-validated direction so presentation cannot disagree with the physical hit result.
+A shot computes its final spread direction once. Hitscan and the visual projectile
+use the same validated start/end points so presentation cannot disagree with the
+physical hit result. Trigger presses are consumed on the physics tick, after player
+aim/movement sampling, so the first shot of a burst uses the same transform timeline
+as subsequent automatic shots.
+
+`WeaponFxController2D` owns transient firing presentation only. Its behavior is
+configured by a `WeaponFxProfile2D` resource and currently covers the visual bullet,
+procedural muzzle-flash variants, a short-lived dynamic muzzle light, heat-scaled
+muzzle smoke, and obstacle impact pixels. Bullet, smoke, and impact nodes are
+preallocated in fixed pools during `_Ready`; firing reuses those nodes instead of
+allocating scene objects per shot. The top-level transient FX branch disables physics
+interpolation because these render-time effects are explicitly positioned in world
+space and pooled nodes can jump between unrelated shot positions. Reactivated pooled
+sprites also reset their interpolation history before becoming visible.
+
+The controller can stop and clear all transient FX without mutating firearm state,
+ammunition, damage, spread, or hitscan results. Casing ejection is intentionally not
+part of the weapon FX system.
 
 ## Crosshair and mouse ownership
 
